@@ -30,3 +30,16 @@ export function formatShortDay(date: string | null | undefined): string {
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
   return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`
 }
+
+/** "Stay for a scene mid-credits and one at the very end", or null when TMDB doesn't tag one. */
+export function stingerLine(s: { during: boolean; after: boolean } | null | undefined): string | null {
+  if (!s || (!s.during && !s.after)) return null
+  if (s.during && s.after) return 'Stay for the credits: a scene mid-credits and one at the very end.'
+  return s.during ? 'Stay for the credits: there’s a scene mid-credits.' : 'Stay for the credits: there’s a scene at the very end.'
+}
+
+/** The short version for list rows. */
+export function stingerShort(s: { during: boolean; after: boolean } | null | undefined): string | null {
+  if (!s || (!s.during && !s.after)) return null
+  return s.during && s.after ? 'Stay: 2 credits scenes' : s.during ? 'Stay: mid-credits scene' : 'Stay: end-credits scene'
+}

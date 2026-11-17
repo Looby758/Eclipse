@@ -110,3 +110,28 @@ describe('parsing', () => {
     expect(imageUrl(null)).toBeNull()
   })
 })
+
+describe('stay for the credits and trailers', () => {
+  it('reads the credits-scene keywords on films', async () => {
+    const { parseDetails } = await import('./tmdb')
+    const film = parseDetails('movie', { id: 1726, title: 'Iron Man', keywords: { keywords: [{ id: 179430, name: 'aftercreditsstinger' }, { id: 1, name: 'superhero' }] } })
+    expect(film.stingers).toEqual({ during: false, after: true })
+    expect(parseDetails('movie', { id: 1, title: 'Old copy' }).stingers).toBeNull()
+    expect(parseDetails('tv', { id: 2, name: 'Show', keywords: { results: [{ id: 179431, name: 'duringcreditsstinger' }] } }).stingers).toBeNull()
+  })
+
+  it('picks the official YouTube trailer', async () => {
+    const { pickTrailer } = await import('./tmdb')
+    expect(
+      pickTrailer({
+        results: [
+          { site: 'YouTube', type: 'Teaser', key: 'tease', official: true },
+          { site: 'Vimeo', type: 'Trailer', key: 'vimeo', official: true },
+          { site: 'YouTube', type: 'Trailer', key: 'fan', official: false },
+          { site: 'YouTube', type: 'Trailer', key: 'real', official: true }
+        ]
+      })
+    ).toBe('real')
+    expect(pickTrailer({ results: [] })).toBeNull()
+  })
+})

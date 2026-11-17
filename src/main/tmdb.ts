@@ -73,7 +73,7 @@ export async function search(query: string): Promise<Fetched<SearchResult[]>> {
 }
 
 export async function details(type: MediaType, id: number, refresh = false): Promise<Fetched<TitleDetails>> {
-  const r = await cached(fileCache, `details:${type}:${id}`, CACHE_TTL.details, () => tmdb().details(type, id), {
+  const r = await cached(fileCache, `details2:${type}:${id}`, CACHE_TTL.details, () => tmdb().details(type, id), {
     force: refresh,
     shouldServeStale: serveStaleUnlessKeyProblem
   })

@@ -71,6 +71,10 @@ export interface TitleDetails {
   lastAirDate: string | null
   /** Films only: the TMDB collection (franchise) it belongs to. */
   collection: { id: number; name: string } | null
+  /** Films: whether TMDB tags a scene during the credits and one after them (null for shows; missing in old saved copies). */
+  stingers?: { during: boolean; after: boolean } | null
+  /** The YouTube key of its trailer, if TMDB lists one. */
+  trailer?: string | null
 }
 
 export type WatchStatus = 'want' | 'watching' | 'watched' | 'stopped'

@@ -477,3 +477,7 @@ button.list-seen.undo:hover { background: var(--glass-hover); }
 .note-open:hover strong { text-decoration: underline; }
 .note-quote { font-size: var(--text-sm); line-height: 1.45; color: var(--text-muted); border-left: 2px solid var(--line); padding-left: 10px; }
 .note .row .chip { height: 32px; padding: 0 12px; }
+
+/* Stay for the credits */
+.stinger { display: flex; align-items: center; gap: 8px; margin: 8px 0 0; color: var(--cyan); font-size: var(--text-sm); }
+.stinger-chip { margin-left: 8px; padding: 1px 8px; border-radius: 999px; font-size: var(--text-xs); color: var(--cyan); border: 1px solid var(--line); white-space: nowrap; }
