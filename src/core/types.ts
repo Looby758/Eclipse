@@ -107,6 +107,8 @@ export interface LibraryEntry {
   rating?: number
   /** Shows: the episodes you've seen, by episodeKey ("S1E3"), each with the day you ticked it. */
   episodes?: Record<string, string>
+  /** Shows: the day you want to have finished it by (YYYY-MM-DD), for "Finish it by Friday". */
+  finishBy?: string
   /** Your own lists it's on, e.g. "Marvel" (brought over from Sequel's collections). */
   lists?: string[]
   title: TitleSnapshot
@@ -126,9 +128,24 @@ export interface Preferences {
   region: string
   /** The streaming services you pay for, by TMDB provider id (e.g. 337 Disney+, 39 NOW TV). */
   services: number[]
+  /** When your evening's watching usually starts, "HH:MM". */
+  startTime: string
+  /** When you go to bed, "HH:MM" (after midnight is fine, e.g. "00:30"). */
+  bedtime: string
+  /** The nights you usually watch: 0 Sunday … 6 Saturday. */
+  watchDays: number[]
+  /** The day of the month each of your services renews, by provider id (optional). */
+  renewals: Record<string, number>
 }
 
-export const DEFAULT_PREFERENCES: Preferences = { region: 'GB', services: [] }
+export const DEFAULT_PREFERENCES: Preferences = {
+  region: 'GB',
+  services: [],
+  startTime: '20:00',
+  bedtime: '23:00',
+  watchDays: [1, 2, 3, 4, 5],
+  renewals: {}
+}
 
 /** Your library file (library.json in your data folder). */
 export interface Library {

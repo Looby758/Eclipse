@@ -47,10 +47,18 @@ Each computer needs the key pasted once.
 
 Avoid having Eclipse open on both computers at the same time, so the two copies don't overwrite each other's changes.
 
+## Phase 3: what to try
+
+1. **Your evenings:** Settings → *Your evenings*. Set when you usually start watching, your bedtime, and the nights you watch (it starts at 20:00 to 23:00, Monday to Friday).
+2. **Renewal days (optional):** Settings → *Your services*. Under your ticked services, pick the day of the month NOW TV (or any of them) renews.
+3. **Watchlist hours:** open Library → *Want to watch*. The top shows how long your watchlist is, split by service. Each poster shows how long it has left. Press **Quickest to finish** to sort by that. Try the *Watching* tab too.
+4. **Finish it by Friday:** open a show you haven't finished. In *Finish it by…*, pick **Friday**, a renewal, the next season, or any date. It tells you how many episodes a night that takes, or the earliest you could finish if it won't fit. Press the × to clear it.
+5. **Home:** for a show with a deadline, the *Up next* box says how many a night you need and how many fit before bed tonight. A film says when to start it to be in bed on time.
+
 ## For development
 
 - `npm test` runs the tests, `npm run typecheck` checks the types.
-- `src/core` holds the tracking logic (TMDB, caching, the library, where-to-watch, the Sequel import). It has no Electron or UI code, so it can move into Orbit later as it is.
+- `src/core` holds the tracking logic (TMDB, caching, the library, where-to-watch, the Sequel import, the runtime maths). It has no Electron or UI code, so it can move into Orbit later as it is.
 - `src/main` is the Electron side (settings, encrypted key, files), `src/preload` the bridge, `src/renderer` the React screens.
 - Every colour, font and size is in `src/renderer/src/styles/theme.css`.
 

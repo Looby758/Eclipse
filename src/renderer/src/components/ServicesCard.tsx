@@ -20,6 +20,8 @@ const REGIONS: [string, string][] = [
   ['NL', 'Netherlands']
 ]
 
+const ordinal = (n: number): string => `${n}${n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th'}`
+
 /** Your country and the streaming services you pay for (saved in library.json, so both computers share them). */
 export default function ServicesCard(): React.JSX.Element {
   const library = useApp((s) => s.library)
@@ -89,6 +91,33 @@ export default function ServicesCard(): React.JSX.Element {
         <button className="link-btn" onClick={() => setShowAll(true)}>
           Show all {all.length} services
         </button>
+      )}
+      {mine.length > 0 && (
+        <div className="renewals">
+          <div className="muted small">Renewal day (optional): lets a show page offer “finish it before it renews”.</div>
+          {mine.map((p) => (
+            <label key={p.id} className="renewal-row">
+              <span>{p.name} renews on the</span>
+              <select
+                value={prefs.renewals[String(p.id)] ?? ''}
+                onChange={(e) => {
+                  const renewals = { ...prefs.renewals }
+                  if (e.target.value) renewals[String(p.id)] = Number(e.target.value)
+                  else delete renewals[String(p.id)]
+                  save({ renewals })
+                }}
+              >
+                <option value="">day I don’t know</option>
+                {Array.from({ length: 31 }, (_, i) => i + 1).map((n) => (
+                  <option key={n} value={n}>
+                    {ordinal(n)}
+                  </option>
+                ))}
+              </select>
+              <span>of each month</span>
+            </label>
+          ))}
+        </div>
       )}
     </section>
   )

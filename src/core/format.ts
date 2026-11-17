@@ -20,3 +20,13 @@ export function formatDate(date: string | null | undefined): string {
 export function plural(n: number, one: string, many = `${one}s`): string {
   return `${n} ${n === 1 ? one : many}`
 }
+
+/** "2026-11-20" → "Fri 20 Nov". */
+export function formatShortDay(date: string | null | undefined): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(date ?? '')
+  if (!m) return ''
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`
+}

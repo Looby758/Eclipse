@@ -1,28 +1,28 @@
 import { useEffect, useState } from 'react'
-import { availability, type AvailabilityFilter } from '@core/providers'
+import { availability } from '@core/providers'
 import { preferencesOf } from '@core/library'
-import type { Availability, WatchProviders } from '@core/types'
+import type { Availability, TitleDetails, WatchProviders } from '@core/types'
 import { useApp } from '../store/app'
 
 /**
- * Where-to-watch for a list of titles, fetched only once a filter needs it (each answer is
- * saved for a day, so it's quick after the first time).
+ * Fetches something for many titles at once, only while `enabled`, keeping what it already has.
+ * Each answer is saved by the app (a day for where-to-watch, a week for details), so it's quick
+ * after the first time.
  */
-export function useAvailability(keys: string[], filter: AvailabilityFilter): { map: Record<string, Availability>; checking: boolean } {
-  const services = useApp((s) => preferencesOf(s.library).services)
-  const [providers, setProviders] = useState<Record<string, WatchProviders>>({})
+function useMany<T>(keys: string[], enabled: boolean, fetchMany: (keys: string[]) => Promise<Record<string, T>>): { map: Record<string, T>; checking: boolean } {
+  const [map, setMap] = useState<Record<string, T>>({})
   const [checking, setChecking] = useState(false)
-  const wanted = filter === 'any' ? '' : keys.join(',')
+  const wanted = enabled ? keys.join(',') : ''
 
   useEffect(() => {
     if (!wanted) return
     let cancelled = false
-    const missing = wanted.split(',').filter((k) => !providers[k])
+    const missing = wanted.split(',').filter((k) => !(k in map))
     if (!missing.length) return
     setChecking(true)
-    window.api.providersMany(missing).then((found) => {
+    fetchMany(missing).then((found) => {
       if (cancelled) return
-      setProviders((p) => ({ ...p, ...found }))
+      setMap((m) => ({ ...m, ...found }))
       setChecking(false)
     })
     return () => {
@@ -30,7 +30,19 @@ export function useAvailability(keys: string[], filter: AvailabilityFilter): { m
     }
   }, [wanted])
 
+  return { map, checking }
+}
+
+/** Where-to-watch for a list of titles, and how you could watch each (on yours, elsewhere, rent or buy, nowhere). */
+export function useAvailability(keys: string[], enabled: boolean): { map: Record<string, Availability>; providers: Record<string, WatchProviders>; checking: boolean } {
+  const services = useApp((s) => preferencesOf(s.library).services)
+  const { map: providers, checking } = useMany(keys, enabled, (k) => window.api.providersMany(k))
   const map: Record<string, Availability> = {}
   for (const [k, p] of Object.entries(providers)) map[k] = availability(p, services)
-  return { map, checking }
+  return { map, providers, checking }
+}
+
+/** TMDB details for a list of titles (for runtimes and episode counts). */
+export function useDetailsMany(keys: string[], enabled: boolean): { map: Record<string, TitleDetails>; checking: boolean } {
+  return useMany(keys, enabled, (k) => window.api.detailsMany(k))
 }

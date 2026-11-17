@@ -45,6 +45,8 @@ export interface EclipseApi {
   providers(type: MediaType, id: number, refresh?: boolean): Promise<Result<Fetched<WatchProviders>>>
   /** Where to watch for many titles at once, by title key (titles that couldn't be checked are left out). */
   providersMany(keys: string[]): Promise<Record<string, WatchProviders>>
+  /** Details for many titles at once (saved for a week), by title key; ones that couldn't be fetched are left out. */
+  detailsMany(keys: string[]): Promise<Record<string, TitleDetails>>
   /** Every streaming service in your region, for picking yours. */
   services(): Promise<Result<Fetched<Provider[]>>>
 
@@ -54,6 +56,8 @@ export interface EclipseApi {
   setEpisodes(item: Item, keys: string[], watched: boolean): Promise<Library>
   setNote(key: TitleKey, note: string): Promise<Library>
   setWatchedOn(key: TitleKey, day: string | null): Promise<Library>
+  /** Sets or clears the day you want to have finished a show by. */
+  setFinishBy(key: TitleKey, day: string | null): Promise<Library>
   setPreferences(patch: Partial<Preferences>): Promise<Library>
   /** Called when library.json changes on disk (e.g. Google Drive synced it from your other computer). */
   onLibraryChanged(callback: (library: Library) => void): () => void
