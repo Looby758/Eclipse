@@ -54,7 +54,8 @@ export function browsers(): Browser[] {
 // Chrome counts time in microseconds since 1 January 1601.
 const EPOCH_GAP_MS = 11_644_473_600_000
 const toChrome = (ms: number): bigint => BigInt(ms + EPOCH_GAP_MS) * 1000n
-const fromChrome = (t: number | bigint): number => Number(BigInt(t) / 1000n) - EPOCH_GAP_MS
+// Rows give milliseconds (divided in SQL): the raw microseconds are too big for a JavaScript number.
+const fromChromeMs = (t: number | bigint): number => Number(t) - EPOCH_GAP_MS
 
 /** The sites to look for in history ("disneyplus.com", "nowtv.com" …). */
 export const STREAMING_HOSTS = ['disneyplus.com', 'nowtv.com', 'netflix.com', 'primevideo.com', 'bbc.co.uk/iplayer', 'itv.com', 'channel4.com', 'tv.apple.com', 'paramountplus.com']
@@ -78,10 +79,10 @@ export async function streamingVisits(sinceMs: number): Promise<{ visits: Visit[
           const db = new DatabaseSync(copy, { readOnly: true })
           try {
             const rows = db
-              .prepare(`SELECT u.url AS url, u.title AS title, v.visit_time AS t FROM visits v JOIN urls u ON v.url = u.id WHERE v.visit_time > ? AND (${like}) ORDER BY v.visit_time LIMIT 5000`)
+              .prepare(`SELECT u.url AS url, u.title AS title, (v.visit_time / 1000) AS t FROM visits v JOIN urls u ON v.url = u.id WHERE v.visit_time > ? AND (${like}) ORDER BY v.visit_time LIMIT 5000`)
               .all(toChrome(sinceMs), ...STREAMING_HOSTS.map((h) => `%${h}%`)) as { url: string; title: string | null; t: number | bigint }[]
             for (const r of rows) {
-              const at = fromChrome(r.t)
+              const at = fromChromeMs(r.t)
               visits.push({ url: r.url, title: r.title ?? '', at, day: localDate(new Date(at)) })
             }
             if (!found.includes(b.name)) found.push(b.name)
