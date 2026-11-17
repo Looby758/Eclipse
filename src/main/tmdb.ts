@@ -112,6 +112,25 @@ export async function providersMany(keys: string[], region: string): Promise<Rec
   return out
 }
 
+/** Details for many titles at once, by title key (titles that couldn't be fetched are left out). */
+export async function detailsMany(keys: string[]): Promise<Record<string, TitleDetails>> {
+  const out: Record<string, TitleDetails> = {}
+  const todo = [...new Set(keys)].filter((k) => parseTitleKey(k))
+  for (let i = 0; i < todo.length; i += 6) {
+    await Promise.all(
+      todo.slice(i, i + 6).map(async (key) => {
+        const { type, id } = parseTitleKey(key)!
+        try {
+          out[key] = (await details(type, id)).data
+        } catch {
+          // Left out; its time shows as unknown.
+        }
+      })
+    )
+  }
+  return out
+}
+
 export async function services(region: string): Promise<Fetched<Provider[]>> {
   const r = await cached(fileCache, `services:${region}`, CACHE_TTL.services, () => tmdb().services(region), { shouldServeStale: serveStaleUnlessKeyProblem })
   return { data: r.data, stale: r.source === 'stale', savedAt: r.savedAt }

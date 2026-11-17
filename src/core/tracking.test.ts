@@ -66,9 +66,9 @@ describe('notes, dates and preferences', () => {
   })
 
   it('keeps preferences tidy', () => {
-    expect(preferencesOf(emptyLibrary())).toEqual({ region: 'GB', services: [] })
+    expect(preferencesOf(emptyLibrary())).toMatchObject({ region: 'GB', services: [], bedtime: '23:00', watchDays: [1, 2, 3, 4, 5] })
     const lib = setPreferences(emptyLibrary(), { services: [337, 39, 337] })
-    expect(preferencesOf(lib)).toEqual({ region: 'GB', services: [337, 39] })
+    expect(preferencesOf(lib)).toMatchObject({ region: 'GB', services: [337, 39] })
   })
 
   it('reads the new fields back from the file, dropping broken ones', () => {
@@ -76,7 +76,7 @@ describe('notes, dates and preferences', () => {
       preferences: { region: 'gb!', services: [337, 'x'] },
       entries: { 'tv:1': { status: 'watching', note: ' hi ', rating: 8, episodes: { S1E1: '2026-01-01', S1E2: 'yesterday', bad: '2026-01-01' } } }
     })
-    expect(lib.preferences).toEqual({ region: 'GB', services: [337] })
+    expect(lib.preferences).toMatchObject({ region: 'GB', services: [337], startTime: '20:00' })
     expect(lib.entries['tv:1']).toMatchObject({ note: 'hi', rating: 8, episodes: { S1E1: '2026-01-01' } })
   })
 })

@@ -11,6 +11,7 @@ import Credits from './Credits'
 import EntryDetails from './EntryDetails'
 import EpisodeTimeline from './EpisodeTimeline'
 import WhereToWatch from './WhereToWatch'
+import TimeCard from './TimeCard'
 
 /** A film or show's page: a sheet over the wall, lit in the poster's own colour. */
 export default function TitleSheet({ type, id }: { type: MediaType; id: number }): React.JSX.Element {
@@ -123,6 +124,8 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
               </>
             )}
           </dl>
+
+          <TimeCard details={d} />
 
           {d.type === 'tv' && d.seasons.length > 0 && <EpisodeTimeline details={d} />}
 

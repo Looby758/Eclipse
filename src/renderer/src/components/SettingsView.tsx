@@ -6,6 +6,7 @@ import KeyForm from './KeyForm'
 import Sheet from './Sheet'
 import Credits from './Credits'
 import ServicesCard from './ServicesCard'
+import EveningsCard from './EveningsCard'
 import SequelImportCard from './SequelImportCard'
 
 export default function SettingsView(): React.JSX.Element {
@@ -39,6 +40,8 @@ export default function SettingsView(): React.JSX.Element {
       </section>
 
       <ServicesCard />
+
+      <EveningsCard />
 
       <SequelImportCard />
 

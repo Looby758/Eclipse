@@ -16,7 +16,7 @@ export default function SearchSheet(): React.JSX.Element {
   const [error, setError] = useState('')
   const [stale, setStale] = useState(false)
   const [filter, setFilter] = useState<Filter>('any')
-  const { map, checking } = useAvailability(results.map((r) => r.key), filter)
+  const { map, checking } = useAvailability(results.map((r) => r.key), filter !== 'any')
   const shown = results.filter((r) => passesFilter(filter, map[r.key]))
 
   useEffect(() => {

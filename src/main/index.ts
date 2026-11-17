@@ -1,6 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { join } from 'path'
-import { preferencesOf, setEpisodes, setNote, setPreferences, setStatus, setWatchedOn } from '@core/library'
+import { preferencesOf, setEpisodes, setFinishBy, setNote, setPreferences, setStatus, setWatchedOn } from '@core/library'
 import { TmdbError } from '@core/tmdb'
 import { mergeSequel, summarizeImport, type SequelImport } from '@core/sequel'
 import type { AppStatus, Result } from '@shared/api'
@@ -88,6 +88,7 @@ function setupIpc(): void {
   ipcMain.handle('tmdb:season', (_e, tvId: number, n: number, refresh?: boolean) => attempt(() => tmdb.season(tvId, n, refresh)))
   ipcMain.handle('tmdb:providers', (_e, type: 'movie' | 'tv', id: number, refresh?: boolean) => attempt(() => tmdb.providers(type, id, region(), refresh)))
   ipcMain.handle('tmdb:providersMany', (_e, keys: string[]) => tmdb.providersMany(keys, region()))
+  ipcMain.handle('tmdb:detailsMany', (_e, keys: string[]) => tmdb.detailsMany(keys))
   ipcMain.handle('tmdb:services', () => attempt(() => tmdb.services(region())))
   ipcMain.handle('tmdb:trending', () => attempt(() => tmdb.trending()))
   ipcMain.handle('tmdb:details', (_e, type: 'movie' | 'tv', id: number, refresh?: boolean) => attempt(() => tmdb.details(type, id, refresh)))
@@ -102,6 +103,7 @@ function setupIpc(): void {
   ipcMain.handle('library:setEpisodes', (_e, item, keys: string[], watched: boolean) => saveLibrary(setEpisodes(getLibrary(), item, keys, watched)))
   ipcMain.handle('library:setNote', (_e, key: string, note: string) => saveLibrary(setNote(getLibrary(), key, note)))
   ipcMain.handle('library:setWatchedOn', (_e, key: string, day: string | null) => saveLibrary(setWatchedOn(getLibrary(), key, day)))
+  ipcMain.handle('library:setFinishBy', (_e, key: string, day: string | null) => saveLibrary(setFinishBy(getLibrary(), key, day)))
   ipcMain.handle('library:setPreferences', (_e, patch) => saveLibrary(setPreferences(getLibrary(), patch)))
 
   // Sequel import: pick the export and see what it holds, then apply it (or don't).

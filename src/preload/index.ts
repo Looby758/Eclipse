@@ -17,6 +17,7 @@ const api: EclipseApi = {
   season: (tvId, n, refresh) => ipcRenderer.invoke('tmdb:season', tvId, n, refresh),
   providers: (type, id, refresh) => ipcRenderer.invoke('tmdb:providers', type, id, refresh),
   providersMany: (keys) => ipcRenderer.invoke('tmdb:providersMany', keys),
+  detailsMany: (keys) => ipcRenderer.invoke('tmdb:detailsMany', keys),
   services: () => ipcRenderer.invoke('tmdb:services'),
 
   getLibrary: () => ipcRenderer.invoke('library:get'),
@@ -24,6 +25,7 @@ const api: EclipseApi = {
   setEpisodes: (item, keys, watched) => ipcRenderer.invoke('library:setEpisodes', item, keys, watched),
   setNote: (key, note) => ipcRenderer.invoke('library:setNote', key, note),
   setWatchedOn: (key, day) => ipcRenderer.invoke('library:setWatchedOn', key, day),
+  setFinishBy: (key, day) => ipcRenderer.invoke('library:setFinishBy', key, day),
   setPreferences: (patch) => ipcRenderer.invoke('library:setPreferences', patch),
   onLibraryChanged: (callback) => {
     const handler = (_e: unknown, library: Parameters<typeof callback>[0]): void => callback(library)

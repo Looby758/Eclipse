@@ -124,17 +124,55 @@ export function setWatchedOn(library: Library, key: string, day: string | null, 
   )
 }
 
-export const preferencesOf = (library: Library): Preferences => library.preferences ?? DEFAULT_PREFERENCES
+const filled = new WeakMap<Preferences, Preferences>()
+
+/** Your preferences, with defaults for anything not set yet. The same object comes back for the same library (so UIs can compare it). */
+export function preferencesOf(library: Library): Preferences {
+  const p = library.preferences
+  if (!p) return DEFAULT_PREFERENCES
+  let full = filled.get(p)
+  if (!full) filled.set(p, (full = { ...DEFAULT_PREFERENCES, ...p }))
+  return full
+}
+
+/** Sets or clears the day you want to have finished a show by. */
+export function setFinishBy(library: Library, key: string, day: string | null, now: Date = new Date()): Library {
+  if (day !== null && !isDay(day)) return library
+  return changeEntry(
+    library,
+    key,
+    (e) => {
+      const next = { ...e }
+      if (day) next.finishBy = day
+      else delete next.finishBy
+      return next
+    },
+    now
+  )
+}
 
 export function setPreferences(library: Library, patch: Partial<Preferences>): Library {
   return { ...library, preferences: normalizePreferences({ ...preferencesOf(library), ...patch }) }
 }
 
+const isTime = (v: unknown): v is string => typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v)
+
 function normalizePreferences(raw: unknown): Preferences {
   const p = (raw && typeof raw === 'object' ? raw : {}) as Partial<Preferences>
+  const services = Array.isArray(p.services) ? [...new Set(p.services.filter((n): n is number => Number.isInteger(n) && n > 0))] : []
+  const renewals: Record<string, number> = {}
+  if (p.renewals && typeof p.renewals === 'object') {
+    for (const [id, day] of Object.entries(p.renewals)) if (/^\d+$/.test(id) && Number.isInteger(day) && day >= 1 && day <= 31) renewals[id] = day
+  }
   return {
     region: typeof p.region === 'string' && /^[A-Z]{2}$/.test(p.region) ? p.region : DEFAULT_PREFERENCES.region,
-    services: Array.isArray(p.services) ? [...new Set(p.services.filter((n): n is number => Number.isInteger(n) && n > 0))] : []
+    services,
+    startTime: isTime(p.startTime) ? p.startTime : DEFAULT_PREFERENCES.startTime,
+    bedtime: isTime(p.bedtime) ? p.bedtime : DEFAULT_PREFERENCES.bedtime,
+    watchDays: Array.isArray(p.watchDays)
+      ? [...new Set(p.watchDays.filter((d): d is number => Number.isInteger(d) && d >= 0 && d <= 6))].sort()
+      : [...DEFAULT_PREFERENCES.watchDays],
+    renewals
   }
 }
 
@@ -190,6 +228,7 @@ export function normalizeLibrary(raw: unknown): Library {
       addedAt: typeof e.addedAt === 'string' ? e.addedAt : now,
       updatedAt: typeof e.updatedAt === 'string' ? e.updatedAt : typeof e.addedAt === 'string' ? e.addedAt : now,
       ...(isDay(e.watchedOn) ? { watchedOn: e.watchedOn } : {}),
+      ...(isDay(e.finishBy) ? { finishBy: e.finishBy } : {}),
       ...(typeof e.note === 'string' && e.note.trim() ? { note: e.note.trim().slice(0, 300) } : {}),
       ...(typeof e.rating === 'number' && e.rating >= 0 && e.rating <= 10 ? { rating: e.rating } : {}),
       ...(cleanEpisodes(e.episodes) ?? {}),
