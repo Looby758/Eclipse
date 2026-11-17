@@ -165,6 +165,18 @@ Build in this order, and finish each phase so the app is usable before moving on
 10. **Seen before and rewatches.** Mark things watched without a date, and track rewatches with a count and their own episode progress (see Seen before and rewatches above).
 11. **Polish.** Export all data (JSON and CSV), the TMDB and JustWatch credits, and Windows and Mac installers with electron-builder and GitHub Actions releases, as in Orbit.
 
+## Future ideas (candidate phases, after Polish)
+
+Ideas agreed in the brainstorm on 17 Nov 2026. They aren't scheduled yet. When one is picked up, it becomes a numbered phase after Polish. Everything here follows the same rules: free, local data, TMDB only, UK first.
+
+12. **Your services: arriving and leaving.** Eclipse already refreshes where-to-watch daily. Save a small snapshot each day for titles in the library and compare it with the previous one: "3 things on your watchlist just arrived on Disney+", "Succession is no longer on NOW TV". TMDB doesn't give leaving dates in advance, so departures show up once they've happened, not before. Shown on Home and as a short history on each title page.
+13. **Your services: "Do I still need NOW TV this month?"** A card for each of my services: hours of my watchlist and Watch soon on it, what I watched on it in the last 30 days, and its renewal day. If nothing I want is queued on it, suggest pausing before it renews. Pairs well with 12 as one "Your services" phase.
+14. **Free UK TV as its own group.** JustWatch's GB data includes free services (BBC iPlayer, ITVX, Channel 4, My5 and others). Show them as their own group after my services and before rent or buy, and add an "On my services or free" filter wherever the availability filters are.
+15. **"Where do I know them from?"** On a title page, list the cast I've already seen in other titles in my library: "You know Rhea Seehorn from Better Call Saul." Uses the credits Eclipse already downloads for Lists; only titles I've watched (or partly watched) count.
+16. **Stalled shows.** Anything in Watching that I haven't ticked an episode of for a while (default 60 days, adjustable) gets a gentle "Keep going or stop?" on Home, with one-click Stopped or "remind me later". Keeps Watching and watchlist hours honest.
+17. **Back after a long gap.** When a show I've finished a season of comes back after a long break (say, 6 months or more), Home says "Season 4 is out. You finished season 3 in March 2024" and shows the last couple of episode summaries from TMDB so I remember where things stood.
+18. **Your year in Eclipse.** A year-in-review screen built from watch dates: hours watched, busiest month, most-watched director and actor, longest binge, lists and watch orders finished. Works for earlier years too, thanks to the Sequel dates. Shows up on Home in December, and any year can be opened from Lists.
+
 ## Open questions
 
 - [ ] **Combining with Orbit:** what would joining them look like? A tab inside Orbit, Orbit's daily notes showing what I watched that day, or just a shared look? This doesn't need answering now, but it affects how strictly `src/core` stays separate.
@@ -238,3 +250,4 @@ You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls
 - Done (after your first look): **sections** within an order. The MCU has The Infinity Saga, The Multiverse Saga and The Defenders (Netflix's Daredevil, Jessica Jones, Luke Cage, Iron Fist, The Defenders and The Punisher, plus Daredevil: Born Again); Harry Potter has Harry Potter and Fantastic Beasts. Pick one to see just that part, with its own progress.
 - Added to the plan: Phase 10, seen-before and rewatches (your idea; Polish moves to 11).
 - Next: you try Phases 4 to 7. Then Phase 8 (release calendar).
+- Added to the plan (17 Nov 2026): seven future ideas from a brainstorm, listed under Future ideas as candidate phases 12 to 18 (arriving and leaving, "Do I still need NOW TV", free UK TV, where do I know them from, stalled shows, back after a long gap, your year in Eclipse).
