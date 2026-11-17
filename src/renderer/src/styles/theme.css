@@ -1,0 +1,133 @@
+/*
+ * Eclipse's look, in one place: every colour, font, size and speed the app uses is a variable
+ * here, and app.css only lays things out with them. Change this file to restyle the app.
+ *
+ * Style: "Drift" (draft C): a slowly moving wall of posters behind everything, a floating dock,
+ * and sheets that slide up for pages. Sleek and futuristic, cool colours only (no browns, oranges
+ * or dark greens), with dark and light modes.
+ * Dark is the default; light applies when the system is light, or when picked in Settings.
+ */
+
+:root {
+  /* Surfaces */
+  --bg: #040309;
+  --glass: rgba(22, 18, 44, 0.66);
+  --glass-soft: rgba(255, 255, 255, 0.06);
+  --glass-hover: rgba(255, 255, 255, 0.11);
+  --sheet: rgba(12, 10, 28, 0.9);
+  --line: rgba(255, 255, 255, 0.14);
+  --rail: rgba(255, 255, 255, 0.16);
+  /* The moving poster wall, and the veils laid over it (home: fades from the left; pages: all over). */
+  --veil-home: linear-gradient(90deg, rgba(4, 3, 9, 0.96) 0%, rgba(4, 3, 9, 0.82) 38%, rgba(4, 3, 9, 0.25) 75%, rgba(4, 3, 9, 0.55) 100%);
+  --veil-page: rgba(4, 3, 9, 0.72);
+  --wall-speed: 70s;
+
+  /* Text */
+  --text-strong: #ffffff;
+  --text: #f1effc;
+  --text-muted: #b3afd0;
+  --text-faint: #7b7798;
+
+  /* Accent: a violet-to-blue gradient, plus cyan for "now" and your own services */
+  --accent: #8b6bff;
+  --accent-2: #4fb8ff;
+  --cyan: #4fd8ff;
+  --accent-gradient: linear-gradient(135deg, var(--accent), var(--accent-2));
+  --accent-shadow: 0 10px 30px rgba(130, 110, 255, 0.5);
+  --on-accent: #ffffff;
+  --danger: #ff6b9a;
+  --ok: #5fe3c0;
+  --status-want: #a98bff;
+  --status-watching: #4fd8ff;
+  --status-watched: #5fe3c0;
+  --status-stopped: #ff6b9a;
+
+  /* Type */
+  --font-display: 'Sora Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-ui: 'Inter Variable', 'Segoe UI', -apple-system, system-ui, sans-serif;
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-md: 15px;
+  --text-lg: 18px;
+  --text-xl: 30px;
+  --text-hero: 48px;
+  --text-spot: 40px;
+
+  /* Sizes */
+  --tile-w: 150px;
+  --tile-h: 225px;
+  --tile-gap: 16px;
+  --radius-sm: 12px;
+  --radius: 16px;
+  --radius-lg: 26px;
+  --radius-sheet: 32px;
+  --sheet-top: 110px;
+  --sheet-side: 40px;
+  --poster-lift: 44px;
+  --shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+
+  /* Motion */
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --fast: 160ms;
+  --slow: 600ms;
+
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    --bg: #efedfa;
+    --glass: rgba(255, 255, 255, 0.78);
+    --glass-soft: rgba(40, 30, 120, 0.05);
+    --glass-hover: rgba(40, 30, 120, 0.09);
+    --sheet: rgba(255, 255, 255, 0.93);
+    --line: rgba(40, 30, 120, 0.14);
+    --rail: rgba(40, 30, 120, 0.16);
+    --veil-home: linear-gradient(90deg, rgba(239, 237, 250, 0.97) 0%, rgba(239, 237, 250, 0.86) 38%, rgba(239, 237, 250, 0.25) 75%, rgba(239, 237, 250, 0.55) 100%);
+    --veil-page: rgba(239, 237, 250, 0.7);
+    --text-strong: #0b0820;
+    --text: #130f2e;
+    --text-muted: #55507a;
+    --text-faint: #8e89ad;
+    --accent: #6a4cf0;
+    --accent-2: #2d8fe0;
+    --cyan: #0a9ccc;
+    --accent-shadow: 0 10px 30px rgba(106, 76, 240, 0.3);
+    --danger: #d43a74;
+    --ok: #0f9c80;
+    --status-want: #6a4cf0;
+    --status-watching: #0a9ccc;
+    --status-watched: #0f9c80;
+    --status-stopped: #d43a74;
+    --shadow: 0 24px 70px rgba(40, 30, 120, 0.18);
+    color-scheme: light;
+  }
+}
+
+:root[data-theme='light'] {
+  --bg: #efedfa;
+  --glass: rgba(255, 255, 255, 0.78);
+  --glass-soft: rgba(40, 30, 120, 0.05);
+  --glass-hover: rgba(40, 30, 120, 0.09);
+  --sheet: rgba(255, 255, 255, 0.93);
+  --line: rgba(40, 30, 120, 0.14);
+  --rail: rgba(40, 30, 120, 0.16);
+  --veil-home: linear-gradient(90deg, rgba(239, 237, 250, 0.97) 0%, rgba(239, 237, 250, 0.86) 38%, rgba(239, 237, 250, 0.25) 75%, rgba(239, 237, 250, 0.55) 100%);
+  --veil-page: rgba(239, 237, 250, 0.7);
+  --text-strong: #0b0820;
+  --text: #130f2e;
+  --text-muted: #55507a;
+  --text-faint: #8e89ad;
+  --accent: #6a4cf0;
+  --accent-2: #2d8fe0;
+  --cyan: #0a9ccc;
+  --accent-shadow: 0 10px 30px rgba(106, 76, 240, 0.3);
+  --danger: #d43a74;
+  --ok: #0f9c80;
+  --status-want: #6a4cf0;
+  --status-watching: #0a9ccc;
+  --status-watched: #0f9c80;
+  --status-stopped: #d43a74;
+  --shadow: 0 24px 70px rgba(40, 30, 120, 0.18);
+  color-scheme: light;
+}
