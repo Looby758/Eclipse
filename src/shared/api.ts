@@ -43,6 +43,21 @@ export interface ListView {
 }
 
 /** The bridge between the window and the main process (window.api), like Orbit's NotesApi. */
+/** Updates come from GitHub Releases (installed app only). */
+export interface UpdateStatus {
+  state: 'off' | 'none' | 'checking' | 'available' | 'downloading' | 'ready' | 'error'
+  current: string
+  version?: string
+  percent?: number
+  /** Mac: download it from the release page yourself (apps there can't replace themselves without a paid certificate). */
+  manual?: boolean
+  error?: string
+  /** Why updates are off (e.g. running from source). */
+  reason?: string
+}
+
+export const GITHUB_REPO = 'Looby758/Eclipse'
+
 export interface EclipseApi {
   status(): Promise<AppStatus>
   pickDataFolder(): Promise<AppStatus>
@@ -115,6 +130,15 @@ export interface EclipseApi {
   /** Merges the picked export into your library (after backing library.json up). */
   applySequel(): Promise<Result<Library>>
   cancelSequel(): Promise<void>
+
+  /** Asks for a folder and saves everything there (library.json plus CSV spreadsheets). */
+  exportData(): Promise<Result<{ saved: boolean; path?: string }>>
+
+  updateStatus(): Promise<UpdateStatus>
+  checkForUpdates(): Promise<UpdateStatus>
+  /** Windows: restart into the downloaded update. Mac: open the release page. */
+  installUpdate(): Promise<void>
+  onUpdateStatus(callback: (status: UpdateStatus) => void): () => void
 
   openExternal(url: string): Promise<void>
   platform: 'mac' | 'win' | 'linux'

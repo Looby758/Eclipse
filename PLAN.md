@@ -303,7 +303,15 @@ You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls
 - Done: every title you've seen shows **Watched once / twice / 3 times**, and each finished rewatch is listed with its dates (× takes one off if added by mistake). Rewatch episode ticks show up in On this day.
 - Done (after your first look): **one-click ticks in lists and watch orders.** Every row you haven't seen has a round tick on the right. Click it and that film or show is marked seen before (no date); on a season row it ticks that season's episodes with no date. Click *Seen* on a row ticked this way to take it off again (rows with a real watch date can't be undone from the list, so a misclick never loses one). A show whose seasons you tick all the way through becomes Watched (seen before); one with only some seasons ticked stays Watching. Shows already ticked through before this fix move to Watched the next time the app opens.
 - Decisions: one rewatch at a time per title. A rewatch is never finished automatically, even when every episode is ticked (the button changes to *Finished it: count this rewatch*). Each rewatch is stored on its own with its dates and ticks, so a "watched with someone" tag can be added later (that's Phase 13, Watching with someone, in the future ideas).
-- Next: Phase 11 (Polish).
+
+**Phase 11: Polish (built, waiting for you to try it)**
+
+- Done: **Export your data** in Settings. It makes a new folder ("Eclipse export 2026-11-17") with `library.json` exactly as Eclipse saves it (Eclipse can open it again) and four spreadsheets: `titles.csv` (status, dates, seen before, times watched, rating, note), `episodes.csv` (every tick, first watch and rewatches), `rewatches.csv` and `lists.csv` (Watch soon, your own lists with their titles, and the lists you follow). They open in Excel, Numbers or Google Sheets, with accents and quotes intact; a note starting with "=" can't run as a formula.
+- Done: **credits.** TMDB's credit was already on every page, and JustWatch's on every page that shows where to watch. Home now has a small "Data from TMDB and JustWatch" in the corner too, since its posters and "On Netflix" come from them.
+- Done: **installers, as in Orbit.** `electron-builder.yml` makes a Windows installer (Eclipse-Setup-1.0.0.exe) and Mac .dmg files for Apple Silicon and Intel, with the new Eclipse icon. Macs get an "ad hoc" signature (no paid Apple certificate), like Orbit. A GitHub Actions workflow (`.github/workflows/release.yml`) builds both on GitHub's computers and publishes them as a GitHub Release.
+- Done: **updates.** Settings → *Version and updates* (copied from Orbit's): the installed app checks GitHub Releases every few hours. On Windows the update downloads in the background and installs when you restart; on a Mac it says a new version is out and opens the download page.
+- Decisions: the version is now **1.0.0**, the first installable one. Your settings and key are kept if you uninstall, and the library is never touched.
+
 
 **Future ideas**
 

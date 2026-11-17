@@ -1,6 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { join } from 'path'
-import { writeFileSync } from 'fs'
+import { existsSync, mkdirSync, writeFileSync } from 'fs'
+import { exportFiles } from '@core/export'
 import { toIcs } from '@core/calendar'
 import { moveWatchSoon, setWatchSoon } from '@core/watchsoon'
 import { endRewatch, localDate, markRowSeen, settleSeenShows, markSeenBefore, preferencesOf, removeRewatch, setEpisodes, startRewatch, setFinishBy, setNote, setPreferences, setStatus, setWatchedOn } from '@core/library'
@@ -14,6 +15,7 @@ import { clearCache } from './cacheStore'
 import * as tmdb from './tmdb'
 import { backupLibrary, getLibrary, isDirectory, openLibrary, saveLibrary } from './library'
 import { readSequelExport } from './sequelImport'
+import { setupUpdater } from './updater'
 
 // Window background, matching --bg in src/renderer/src/styles/theme.css so there's no flash on start.
 const BG = '#040309'
@@ -133,6 +135,25 @@ function setupIpc(): void {
       return { saved: true, path: result.filePath, count: events.length }
     })
   )
+  ipcMain.handle('data:export', (event) =>
+    attempt(async () => {
+      const win = BrowserWindow.fromWebContents(event.sender)!
+      const result = await dialog.showOpenDialog(win, {
+        title: 'Choose where to save your Eclipse export',
+        defaultPath: app.getPath('documents'),
+        buttonLabel: 'Save here',
+        properties: ['openDirectory', 'createDirectory']
+      })
+      if (result.canceled || !result.filePaths[0]) return { saved: false }
+      const base = join(result.filePaths[0], `Eclipse export ${localDate(new Date())}`)
+      let dir = base
+      for (let n = 2; existsSync(dir); n++) dir = `${base} (${n})`
+      mkdirSync(dir, { recursive: true })
+      for (const f of exportFiles(getLibrary())) writeFileSync(join(dir, f.name), f.text, 'utf8')
+      shell.showItemInFolder(join(dir, 'titles.csv'))
+      return { saved: true, path: dir }
+    })
+  )
   ipcMain.handle('lists:open', (_e, id: string, refresh?: boolean) => attempt(() => tmdb.openList(id, getLibrary(), refresh)))
   ipcMain.handle('tmdb:detailsMany', (_e, keys: string[]) => tmdb.detailsMany(keys))
   ipcMain.handle('tmdb:services', () => attempt(() => tmdb.services(region())))
@@ -222,6 +243,8 @@ function createWindow(): BrowserWindow {
     show: false,
     backgroundColor: BG,
     title: 'Eclipse',
+    // Windows and Linux show it in the taskbar while running from source; installers bring their own.
+    ...(IS_MAC ? {} : { icon: join(__dirname, '../../build/icon.png') }),
     // Same window style as Orbit: our own title bar, with the system's buttons kept.
     ...(IS_MAC
       ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: { x: 14, y: 14 } }
@@ -262,6 +285,7 @@ app.whenReady().then(() => {
   mainWindow = createWindow()
   mainWindow.on('closed', () => (mainWindow = null))
   void settleOnStart()
+  void setupUpdater()
   app.on('activate', () => {
     if (!BrowserWindow.getAllWindows().length) {
       mainWindow = createWindow()

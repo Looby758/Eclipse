@@ -9,6 +9,8 @@ import ServicesCard from './ServicesCard'
 import EveningsCard from './EveningsCard'
 import CalendarCard from './CalendarCard'
 import SequelImportCard from './SequelImportCard'
+import ExportCard from './ExportCard'
+import UpdatesCard from './UpdatesCard'
 
 export default function SettingsView(): React.JSX.Element {
   const status = useApp((s) => s.status)!
@@ -68,6 +70,8 @@ export default function SettingsView(): React.JSX.Element {
         </div>
       </section>
 
+      <ExportCard />
+
       <section className="card">
         <h2>TMDB API key</h2>
         <p className="muted">{status.hasKey ? 'A key is saved (encrypted on this computer).' : 'No key saved.'}</p>
@@ -93,7 +97,8 @@ export default function SettingsView(): React.JSX.Element {
         </button>
       </section>
 
-      <p className="muted small">Eclipse {status.version}</p>
+      <UpdatesCard />
+
       <Credits justWatch />
     </Sheet>
   )
