@@ -11,7 +11,7 @@ const ITEMS: { view: View['name']; label: string; icon: typeof Moon }[] = [
 ]
 
 /** The floating dock at the bottom: where to go, and search. */
-export default function Dock(): React.JSX.Element {
+export default function Dock({ tucked = false }: { tucked?: boolean }): React.JSX.Element {
   const view = useApp(currentView)
   const query = useApp((s) => s.query)
   const { go, setQuery } = useApp.getState()
@@ -37,7 +37,7 @@ export default function Dock(): React.JSX.Element {
   }, [])
 
   return (
-    <nav className="dock" aria-label="Main">
+    <nav className={`dock ${tucked ? 'tucked' : ''}`} aria-label="Main" aria-hidden={tucked || undefined}>
       {ITEMS.map(({ view: name, label, icon: Icon }) => (
         <button key={name} className={`dock-btn ${view.name === name || (name === 'lists' && view.name === 'list') ? 'on' : ''}`} onClick={() => go({ name } as View)}>
           <Icon size={21} strokeWidth={1.9} />

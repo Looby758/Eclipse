@@ -3,6 +3,9 @@ import { imageUrl } from '@core/tmdb'
 import { OWN_ENOUGH, WALL_COLUMNS, WALL_PER_COLUMN, wallPosters } from '../lib/wall'
 import { useApp } from '../store/app'
 
+const ROWS = 6
+const PER_ROW = 14
+
 // Cool stand-in colours, only used if there are no posters at all (offline on first launch).
 const HUES = [330, 195, 265, 285, 240, 220, 210, 300, 200, 250, 180, 310]
 
@@ -17,7 +20,7 @@ interface Tile {
  * this week's trending titles while it's small. Each column drifts up or down and holds two copies
  * of its posters so it loops smoothly. Decoration only: it can't be clicked and screen readers skip it.
  */
-export default function PosterWall(): React.JSX.Element {
+export default function PosterWall({ rows = false }: { rows?: boolean }): React.JSX.Element {
   const library = useApp((s) => s.library)
   const hasKey = useApp((s) => !!s.status?.hasKey)
   const [trending, setTrending] = useState<string[]>([])
@@ -53,18 +56,45 @@ export default function PosterWall(): React.JSX.Element {
     return cols
   }, [own, trending])
 
+  // Spotlight Home: flat rows drifting sideways, alternate rows the other way.
+  const lines = useMemo(() => {
+    const posters = wallPosters(own, trending, ROWS * PER_ROW)
+    return Array.from({ length: ROWS }, (_, r) => {
+      const row: Tile[] = Array.from({ length: PER_ROW }, (_, k) => {
+        const path = posters[r + k * ROWS]
+        return { key: `${r}-${k}`, url: path ? imageUrl(path, 'w185') : null, hue: HUES[(r * 5 + k) % HUES.length] }
+      })
+      return [...row, ...row.map((t) => ({ ...t, key: `${t.key}b` }))]
+    })
+  }, [own, trending])
+
+  const tile = (t: Tile): React.JSX.Element =>
+    t.url ? (
+      <img key={t.key} className="wall-tile" src={t.url} alt="" draggable={false} />
+    ) : (
+      <div key={t.key} className="wall-tile" style={{ background: `linear-gradient(165deg, hsl(${t.hue} 85% 62%), hsl(272 65% 28%) 70%, hsl(250 50% 10%))` }} />
+    )
+
+  if (rows) {
+    return (
+      <div className="wall rows" aria-hidden>
+        <div className="wall-rows">
+          {lines.map((row, r) => (
+            <div key={r} className={`wall-row ${r % 2 ? 'right' : 'left'}`} style={{ animationDuration: `calc(var(--row-speed) + ${r * 9}s)` }}>
+              {row.map(tile)}
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="wall" aria-hidden>
       <div className="wall-tilt">
         {columns.map((col, c) => (
           <div key={c} className={`wall-col ${c % 2 ? 'down' : 'up'}`} style={{ animationDuration: `calc(var(--wall-speed) + ${c * 6}s)` }}>
-            {col.map((t) =>
-              t.url ? (
-                <img key={t.key} className="wall-tile" src={t.url} alt="" draggable={false} />
-              ) : (
-                <div key={t.key} className="wall-tile" style={{ background: `linear-gradient(165deg, hsl(${t.hue} 85% 62%), hsl(272 65% 28%) 70%, hsl(250 50% 10%))` }} />
-              )
-            )}
+            {col.map(tile)}
           </div>
         ))}
       </div>

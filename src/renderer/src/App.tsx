@@ -20,11 +20,15 @@ import SettingsView from './components/SettingsView'
 import WatchSoonSheet from './components/WatchSoonSheet'
 import ListsSheet from './components/ListsSheet'
 import ListSheet from './components/ListSheet'
+import SpotlightHome from './components/SpotlightHome'
+import Logo from './components/Logo'
+import { useHomeStyle } from './lib/homeStyle'
 
 export default function App(): React.JSX.Element {
   const status = useApp((s) => s.status)
   const view = useApp(currentView)
   const canGoBack = useApp((s) => s.history.length > 1)
+  const homeStyle = useHomeStyle((s) => s.style)
   const { setStatus, setLibrary, back, go } = useApp.getState()
 
   useEffect(() => {
@@ -56,17 +60,19 @@ export default function App(): React.JSX.Element {
   if (!status) return <div className="app" />
   const needsSetup = !status.dataFolder || status.dataFolderMissing || !status.hasKey
   const onHome = !needsSetup && view.name === 'home'
+  const spot = onHome && homeStyle === 'spotlight'
 
   return (
-    <div className={`app ${onHome ? 'on-home' : 'on-page'}`}>
-      <PosterWall />
+    <div className={`app ${onHome ? 'on-home' : 'on-page'} ${spot ? 'spot' : ''} ${homeStyle === 'spotlight' ? 'frost' : ''}`}>
+      {/* Spotlight's flat drifting rows stay behind every page, so leaving Home doesn't swap the wall. */}
+      <PosterWall rows={homeStyle === 'spotlight'} />
       <div className="veil" aria-hidden />
       <div className="drag-strip" aria-hidden />
 
       <header className="corner">
         {onHome || needsSetup ? (
           <div className="brand">
-            <span className="brand-mark" aria-hidden />
+            <Logo size={30} className="brand-logo" />
             ECLIPSE
           </div>
         ) : (
@@ -81,7 +87,13 @@ export default function App(): React.JSX.Element {
       ) : (
         <>
           <GuardBanner />
-          {view.name === 'home' && (
+          {spot && (
+            <>
+              <SpotlightHome />
+              <HomeCredit />
+            </>
+          )}
+          {view.name === 'home' && !spot && (
             <>
               <HomeHero />
               <aside className="home-side">
@@ -102,7 +114,7 @@ export default function App(): React.JSX.Element {
           {view.name === 'year' && <YearSheet key={view.year ?? 'now'} year={view.year} />}
           {view.name === 'list' && <ListSheet key={view.id} id={view.id} />}
           {view.name === 'title' && <TitleSheet key={`${view.type}:${view.id}`} type={view.type} id={view.id} />}
-          <Dock />
+          <Dock tucked={spot} />
         </>
       )}
     </div>
