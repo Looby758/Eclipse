@@ -1,0 +1,6 @@
+node_modules/
+out/
+dist/
+*.log
+# Personal data: the Sequel export to import in Phase 2.
+import/sequel/
