@@ -22,6 +22,7 @@ import { repairBatch, type Batch, type RepairChoice } from '@core/repair'
 import { refreshTray, setTray, setupTray, trayOn } from './tray'
 import { acceptSuggestion, dismissSuggestion, noticingStatus, scanHistory, setNoticing, setupNoticing, stopNoticing } from './noticing'
 import { editMoment } from '@core/watching'
+import { CATCH_UP_ID, dismissCatchUp } from '@core/catchup'
 import { newRemoteCode, remoteStatus, setRemote, setupRemote, stopRemote } from './remote'
 import { guardStatus, readOnlyReason, startGuard, stopGuard, takeOver } from './guard'
 
@@ -238,6 +239,8 @@ function setupIpc(): void {
       return yearInReview(getLibrary(), year, details, credits, lists, localDate(new Date()))
     })
   )
+  ipcMain.handle('catchup:list', () => attempt(() => tmdb.catchUpList(getLibrary())))
+  ipcMain.handle('catchup:dismiss', (_e, id: string) => (CATCH_UP_ID.test(String(id)) ? saveLibrary(dismissCatchUp(getLibrary(), String(id))) : getLibrary()))
   ipcMain.handle('tray:get', () => trayOn())
   ipcMain.handle('tray:set', (_e, on: boolean) => setTray(!!on))
   ipcMain.handle('noticing:status', () => noticingStatus())

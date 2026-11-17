@@ -4,6 +4,7 @@ import type { KnownFrom } from '@core/knownfrom'
 import type { ServiceHistory } from '@core/services'
 import type { Batch, RepairChoice } from '@core/repair'
 import type { YearReview } from '@core/year'
+import type { CatchUp } from '@core/catchup'
 import type { NowPlaying, Recognised, Suggestion } from '@core/watching'
 import type { CollectionDetails, Credits, ListSource, PersonDetails, TitleRef, TmdbListDetails } from '@core/types'
 import type { Library, MediaType, Preferences, Provider, SearchResult, SeasonDetails, TitleDetails, TitleKey, TitleSnapshot, WatchProviders, WatchStatus } from '@core/types'
@@ -186,6 +187,11 @@ export interface EclipseApi {
 
   /** Your year in Eclipse: hours, busiest month, most-watched director and actor, longest binge. */
   yearReview(year: number): Promise<Result<YearReview>>
+
+  /** Catch up before the sequel: what to rewatch before a film or season coming out in the next six weeks. */
+  catchUps(): Promise<Result<CatchUp[]>>
+  /** "Not now": don't suggest this one again. */
+  dismissCatchUp(id: string): Promise<Library>
 
   /** Eclipse in the menu bar / tray (Phase 26), and whether closing the window keeps it running there. */
   trayOn(): Promise<boolean>

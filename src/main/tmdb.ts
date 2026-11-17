@@ -9,6 +9,7 @@ import { parseTitleKey } from '@core/types'
 import { followed, seasonsToCheck, upcomingReleases, type ReleaseEvent } from '@core/calendar'
 import { localDate, preferencesOf } from '@core/library'
 import { knownFrom, type KnownFrom } from '@core/knownfrom'
+import { catchUps, type CatchUp } from '@core/catchup'
 import type { Fetched, ListView } from '@shared/api'
 import { loadSettings, saveSettings } from './settings'
 import { fileCache } from './cacheStore'
@@ -74,7 +75,7 @@ export async function search(query: string): Promise<Fetched<SearchResult[]>> {
 }
 
 export async function details(type: MediaType, id: number, refresh = false): Promise<Fetched<TitleDetails>> {
-  const r = await cached(fileCache, `details2:${type}:${id}`, CACHE_TTL.details, () => tmdb().details(type, id), {
+  const r = await cached(fileCache, `details3:${type}:${id}`, CACHE_TTL.details, () => tmdb().details(type, id), {
     force: refresh,
     shouldServeStale: serveStaleUnlessKeyProblem
   })
@@ -270,4 +271,32 @@ export async function yearData(library: Library, keys: string[]): Promise<{ deta
     }
   }
   return { details, credits: creditsByKey, lists }
+}
+
+/** Catch up before the sequel: your films and shows, the series your films are in, and what's coming out in them. */
+export async function catchUpList(library: Library, now = new Date()): Promise<CatchUp[]> {
+  const today = localDate(now)
+  const prefs = preferencesOf(library)
+  const entries = Object.values(library.entries)
+  const films = entries.filter((e) => e.type === 'movie' && (e.status === 'watched' || e.watchedOn || e.rewatches?.length)).map((e) => e.key)
+  const shows = entries.filter((e) => e.type === 'tv' && e.status !== 'stopped' && e.status !== 'want').map((e) => e.key)
+  const details = await detailsMany([...films, ...shows])
+  const ids = [...new Set(Object.values(details).flatMap((d) => (d.collection ? [d.collection.id] : [])))]
+  const collections: Record<number, CollectionDetails> = {}
+  for (let i = 0; i < ids.length; i += 6) {
+    await Promise.all(
+      ids.slice(i, i + 6).map(async (id) => {
+        try {
+          collections[id] = (await collection(id)).data
+        } catch {
+          // Skipped until it can be fetched.
+        }
+      })
+    )
+  }
+  // Films coming out around now (by any date), for their release date here.
+  const lo = localDate(new Date(now.getTime() - 60 * 86_400_000))
+  const upcoming = Object.values(collections).flatMap((c) => c.parts.filter((p) => !p.date || p.date >= lo).map((p) => p.key))
+  Object.assign(details, await detailsMany(upcoming.filter((k) => !details[k])))
+  return catchUps({ library, details, collections, now, evenings: prefs, region: prefs.region, skipDays: prefs.catchUpSkipDays, aheadDays: 42 }).filter((c) => c.upcoming.date > today)
 }

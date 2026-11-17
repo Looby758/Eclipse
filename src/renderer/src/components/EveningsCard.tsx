@@ -56,6 +56,22 @@ export default function EveningsCard(): React.JSX.Element {
           ))}
         </select>
       </label>
+      <label className="renewal-row stalled-row">
+        <span>Catch up before a sequel: don’t suggest it if I watched the one before in the last</span>
+        <select value={prefs.catchUpSkipDays} onChange={(e) => save({ catchUpSkipDays: Number(e.target.value) })}>
+          {[
+            [90, '3 months'],
+            [180, '6 months'],
+            [365, 'year'],
+            [730, '2 years'],
+            [0, 'any time (always suggest it)']
+          ].map(([n, label]) => (
+            <option key={n} value={n}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </label>
     </section>
   )
 }

@@ -53,6 +53,11 @@ Each computer needs the key pasted once.
 6. **Filters:** in Library or Search, pick **On my services**, **Rent or buy only** or **Not streaming anywhere**. The first time it checks every title, which takes a few seconds.
 7. **Home:** the suggestion shows the next episode and a button to tick it.
 
+## Phase 33: what to try
+
+1. **Catch up before the sequel:** open Tonight. If a film in a series you've seen, or a new season of a show you've finished a season of, comes out in the next six weeks, a *Catch up before it's out* card says what to rewatch and which nights it fits. Try **Add to Watch soon** and **Not now**.
+2. Settings → *Your evenings* → change *Catch up before a sequel* to "any time" to see suggestions even for things you watched recently.
+
 ## Phases 27 to 31: what to try
 
 No new packages this time, so no `npm install` needed (just pull and `npm run dev`). These need Windows or a Mac, so try them on your computer.
