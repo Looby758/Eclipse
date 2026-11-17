@@ -67,16 +67,16 @@ export function episodesCsv(library: Library): string {
   for (const e of Object.values(library.entries).filter((x) => x.type === 'tv').sort(byName)) {
     for (const [s, n, v] of order(e.episodes ?? {})) rows.push([e.title.name, s, n, day(v), 'First watch'])
     ;(e.rewatches ?? []).forEach((r, i) => {
-      for (const [s, n, v] of order(r.episodes ?? {})) rows.push([e.title.name, s, n, day(v), `Rewatch ${i + 1}`])
+      for (const [s, n, v] of order(r.episodes ?? {})) rows.push([e.title.name, s, n, day(v), r.with ? `With ${r.with}` : `Rewatch ${i + 1}`])
     })
   }
   return toCsv(rows)
 }
 
 export function rewatchesCsv(library: Library): string {
-  const rows: (string | number | null | undefined)[][] = [['Title', 'Type', 'Rewatch', 'Started', 'Finished']]
+  const rows: (string | number | null | undefined)[][] = [['Title', 'Type', 'Rewatch', 'Started', 'Finished', 'With']]
   for (const e of Object.values(library.entries).sort(byName)) {
-    ;(e.rewatches ?? []).forEach((r, i) => rows.push([e.title.name, e.type === 'movie' ? 'Film' : 'Show', i + 1, r.startedOn, r.finishedOn ?? 'still going']))
+    ;(e.rewatches ?? []).forEach((r, i) => rows.push([e.title.name, e.type === 'movie' ? 'Film' : 'Show', i + 1, r.startedOn, r.finishedOn ?? 'still going', r.with]))
   }
   return toCsv(rows)
 }

@@ -12,6 +12,7 @@ import WatchSoonToggle from './WatchSoonToggle'
 import Credits from './Credits'
 import EntryDetails from './EntryDetails'
 import RewatchPanel from './RewatchPanel'
+import WatchWithPanel from './WatchWithPanel'
 import EpisodeTimeline from './EpisodeTimeline'
 import WhereToWatch from './WhereToWatch'
 import TimeCard from './TimeCard'
@@ -96,6 +97,7 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
           <WatchSoonToggle details={d} />
           <EntryDetails titleKey={d.key} />
           <RewatchPanel details={d} />
+          <WatchWithPanel details={d} />
         </div>
 
         <div className="title-body">

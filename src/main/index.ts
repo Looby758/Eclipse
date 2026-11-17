@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import { exportFiles } from '@core/export'
 import { toIcs } from '@core/calendar'
 import { moveWatchSoon, setWatchSoon } from '@core/watchsoon'
-import { endRewatch, localDate, markRowSeen, settleSeenShows, markSeenBefore, preferencesOf, removeRewatch, setEpisodes, startRewatch, setFinishBy, setNote, setPreferences, setStatus, setWatchedOn } from '@core/library'
+import { endWatchWith, startWatchWith, tickWith, endRewatch, localDate, markRowSeen, settleSeenShows, markSeenBefore, preferencesOf, removeRewatch, setEpisodes, startRewatch, setFinishBy, setNote, setPreferences, setStatus, setWatchedOn } from '@core/library'
 import { TmdbError } from '@core/tmdb'
 import { createList, followList, moveInList, removeList, renameList, setInList } from '@core/lists'
 import { UNDATED, type TitleRef } from '@core/types'
@@ -173,6 +173,9 @@ function setupIpc(): void {
   })
   ipcMain.handle('library:setStatus', (_e, item, newStatus) => saveLibrary(setStatus(getLibrary(), item, newStatus)))
   ipcMain.handle('library:setEpisodes', (_e, item, keys: string[], watched: boolean, undated?: boolean) => saveLibrary(setEpisodes(getLibrary(), item, keys, watched, new Date(), !!undated)))
+  ipcMain.handle('library:startWith', (_e, item, name) => saveLibrary(startWatchWith(getLibrary(), item, name)))
+  ipcMain.handle('library:tickWith', (_e, key, index, keys, watched) => saveLibrary(tickWith(getLibrary(), key, index, keys, watched)))
+  ipcMain.handle('library:endWith', (_e, key, index, keep) => saveLibrary(endWatchWith(getLibrary(), key, index, keep)))
   ipcMain.handle('library:seenBefore', (_e, item) => saveLibrary(markSeenBefore(getLibrary(), item)))
   ipcMain.handle('library:markRowSeen', async (_e, ref, on) => {
     const lib = saveLibrary(markRowSeen(getLibrary(), ref, on))

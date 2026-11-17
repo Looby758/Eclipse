@@ -22,7 +22,7 @@ export default function OnThisDay(): React.JSX.Element | null {
   const shown = all ? memories : memories.slice(0, 3)
 
   return (
-    <aside className="otd" aria-label="On this day">
+    <section className="otd" aria-label="On this day">
       <div className="otd-kicker">
         <History size={14} /> On this day
       </div>
@@ -51,6 +51,6 @@ export default function OnThisDay(): React.JSX.Element | null {
           {all ? 'Show fewer' : `${memories.length - 3} more`}
         </button>
       )}
-    </aside>
+    </section>
   )
 }

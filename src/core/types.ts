@@ -123,6 +123,8 @@ export interface Rewatch {
   finishedOn?: string
   /** Shows: this rewatch's own episode ticks, by episodeKey, each with its day. */
   episodes?: Record<string, string>
+  /** Watching with someone ("Sam"): kept apart from your own progress, and several can run at once. */
+  with?: string
 }
 
 /** An episode ticked as seen with no date (watched before Eclipse). */

@@ -119,6 +119,10 @@ export interface EclipseApi {
   setEpisodes(item: Item, keys: string[], watched: boolean, undated?: boolean): Promise<Library>
   /** Watched before Eclipse, with no date. */
   markSeenBefore(item: Item): Promise<Library>
+  /** Watching a show with someone: its own progress, apart from yours. */
+  startWatchWith(item: Item, name: string): Promise<Library>
+  tickWith(key: TitleKey, index: number, keys: string[], watched: boolean): Promise<Library>
+  endWatchWith(key: TitleKey, index: number, keep: boolean): Promise<Library>
   /** A list or watch-order row: seen with no date (a season row ticks its episodes), or undo that. */
   markRowSeen(ref: TitleRef, on: boolean): Promise<Library>
   /** Starts watching it again (a film counts as watched again today). */
