@@ -3,10 +3,10 @@ import { join } from 'path'
 import { writeFileSync } from 'fs'
 import { toIcs } from '@core/calendar'
 import { moveWatchSoon, setWatchSoon } from '@core/watchsoon'
-import { endRewatch, markRowSeen, markSeenBefore, preferencesOf, removeRewatch, setEpisodes, startRewatch, setFinishBy, setNote, setPreferences, setStatus, setWatchedOn } from '@core/library'
+import { endRewatch, localDate, markRowSeen, settleSeenShows, markSeenBefore, preferencesOf, removeRewatch, setEpisodes, startRewatch, setFinishBy, setNote, setPreferences, setStatus, setWatchedOn } from '@core/library'
 import { TmdbError } from '@core/tmdb'
 import { createList, followList, moveInList, removeList, renameList, setInList } from '@core/lists'
-import type { TitleRef } from '@core/types'
+import { UNDATED, type TitleRef } from '@core/types'
 import { mergeSequel, summarizeImport, type SequelImport } from '@core/sequel'
 import type { AppStatus, Result } from '@shared/api'
 import { loadSettings, saveSettings } from './settings'
@@ -45,6 +45,25 @@ function status(): AppStatus {
 }
 
 const broadcastLibrary = (): void => mainWindow?.webContents.send('library:changed', getLibrary())
+
+/** Shows ticked season by season as seen before, all the way through, move from Watching to Watched. */
+async function settleOnStart(): Promise<void> {
+  try {
+    const lib = getLibrary()
+    const keys = Object.values(lib.entries)
+      .filter((e) => e.type === 'tv' && e.status === 'watching' && Object.values(e.episodes ?? {}).includes(UNDATED))
+      .map((e) => e.key)
+    if (!keys.length || !tmdb.hasKey()) return
+    const details = await tmdb.detailsMany(keys)
+    const settled = settleSeenShows(getLibrary(), details, localDate(new Date()))
+    if (settled !== getLibrary()) {
+      saveLibrary(settled)
+      broadcastLibrary()
+    }
+  } catch {
+    // Not worth stopping anything for: it'll try again next time.
+  }
+}
 
 function reopenLibrary(): void {
   openLibrary(loadSettings().dataFolder, broadcastLibrary)
@@ -129,7 +148,18 @@ function setupIpc(): void {
   ipcMain.handle('library:setStatus', (_e, item, newStatus) => saveLibrary(setStatus(getLibrary(), item, newStatus)))
   ipcMain.handle('library:setEpisodes', (_e, item, keys: string[], watched: boolean, undated?: boolean) => saveLibrary(setEpisodes(getLibrary(), item, keys, watched, new Date(), !!undated)))
   ipcMain.handle('library:seenBefore', (_e, item) => saveLibrary(markSeenBefore(getLibrary(), item)))
-  ipcMain.handle('library:markRowSeen', (_e, ref, on) => saveLibrary(markRowSeen(getLibrary(), ref, on)))
+  ipcMain.handle('library:markRowSeen', async (_e, ref, on) => {
+    const lib = saveLibrary(markRowSeen(getLibrary(), ref, on))
+    if (!on || ref.type !== 'tv') return lib
+    // Every season ticked: the show is Watched, not Watching.
+    try {
+      const d = (await tmdb.details('tv', ref.id)).data
+      const settled = settleSeenShows(getLibrary(), { [ref.key]: d }, localDate(new Date()))
+      return settled === getLibrary() ? getLibrary() : saveLibrary(settled)
+    } catch {
+      return getLibrary()
+    }
+  })
   ipcMain.handle('library:startRewatch', (_e, item) => saveLibrary(startRewatch(getLibrary(), item)))
   ipcMain.handle('library:endRewatch', (_e, key: string, keep: boolean) => saveLibrary(endRewatch(getLibrary(), key, keep)))
   ipcMain.handle('library:removeRewatch', (_e, key: string, index: number) => saveLibrary(removeRewatch(getLibrary(), key, index)))
@@ -231,6 +261,7 @@ app.whenReady().then(() => {
   setupIpc()
   mainWindow = createWindow()
   mainWindow.on('closed', () => (mainWindow = null))
+  void settleOnStart()
   app.on('activate', () => {
     if (!BrowserWindow.getAllWindows().length) {
       mainWindow = createWindow()

@@ -9,6 +9,7 @@ import {
   isRowSeenUndated,
   markRowSeen,
   markSeenBefore,
+  settleSeenShows,
   normalizeLibrary,
   removeRewatch,
   setEpisodes,
@@ -164,5 +165,43 @@ describe('one-click seen on list rows', () => {
   it('leaves a season row alone when its episode count is unknown', () => {
     const lib = emptyLibrary()
     expect(markRowSeen(lib, { ...dd2, episodes: undefined }, true)).toBe(lib)
+  })
+})
+
+describe('settling shows ticked season by season', () => {
+  const wv = { key: 'tv:85271' as const, type: 'tv' as const, id: 85271, name: 'WandaVision', year: 2021, posterPath: null }
+  const dd = { key: 'tv:61889' as const, type: 'tv' as const, id: 61889, name: 'Daredevil', year: 2015, posterPath: null }
+  const seasons = (...counts: number[]) => ({ seasons: counts.map((c, i) => ({ number: i + 1, name: '', episodeCount: c, airDate: '2015-01-01', posterPath: null })), nextEpisode: null })
+
+  it('a show with every season ticked becomes Watched, seen before', () => {
+    let lib = markRowSeen(emptyLibrary(), { ...wv, season: 1, episodes: 9 }, true)
+    expect(lib.entries[wv.key].status).toBe('watching')
+    lib = settleSeenShows(lib, { [wv.key]: seasons(9) }, '2026-11-17')
+    expect(lib.entries[wv.key]).toMatchObject({ status: 'watched', seenBefore: true })
+    expect(lib.entries[wv.key].watchedOn).toBeUndefined()
+
+    // Undoing the season puts it back as it was: off your library.
+    expect(isRowSeenUndated(lib, { ...wv, season: 1, episodes: 9 })).toBe(true)
+    expect(markRowSeen(lib, { ...wv, season: 1, episodes: 9 }, false).entries).toEqual({})
+  })
+
+  it('leaves part-seen shows as Watching', () => {
+    const lib = markRowSeen(emptyLibrary(), { ...dd, season: 1, episodes: 13 }, true)
+    expect(settleSeenShows(lib, { [dd.key]: seasons(13, 13, 13) }, '2026-11-17')).toBe(lib)
+  })
+
+  it('undoing one season of a finished show takes it back to Watching', () => {
+    let lib = markRowSeen(emptyLibrary(), { ...dd, season: 1, episodes: 2 }, true)
+    lib = markRowSeen(lib, { ...dd, season: 2, episodes: 2 }, true)
+    lib = settleSeenShows(lib, { [dd.key]: seasons(2, 2) }, '2026-11-17')
+    expect(lib.entries[dd.key].status).toBe('watched')
+    lib = markRowSeen(lib, { ...dd, season: 2, episodes: 2 }, false)
+    expect(lib.entries[dd.key]).toMatchObject({ status: 'watching', episodes: { S1E1: UNDATED, S1E2: UNDATED } })
+    expect(lib.entries[dd.key].seenBefore).toBeUndefined()
+  })
+
+  it('never touches shows you are watching with real dates only', () => {
+    const lib = setEpisodes(emptyLibrary(), { key: dd.key, type: 'tv', id: dd.id, title: { name: 'Daredevil', year: 2015, posterPath: null } }, ['S1E1', 'S1E2'], true)
+    expect(settleSeenShows(lib, { [dd.key]: seasons(2) }, '2026-11-17')).toBe(lib)
   })
 })
