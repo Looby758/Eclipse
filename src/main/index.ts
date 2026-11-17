@@ -23,6 +23,7 @@ import { refreshTray, setTray, setupTray, trayOn } from './tray'
 import { acceptSuggestion, dismissSuggestion, noticingStatus, scanHistory, setNoticing, setupNoticing, stopNoticing } from './noticing'
 import { editMoment } from '@core/watching'
 import { CATCH_UP_ID, dismissCatchUp } from '@core/catchup'
+import { hideRecommendation } from '@core/recommend'
 import { newRemoteCode, remoteStatus, setRemote, setupRemote, stopRemote } from './remote'
 import { guardStatus, readOnlyReason, startGuard, stopGuard, takeOver } from './guard'
 
@@ -239,6 +240,8 @@ function setupIpc(): void {
       return yearInReview(getLibrary(), year, details, credits, lists, localDate(new Date()))
     })
   )
+  ipcMain.handle('recs:list', () => attempt(() => tmdb.recommendationsFor(getLibrary())))
+  ipcMain.handle('recs:hide', (_e, key: string) => (/^(movie|tv):\d+$/.test(String(key)) ? saveLibrary(hideRecommendation(getLibrary(), String(key))) : getLibrary()))
   ipcMain.handle('week:budget', () => attempt(() => tmdb.weekBudget(getLibrary())))
   ipcMain.handle('catchup:list', () => attempt(() => tmdb.catchUpList(getLibrary())))
   ipcMain.handle('catchup:dismiss', (_e, id: string) => (CATCH_UP_ID.test(String(id)) ? saveLibrary(dismissCatchUp(getLibrary(), String(id))) : getLibrary()))

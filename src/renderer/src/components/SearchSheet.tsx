@@ -8,6 +8,7 @@ import { useApp } from '../store/app'
 import Sheet from './Sheet'
 import TitleCard from './TitleCard'
 import Credits from './Credits'
+import Recommendations from './Recommendations'
 import AvailabilityFilter from './AvailabilityFilter'
 import { useAvailability } from '../lib/availability'
 import { FILTER_LABELS, passesFilter, type AvailabilityFilter as Filter } from '@core/providers'
@@ -64,7 +65,8 @@ export default function SearchSheet(): React.JSX.Element {
       </div>
       {stale && <p className="notice">Offline: showing results saved earlier.</p>}
       {error && <p className="error">{error}</p>}
-      {!query.trim() && <p className="muted">Type a film or show in the search box below.</p>}
+      {!query.trim() && <p className="muted">Type a film or show in the search box below, or pick from these.</p>}
+      {!query.trim() && <Recommendations />}
       {order && (
         <button className="order-card" onClick={() => go({ name: 'list', id: listIdFor({ kind: 'guide', guideId: order.id }) })}>
           <Clapperboard size={22} />

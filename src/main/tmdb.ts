@@ -11,6 +11,7 @@ import { localDate, preferencesOf } from '@core/library'
 import { knownFrom, type KnownFrom } from '@core/knownfrom'
 import { catchUps, type CatchUp } from '@core/catchup'
 import { weekStart } from '@core/time'
+import { recommend, seedsOf, type Recommendation, type Seed } from '@core/recommend'
 import { weekSoFar, type WeekSoFar } from '@core/week'
 import type { Fetched, ListView } from '@shared/api'
 import { loadSettings, saveSettings } from './settings'
@@ -138,6 +139,27 @@ export async function detailsMany(keys: string[]): Promise<Record<string, TitleD
     )
   }
   return out
+}
+
+/** Recommendations for Search: TMDB's lists for your strongest titles, added up (each list saved for a week). */
+export async function recommendationsFor(library: Library, now = new Date()): Promise<Recommendation[]> {
+  const seeds = seedsOf(library, now)
+  const lists: { seed: Seed; results: SearchResult[] }[] = []
+  for (let i = 0; i < seeds.length; i += 5) {
+    await Promise.all(
+      seeds.slice(i, i + 5).map(async (seed) => {
+        const t = parseTitleKey(seed.key)
+        if (!t) return
+        try {
+          const r = await cached(fileCache, `recs:${seed.key}`, CACHE_TTL.credits, () => tmdb().recommendations(t.type, t.id), { shouldServeStale: serveStaleUnlessKeyProblem })
+          lists.push({ seed, results: r.data })
+        } catch {
+          // Skipped until it can be fetched.
+        }
+      })
+    )
+  }
+  return recommend(library, lists)
 }
 
 export async function services(region: string): Promise<Fetched<Provider[]>> {

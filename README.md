@@ -63,6 +63,7 @@ No new packages, so just pull and `npm run dev`.
 4. **Weekly budget:** pick "About 10 hours a week". Home shows how much of this week is left, and Watch soon spreads your list out to stay under it.
 5. **Phone remote:** if it's on, the phone page has **Not watching tonight** and **Bed 30 min later**.
 6. **Best services for your watchlist:** Settings → *Your services* → **Which services are best for my watchlist?** The card at the top lists the fewest services that cover the most of what you want to watch.
+7. **Recommendations:** open Search (the magnifier, or Ctrl+K) without typing. *Recommended for you* lists picks from what you've watched, each with *Because you watched …*. Try **Shows**, **On my services**, and the cross on a poster (Not for me).
 
 ## Phase 34: what to try
 

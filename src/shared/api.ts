@@ -6,6 +6,7 @@ import type { Batch, RepairChoice } from '@core/repair'
 import type { YearReview } from '@core/year'
 import type { CatchUp } from '@core/catchup'
 import type { WeekSoFar } from '@core/week'
+import type { Recommendation } from '@core/recommend'
 import type { NowPlaying, Recognised, Suggestion } from '@core/watching'
 import type { CollectionDetails, Credits, ListSource, PersonDetails, TitleRef, TmdbListDetails } from '@core/types'
 import type { Library, MediaType, Preferences, Provider, SearchResult, SeasonDetails, TitleDetails, TitleKey, TitleSnapshot, WatchProviders, WatchStatus } from '@core/types'
@@ -188,6 +189,11 @@ export interface EclipseApi {
 
   /** Your year in Eclipse: hours, busiest month, most-watched director and actor, longest binge. */
   yearReview(year: number): Promise<Result<YearReview>>
+
+  /** Recommendations for Search, from what you've watched and are watching. */
+  recommendations(): Promise<Result<Recommendation[]>>
+  /** "Not for me": never recommend it again. */
+  hideRecommendation(key: string): Promise<Library>
 
   /** The weekly budget: how much of this week you've watched and have left (null with no budget). */
   weekBudget(): Promise<Result<WeekSoFar | null>>

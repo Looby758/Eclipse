@@ -235,6 +235,8 @@ export interface Library {
   repairLeft?: string[]
   /** Catch up before the sequel: ones you said "Not now" to ("movie:438631>movie:1170608"). */
   catchUpDismissed?: string[]
+  /** Recommendations you said "Not for me" to, by title key. */
+  recsHidden?: string[]
 }
 
 /** A title taken off your library while clearing out the watchlist, kept whole so it can be put back. */

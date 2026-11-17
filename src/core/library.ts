@@ -355,7 +355,12 @@ export function normalizeLibrary(raw: unknown): Library {
   const rawDropped = raw && typeof raw === 'object' ? (raw as { dropped?: unknown }).dropped : undefined
   const rawLeft = raw && typeof raw === 'object' ? (raw as { repairLeft?: unknown }).repairLeft : undefined
   const rawCatch = raw && typeof raw === 'object' ? (raw as { catchUpDismissed?: unknown }).catchUpDismissed : undefined
+  const rawHidden = raw && typeof raw === 'object' ? (raw as { recsHidden?: unknown }).recsHidden : undefined
   const finish = (): Library => {
+    if (Array.isArray(rawHidden)) {
+      const hidden = [...new Set(rawHidden.filter((x): x is string => typeof x === 'string' && /^(movie|tv):\d+$/.test(x)))]
+      if (hidden.length) lib.recsHidden = hidden.slice(-500)
+    }
     if (Array.isArray(rawCatch)) {
       const no = [...new Set(rawCatch.filter((x): x is string => typeof x === 'string' && /^(movie|tv):\d+(@S\d+)?>(movie|tv):\d+(@S\d+)?$/.test(x)))]
       if (no.length) lib.catchUpDismissed = no.slice(-300)
