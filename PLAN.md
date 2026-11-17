@@ -245,10 +245,17 @@ You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls
 - Done (asked during this phase): the Walking Dead order has two sections, **Main story** (The Walking Dead, Daryl Dixon, The Ones Who Live, Dead City) and **Spin-offs** (Fear, World Beyond, Tales).
 - To decide after you've tried it: whether re-exporting now and then is fine, or worth a self-updating calendar link (that needs the feed hosted online somewhere free with a private link).
 
-**Phase 9: Watch soon (built, waiting for you to try it)**
+**Phase 9: Watch soon (done, merged)**
 
 - Done: a **Watch soon** button on every film and show page, and a **Soon** button in the dock. Watch soon is a short list in your own order (drag or use the arrows), separate from your watchlist and saved in `library.json`, so both computers share it.
 - Done: the Soon page adds it all up ("19 hours"), says how many evenings it takes and when you'd finish on your usual nights, and shows **Tonight**: what from your list fits before bed ("Dune, then Breaking Bad S4 E12"), plus other things that would fit on their own ("Or instead: 3 episodes of Breaking Bad"). Below that is the list with what's left of each, and **Your evenings**: night by night, what you'd watch.
 - Done: Home's "Pick up …?" suggests what you're already watching first, then Watch soon (in your order), then the rest of your watchlist (changed after your try-out: carrying on comes before starting something new).
 - Decisions: evenings are filled strictly in your order. A film only goes on a night it fits whole (or gets a whole evening to itself if it's longer than one); a show carries on across nights. Tonight counts only if it's one of your watching nights, using the time left before bed. Shows count the episodes after the furthest one you've ticked that are already out. Films with no runtime on TMDB count as 2 hours, and episodes as 45 minutes, shown as "about". Finished things stay on the list marked Done until you take them off.
-- Next: Phase 10 (seen before and rewatches).
+
+**Phase 10: Seen before and rewatches (built, waiting for you to try it)**
+
+- Done: **Seen it before.** Any film or show not yet marked watched has *Seen it before? Mark it watched with no date* under the status buttons. It's marked Watched with no date, so it counts everywhere (watch orders, lists, completion) but On this day leaves it out. Give it a date later in *Watched on* if you remember, and the "no date" goes away. Shows also get *Seen season N before (no date)* above the episodes, to tick a whole season without dates; a later normal tick or a Sequel import replaces the "no date" with a real day.
+- Done: **Rewatches.** A watched film has *Watched it again today*, which counts straight away. A watched show has *Start a rewatch*: from then on, ticking episodes goes to the rewatch, not your first watch, which is kept as it was. While it's going, the page shows *Rewatching since …* with its own progress, and the show counts as Watching (Library tab, Home's *Pick up*, time left, Watch soon and the heatmap all follow the rewatch). *Finish rewatch* counts it; *Give up* drops it.
+- Done: every title you've seen shows **Watched once / twice / 3 times**, and each finished rewatch is listed with its dates (× takes one off if added by mistake). Rewatch episode ticks show up in On this day.
+- Decisions: one rewatch at a time per title. A rewatch is never finished automatically, even when every episode is ticked (the button changes to *Finished it: count this rewatch*). Each rewatch is stored on its own with its dates and ticks, so a "watched with someone" tag can be added later (that's Phase 23 in the future ideas).
+- Next: Phase 11 (Polish).

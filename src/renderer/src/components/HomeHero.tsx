@@ -25,6 +25,7 @@ export default function HomeHero(): React.JSX.Element {
   const library = useApp((s) => s.library)
   const go = useApp((s) => s.go)
   const [skip, setSkip] = useState(0)
+  // A show you're rewatching counts as one you're watching, with the rewatch's progress.
   const all = entriesWith(library)
   const picks = candidates(all, (library.watchSoon ?? []).map((r) => r.key))
   const pick = picks.length ? picks[skip % picks.length] : null

@@ -11,6 +11,7 @@ import StatusPicker from './StatusPicker'
 import WatchSoonToggle from './WatchSoonToggle'
 import Credits from './Credits'
 import EntryDetails from './EntryDetails'
+import RewatchPanel from './RewatchPanel'
 import EpisodeTimeline from './EpisodeTimeline'
 import WhereToWatch from './WhereToWatch'
 import TimeCard from './TimeCard'
@@ -94,6 +95,7 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
           <StatusPicker details={d} />
           <WatchSoonToggle details={d} />
           <EntryDetails titleKey={d.key} />
+          <RewatchPanel details={d} />
         </div>
 
         <div className="title-body">

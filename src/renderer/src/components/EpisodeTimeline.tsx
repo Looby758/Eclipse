@@ -1,9 +1,9 @@
-import { Check, CheckCheck, Eye, Undo2 } from 'lucide-react'
+import { Check, CheckCheck, Eye, Undo2, History } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { formatDate, formatRuntime, plural } from '@core/format'
-import { localDate, nextEpisodeFor, showProgress } from '@core/library'
+import { activeEntry, currentRewatch, localDate, nextEpisodeFor, showProgress } from '@core/library'
 import { imageUrl } from '@core/tmdb'
-import { episodeKey, type SeasonDetails, type TitleDetails } from '@core/types'
+import { episodeKey, type SeasonDetails, type TitleDetails, UNDATED } from '@core/types'
 import { itemOf } from '../lib/item'
 import { useApp } from '../store/app'
 
@@ -16,8 +16,9 @@ export type EpisodeFocus = { season: number; episode: number; n: number }
 
 export default function EpisodeTimeline({ details, focus }: { details: TitleDetails; focus?: EpisodeFocus | null }): React.JSX.Element | null {
   const sectionRef = useRef<HTMLElement>(null)
-  const entry = useApp((s) => s.library.entries[details.key])
+  const entry = useApp((s) => activeEntry(s.library.entries[details.key]))
   const setLibrary = useApp((s) => s.setLibrary)
+  const rewatching = useApp((s) => !!currentRewatch(s.library.entries[details.key]))
   const counts = useMemo(() => details.seasons.map((s) => ({ number: s.number, episodeCount: s.episodeCount })), [details])
   const next = nextEpisodeFor(entry, counts)
   const regular = details.seasons.filter((s) => s.number > 0)
@@ -76,11 +77,11 @@ export default function EpisodeTimeline({ details, focus }: { details: TitleDeta
   const leftMinutes = season ? season.episodes.filter((e) => !seen[episodeKey(shown, e.number)] && aired(e.number)).reduce((m, e) => m + (e.runtime ?? details.runtime ?? 0), 0) : 0
   const overall = showProgress(entry, counts)
 
-  const tick = async (keys: string[], watched: boolean): Promise<void> => {
+  const tick = async (keys: string[], watched: boolean, undated = false): Promise<void> => {
     if (!keys.length) return
     setBusy(true)
     try {
-      setLibrary(await window.api.setEpisodes(itemOf(details), keys, watched))
+      setLibrary(await window.api.setEpisodes(itemOf(details), keys, watched, undated))
     } finally {
       setBusy(false)
     }
@@ -141,7 +142,7 @@ export default function EpisodeTimeline({ details, focus }: { details: TitleDeta
                   setReveal(false)
                 }}
                 onDoubleClick={() => aired(n) && tick([key], !watched)}
-                title={watched ? `Watched ${formatDate(seen[key])}` : 'Double-click to tick'}
+                title={watched ? (seen[key] === UNDATED ? 'Seen before (no date)' : `Watched ${formatDate(seen[key])}`) : 'Double-click to tick'}
               >
                 {watched ? <Check size={14} strokeWidth={3} /> : n}
               </button>
@@ -157,7 +158,7 @@ export default function EpisodeTimeline({ details, focus }: { details: TitleDeta
             <div className="episode-kicker">
               {shown === 0 ? 'Special' : `S${shown} E${selected}`}
               {isNext(selected) ? ' · Up next' : ''}
-              {pickedSeen ? ` · Watched ${formatDate(seen[pickedKey!])}` : ''}
+              {pickedSeen ? (seen[pickedKey!] === UNDATED ? ' · Seen before' : ` · Watched ${formatDate(seen[pickedKey!])}`) : ''}
             </div>
             <div className="episode-name">{spoiler ? 'Title hidden until you get here' : ep?.name || `Episode ${selected}`}</div>
             <div className="muted small">
@@ -194,6 +195,11 @@ export default function EpisodeTimeline({ details, focus }: { details: TitleDeta
         {seenHere.length < allHere.length ? (
           <button className="link-btn" disabled={busy} onClick={() => tick(allHere.filter((k) => !seen[k]), true)}>
             <CheckCheck size={13} /> Mark all of {shown === 0 ? 'Specials' : `Season ${shown}`} watched
+          </button>
+        ) : null}
+        {seenHere.length < allHere.length && !rewatching ? (
+          <button className="link-btn" disabled={busy} onClick={() => tick(allHere.filter((k) => !seen[k]), true, true)} title="For seasons you watched before Eclipse: ticked with no date">
+            <History size={13} /> Seen {shown === 0 ? 'these' : `season ${shown}`} before (no date)
           </button>
         ) : null}
         {seenHere.length > 0 && (

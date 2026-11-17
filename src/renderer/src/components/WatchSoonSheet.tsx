@@ -1,7 +1,7 @@
 import { ArrowDown, ArrowUp, Check, GripVertical, Moon, X } from 'lucide-react'
 import { useState } from 'react'
 import { formatRuntime, formatShortDay, plural } from '@core/format'
-import { localDate, preferencesOf } from '@core/library'
+import { activeEntry, localDate, preferencesOf } from '@core/library'
 import { formatHours, tonight } from '@core/time'
 import { episodeRange, planEvenings, soonItem, tonightOptions, watchSoonOf, type SoonItem } from '@core/watchsoon'
 import { useApp } from '../store/app'
@@ -40,7 +40,7 @@ export default function WatchSoonSheet(): React.JSX.Element {
   const [dragFrom, setDragFrom] = useState<number | null>(null)
   const now = new Date()
   const today = tonight(now, prefs).day
-  const items = refs.map((r) => soonItem(r, map[r.key], library.entries[r.key], today))
+  const items = refs.map((r) => soonItem(r, map[r.key], activeEntry(library.entries[r.key]), today))
   const plan = planEvenings(items, now, prefs)
   const first = plan.nights[0]
   const tonightPlan = first?.tonight ? first : null

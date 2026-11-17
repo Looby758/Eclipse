@@ -105,12 +105,28 @@ export interface LibraryEntry {
   note?: string
   /** Your own rating out of 10, if you gave one (e.g. brought over from Sequel). */
   rating?: number
-  /** Shows: the episodes you've seen, by episodeKey ("S1E3"), each with the day you ticked it. */
+  /** Shows: the episodes you've seen, by episodeKey ("S1E3"), each with the day you ticked it ("seen" when there's no date). */
   episodes?: Record<string, string>
+  /** Watched before you used Eclipse (or Sequel), with no date. */
+  seenBefore?: boolean
+  /** Times you've watched it again, oldest first. The last one may still be going (no finishedOn). */
+  rewatches?: Rewatch[]
   /** Shows: the day you want to have finished it by (YYYY-MM-DD), for "Finish it by Friday". */
   finishBy?: string
   title: TitleSnapshot
 }
+
+/** One time you watched something again. Shaped so a watch with someone else can be added later. */
+export interface Rewatch {
+  startedOn: string
+  /** Missing while you're still rewatching. */
+  finishedOn?: string
+  /** Shows: this rewatch's own episode ticks, by episodeKey, each with its day. */
+  episodes?: Record<string, string>
+}
+
+/** An episode ticked as seen with no date (watched before Eclipse). */
+export const UNDATED = 'seen'
 
 /** "S1E3": how an episode is named in your library file. */
 export const episodeKey = (season: number, episode: number): string => `S${season}E${episode}`

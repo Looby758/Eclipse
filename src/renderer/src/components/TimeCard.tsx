@@ -1,6 +1,6 @@
 import { CalendarClock, Moon, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { localDate, preferencesOf } from '@core/library'
+import { activeEntry, localDate, preferencesOf } from '@core/library'
 import { formatRuntime, formatShortDay, plural } from '@core/format'
 import { onMyServices } from '@core/providers'
 import { dayBefore, episodeMinutes, finishPlan, fitTonight, formatHours, nextFriday, nextPremiere, nextRenewal, startBy, timeLeft } from '@core/time'
@@ -14,7 +14,7 @@ type Option = { id: string; label: string; day: string }
  * "Finish it by Friday": pick a deadline and see how many episodes a night it takes.
  */
 export default function TimeCard({ details: d }: { details: TitleDetails }): React.JSX.Element | null {
-  const entry = useApp((s) => s.library.entries[d.key])
+  const entry = useApp((s) => activeEntry(s.library.entries[d.key]))
   const prefs = useApp((s) => preferencesOf(s.library))
   const setLibrary = useApp((s) => s.setLibrary)
   const [yours, setYours] = useState<Provider[]>([])
