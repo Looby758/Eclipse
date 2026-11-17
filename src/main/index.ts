@@ -17,6 +17,7 @@ import { backupLibrary, getLibrary, isDirectory, openLibrary, saveLibrary } from
 import { readSequelExport } from './sequelImport'
 import { setupUpdater } from './updater'
 import { getHistory, startServiceWatch } from './services'
+import { newRemoteCode, remoteStatus, setRemote, setupRemote, stopRemote } from './remote'
 import { guardStatus, readOnlyReason, startGuard, stopGuard, takeOver } from './guard'
 
 // Window background, matching --bg in src/renderer/src/styles/theme.css so there's no flash on start.
@@ -49,6 +50,7 @@ function status(): AppStatus {
 }
 
 const broadcastLibrary = (): void => mainWindow?.webContents.send('library:changed', getLibrary())
+const sendRemote = (s: unknown): void => mainWindow?.webContents.send('remote:changed', s)
 
 /** Shows ticked season by season as seen before, all the way through, move from Watching to Watched. */
 async function settleOnStart(): Promise<void> {
@@ -213,6 +215,9 @@ function setupIpc(): void {
   ipcMain.handle('library:setFinishBy', (_e, key: string, day: string | null) => saveLibrary(setFinishBy(getLibrary(), key, day)))
   ipcMain.handle('library:snooze', (_e, key: string, until: string | null) => saveLibrary(snoozeTitle(getLibrary(), key, until)))
   ipcMain.handle('services:history', () => getHistory())
+  ipcMain.handle('remote:status', () => remoteStatus())
+  ipcMain.handle('remote:set', (_e, on: boolean) => setRemote(!!on, sendRemote))
+  ipcMain.handle('remote:newCode', () => newRemoteCode())
   ipcMain.handle('library:setPreferences', (_e, patch) => saveLibrary(setPreferences(getLibrary(), patch)))
 
   // Sequel import: pick the export and see what it holds, then apply it (or don't).
@@ -306,6 +311,7 @@ app.whenReady().then(() => {
   mainWindow = createWindow()
   mainWindow.on('closed', () => (mainWindow = null))
   void settleOnStart()
+  setupRemote(broadcastLibrary, sendRemote)
   startServiceWatch(getLibrary, () => mainWindow?.webContents.send('services:changed', getHistory()))
   void setupUpdater()
   app.on('activate', () => {
@@ -316,7 +322,10 @@ app.whenReady().then(() => {
   })
 })
 
-app.on('will-quit', () => stopGuard())
+app.on('will-quit', () => {
+  stopGuard()
+  stopRemote()
+})
 
 app.on('window-all-closed', () => {
   if (!IS_MAC) app.quit()

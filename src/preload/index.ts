@@ -56,6 +56,14 @@ const api: EclipseApi = {
   setFinishBy: (key, day) => ipcRenderer.invoke('library:setFinishBy', key, day),
   snooze: (key, until) => ipcRenderer.invoke('library:snooze', key, until),
   servicesHistory: () => ipcRenderer.invoke('services:history'),
+  remoteStatus: () => ipcRenderer.invoke('remote:status'),
+  setRemote: (on) => ipcRenderer.invoke('remote:set', on),
+  newRemoteCode: () => ipcRenderer.invoke('remote:newCode'),
+  onRemoteStatus: (callback) => {
+    const handler = (_e: unknown, s: Parameters<typeof callback>[0]): void => callback(s)
+    ipcRenderer.on('remote:changed', handler)
+    return () => ipcRenderer.removeListener('remote:changed', handler)
+  },
   onServicesChanged: (callback) => {
     const handler = (_e: unknown, h: Parameters<typeof callback>[0]): void => callback(h)
     ipcRenderer.on('services:changed', handler)

@@ -67,6 +67,15 @@ export interface UpdateStatus {
   reason?: string
 }
 
+/** Your phone as a remote (Phase 23). */
+export interface RemoteStatus {
+  on: boolean
+  running: boolean
+  /** What the QR code holds: this computer's address on your Wi-Fi with the pairing code. */
+  url: string | null
+  error: string | null
+}
+
 export const GITHUB_REPO = 'Looby758/Eclipse'
 
 export interface EclipseApi {
@@ -148,6 +157,11 @@ export interface EclipseApi {
   /** What arrived on and left your services lately (checked once a day). */
   servicesHistory(): Promise<ServiceHistory>
   onServicesChanged(callback: (history: ServiceHistory) => void): () => void
+
+  remoteStatus(): Promise<RemoteStatus>
+  setRemote(on: boolean): Promise<RemoteStatus>
+  newRemoteCode(): Promise<RemoteStatus>
+  onRemoteStatus(callback: (status: RemoteStatus) => void): () => void
   setPreferences(patch: Partial<Preferences>): Promise<Library>
   /** Called when library.json changes on disk (e.g. Google Drive synced it from your other computer). */
   onLibraryChanged(callback: (library: Library) => void): () => void

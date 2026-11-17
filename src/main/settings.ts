@@ -20,6 +20,9 @@ export interface Settings {
   /** The TMDB key, encrypted with the system's own protection (see tmdbKey.ts). */
   tmdbKey?: string
   window?: WindowBounds
+  /** Phase 23: the phone remote is switched on (this computer only), and its pairing code. */
+  remoteOn?: boolean
+  remoteToken?: string
 }
 
 const defaults: Settings = { dataFolder: null }

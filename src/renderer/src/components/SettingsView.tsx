@@ -11,6 +11,7 @@ import CalendarCard from './CalendarCard'
 import SequelImportCard from './SequelImportCard'
 import ExportCard from './ExportCard'
 import UpdatesCard from './UpdatesCard'
+import RemoteCard from './RemoteCard'
 
 export default function SettingsView(): React.JSX.Element {
   const status = useApp((s) => s.status)!
@@ -45,6 +46,8 @@ export default function SettingsView(): React.JSX.Element {
       <ServicesCard />
 
       <EveningsCard />
+
+      <RemoteCard />
 
       <CalendarCard />
 

@@ -523,3 +523,8 @@ button.list-seen.undo:hover { background: var(--glass-hover); }
 .service-facts dd { margin: 0; text-align: right; color: var(--text); }
 .service-queue { list-style: none; margin: 0; padding: 10px 0 0; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; font-size: var(--text-sm); }
 .stalled-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 16px; font-size: var(--text-sm); color: var(--text-muted); }
+
+/* Your phone as a remote (Phase 23) */
+.remote-pair { display: flex; gap: 20px; align-items: flex-start; margin-top: 16px; flex-wrap: wrap; }
+.remote-pair > div { flex: 1; min-width: 240px; }
+.remote-qr { width: 180px; height: 180px; border-radius: var(--radius-sm); background: #fff; padding: 6px; }
