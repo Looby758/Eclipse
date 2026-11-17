@@ -38,7 +38,12 @@ const api: EclipseApi = {
 
   getLibrary: () => ipcRenderer.invoke('library:get'),
   setStatus: (item, status) => ipcRenderer.invoke('library:setStatus', item, status),
-  setEpisodes: (item, keys, watched) => ipcRenderer.invoke('library:setEpisodes', item, keys, watched),
+  setEpisodes: (item, keys, watched, undated) => ipcRenderer.invoke('library:setEpisodes', item, keys, watched, undated),
+  markSeenBefore: (item) => ipcRenderer.invoke('library:seenBefore', item),
+  markRowSeen: (ref, on) => ipcRenderer.invoke('library:markRowSeen', ref, on),
+  startRewatch: (item) => ipcRenderer.invoke('library:startRewatch', item),
+  endRewatch: (key, keep) => ipcRenderer.invoke('library:endRewatch', key, keep),
+  removeRewatch: (key, index) => ipcRenderer.invoke('library:removeRewatch', key, index),
   setNote: (key, note) => ipcRenderer.invoke('library:setNote', key, note),
   setWatchedOn: (key, day) => ipcRenderer.invoke('library:setWatchedOn', key, day),
   setFinishBy: (key, day) => ipcRenderer.invoke('library:setFinishBy', key, day),

@@ -1,7 +1,7 @@
 import { Check, Flame } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { buildHeatmap, heatColour, MIN_VOTES, type HeatCell } from '@core/heatmap'
-import { localDate } from '@core/library'
+import { activeEntry, localDate } from '@core/library'
 import type { SeasonDetails, TitleDetails } from '@core/types'
 import { hsl } from '../lib/posterColour'
 import { useApp } from '../store/app'
@@ -21,7 +21,7 @@ function describe(c: HeatCell): string {
 
 /** "Does it get good?": every episode as a square, coloured by its TMDB rating. */
 export default function Heatmap({ details, onPick }: { details: TitleDetails; onPick: (season: number, episode: number) => void }): React.JSX.Element | null {
-  const entry = useApp((s) => s.library.entries[details.key])
+  const entry = useApp((s) => activeEntry(s.library.entries[details.key]))
   const [seasons, setSeasons] = useState<SeasonDetails[] | null>(null)
   const [failed, setFailed] = useState(false)
   const numbers = details.seasons.filter((s) => s.number > 0).map((s) => s.number)

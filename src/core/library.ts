@@ -1,5 +1,5 @@
-import type { Library, LibraryEntry, MediaType, Preferences, TitleKey, TitleSnapshot, WatchStatus } from './types'
-import { DEFAULT_PREFERENCES, WATCH_STATUSES, episodeKey, parseEpisodeKey, parseTitleKey } from './types'
+import type { Library, LibraryEntry, MediaType, Preferences, Rewatch, TitleDetails, TitleKey, TitleSnapshot, WatchStatus } from './types'
+import { DEFAULT_PREFERENCES, UNDATED, WATCH_STATUSES, episodeKey, parseEpisodeKey, parseTitleKey } from './types'
 import type { TitleRef } from './types'
 import { normalizeLists, normalizeWatchSoon, refOf } from './lists'
 
@@ -38,21 +38,25 @@ export function setStatus(
   const entry: LibraryEntry = old
     ? { ...old, status, updatedAt: stamp, title: item.title }
     : { key: item.key, type: item.type, id: item.id, status, addedAt: stamp, updatedAt: stamp, title: item.title }
-  if (status === 'watched' && !entry.watchedOn) entry.watchedOn = localDate(now)
+  if (status === 'watched' && !entry.watchedOn && !entry.seenBefore) entry.watchedOn = localDate(now)
   entries[item.key] = entry
   return { ...library, entries }
 }
 
-/** Entries with a given status (or all), most recently changed first. */
+/**
+ * Entries with a given status (or all), most recently changed first. A show you're rewatching
+ * comes back as Watching, with the rewatch's ticks (see activeEntry).
+ */
 export function entriesWith(library: Library, status?: WatchStatus, type?: MediaType): LibraryEntry[] {
   return Object.values(library.entries)
+    .map((e) => activeEntry(e)!)
     .filter((e) => (!status || e.status === status) && (!type || e.type === type))
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
 }
 
 export function countByStatus(library: Library): Record<WatchStatus, number> {
   const counts = { want: 0, watching: 0, watched: 0, stopped: 0 }
-  for (const e of Object.values(library.entries)) counts[e.status]++
+  for (const e of Object.values(library.entries)) counts[activeEntry(e)!.status]++
   return counts
 }
 
@@ -70,7 +74,31 @@ function changeEntry(library: Library, key: string, change: (e: LibraryEntry) =>
  * kept), adds the show to your library if it isn't yet, and moves it to Watching from Want to
  * watch, Stopped or nothing.
  */
-export function setEpisodes(library: Library, item: LibraryItem, keys: string[], watched: boolean, now: Date = new Date()): Library {
+/**
+ * Ticks (or unticks) episodes. While you're rewatching, the ticks go on the rewatch, not your first
+ * watch. `undated` ticks them as seen with no date (watched before Eclipse).
+ */
+export function setEpisodes(library: Library, item: LibraryItem, keys: string[], watched: boolean, now: Date = new Date(), undated = false): Library {
+  const day = undated ? UNDATED : localDate(now)
+  const rewatch = currentRewatch(library.entries[item.key])
+  if (rewatch) {
+    return changeEntry(
+      library,
+      item.key,
+      (e) => {
+        const episodes = { ...(rewatch.episodes ?? {}) }
+        for (const k of keys) {
+          if (!parseEpisodeKey(k)) continue
+          if (watched) episodes[k] = episodes[k] ?? day
+          else delete episodes[k]
+        }
+        const r: Rewatch = { ...rewatch, episodes }
+        if (!Object.keys(episodes).length) delete r.episodes
+        return { ...e, rewatches: (e.rewatches ?? []).map((x) => (x === rewatch ? r : x)) }
+      },
+      now
+    )
+  }
   let lib = library
   if (!lib.entries[item.key]) {
     if (!watched) return lib
@@ -83,7 +111,7 @@ export function setEpisodes(library: Library, item: LibraryItem, keys: string[],
       const episodes = { ...(e.episodes ?? {}) }
       for (const k of keys) {
         if (!parseEpisodeKey(k)) continue
-        if (watched) episodes[k] = episodes[k] ?? localDate(now)
+        if (watched) episodes[k] = episodes[k] && episodes[k] !== UNDATED ? episodes[k] : day
         else delete episodes[k]
       }
       const next: LibraryEntry = { ...e, episodes }
@@ -118,8 +146,10 @@ export function setWatchedOn(library: Library, key: string, day: string | null, 
     key,
     (e) => {
       const next = { ...e }
-      if (day) next.watchedOn = day
-      else delete next.watchedOn
+      if (day) {
+        next.watchedOn = day
+        delete next.seenBefore
+      } else delete next.watchedOn
       return next
     },
     now
@@ -245,6 +275,8 @@ export function normalizeLibrary(raw: unknown): Library {
       ...(typeof e.note === 'string' && e.note.trim() ? { note: e.note.trim().slice(0, 300) } : {}),
       ...(typeof e.rating === 'number' && e.rating >= 0 && e.rating <= 10 ? { rating: e.rating } : {}),
       ...(cleanEpisodes(e.episodes) ?? {}),
+      ...(e.seenBefore === true ? { seenBefore: true } : {}),
+      ...cleanRewatches(e.rewatches),
       title: {
         name: typeof t.name === 'string' ? t.name : 'Untitled',
         year: typeof t.year === 'number' ? t.year : null,
@@ -258,12 +290,238 @@ export function normalizeLibrary(raw: unknown): Library {
   return finish()
 }
 
+function cleanRewatches(raw: unknown): { rewatches?: Rewatch[] } {
+  if (!Array.isArray(raw)) return {}
+  const out: Rewatch[] = []
+  for (const r of raw) {
+    if (!r || typeof r !== 'object' || !isDay((r as Rewatch).startedOn)) continue
+    const x = r as Rewatch
+    const done = isDay(x.finishedOn) ? x.finishedOn : undefined
+    // Only the last one can still be going.
+    if (!done && out.some((o) => !o.finishedOn)) continue
+    out.push({ startedOn: x.startedOn, ...(done ? { finishedOn: done } : {}), ...(cleanEpisodes(x.episodes) ?? {}) })
+  }
+  out.sort((a, b) => (a.finishedOn ? 0 : 1) - (b.finishedOn ? 0 : 1) || a.startedOn.localeCompare(b.startedOn))
+  return out.length ? { rewatches: out } : {}
+}
+
 function cleanEpisodes(raw: unknown): { episodes: Record<string, string> } | null {
   if (!raw || typeof raw !== 'object') return null
   const episodes: Record<string, string> = {}
   for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
     const ep = parseEpisodeKey(k)
-    if (ep && isDay(v)) episodes[episodeKey(ep.season, ep.episode)] = v
+    if (ep && (isDay(v) || v === UNDATED)) episodes[episodeKey(ep.season, ep.episode)] = v as string
   }
   return Object.keys(episodes).length ? { episodes } : null
+}
+
+// ---- Seen before and rewatches ----
+
+/** The rewatch you're part-way through, if any. */
+export const currentRewatch = (e: LibraryEntry | undefined): Rewatch | undefined => e?.rewatches?.find((r) => !r.finishedOn)
+
+const active = new WeakMap<LibraryEntry, LibraryEntry>()
+
+/**
+ * The entry as progress should see it: while you're rewatching, a Watching show with the rewatch's
+ * ticks, so "next episode", time left and the heatmap follow the rewatch. The same object comes
+ * back for the same entry (so UIs can compare it).
+ */
+export function activeEntry(e: LibraryEntry | undefined): LibraryEntry | undefined {
+  const r = currentRewatch(e)
+  if (!e || !r) return e
+  let view = active.get(e)
+  if (!view) {
+    view = { ...e, status: 'watching', episodes: r.episodes ?? {} }
+    if (!r.episodes) delete view.episodes
+    active.set(e, view)
+  }
+  return view
+}
+
+/** How many times you've watched it: the first time (dated or not) plus every finished rewatch. */
+export function watchCount(e: LibraryEntry | undefined): number {
+  if (!e) return 0
+  const first = e.status === 'watched' || !!e.watchedOn || !!e.seenBefore || (e.rewatches?.length ?? 0) > 0 ? 1 : 0
+  return first + (e.rewatches ?? []).filter((r) => r.finishedOn).length
+}
+
+/** Marks it watched with no date: you saw it before Eclipse. */
+export function markSeenBefore(library: Library, item: LibraryItem, now: Date = new Date()): Library {
+  const lib = setStatus(library, item, 'watched', now)
+  return changeEntry(
+    lib,
+    item.key,
+    (e) => {
+      const next: LibraryEntry = { ...e, seenBefore: true }
+      delete next.watchedOn
+      return next
+    },
+    now
+  )
+}
+
+/** Starts watching it again. Films: watched again today (it's finished straight away). */
+export function startRewatch(library: Library, item: LibraryItem, now: Date = new Date()): Library {
+  const e = library.entries[item.key]
+  if (currentRewatch(e)) return library
+  const lib = e ? library : setStatus(library, item, 'watched', now)
+  const day = localDate(now)
+  return changeEntry(
+    lib,
+    item.key,
+    (x) => ({ ...x, status: 'watched', rewatches: [...(x.rewatches ?? []), item.type === 'movie' ? { startedOn: day, finishedOn: day } : { startedOn: day }] }),
+    now
+  )
+}
+
+/** Finishes the rewatch you're on (today), or gives it up (`keep` false) as if it never started. */
+export function endRewatch(library: Library, key: string, keep: boolean, now: Date = new Date()): Library {
+  const r = currentRewatch(library.entries[key])
+  if (!r) return library
+  return changeEntry(
+    library,
+    key,
+    (e) => {
+      const rest = (e.rewatches ?? []).filter((x) => x !== r)
+      const rewatches = keep ? [...rest, { ...r, finishedOn: localDate(now) }] : rest
+      const next: LibraryEntry = { ...e, rewatches }
+      if (!rewatches.length) delete next.rewatches
+      return next
+    },
+    now
+  )
+}
+
+/** Takes one finished rewatch off (by its position), e.g. one added by mistake. */
+export function removeRewatch(library: Library, key: string, index: number, now: Date = new Date()): Library {
+  return changeEntry(
+    library,
+    key,
+    (e) => {
+      const rewatches = (e.rewatches ?? []).filter((_, i) => i !== index)
+      const next: LibraryEntry = { ...e, rewatches }
+      if (!rewatches.length) delete next.rewatches
+      return next
+    },
+    now
+  )
+}
+
+// ---- One-click "seen it" on list and watch-order rows ----
+
+const isWatchSoonKey = (library: Library, key: string): boolean => (library.watchSoon ?? []).some((r) => r.key === key)
+
+type Row = Pick<TitleRef, 'key' | 'type' | 'id' | 'name' | 'year' | 'posterPath' | 'season' | 'episodes'>
+
+const seasonTicks = (e: LibraryEntry, season: number): [string, string][] => Object.entries(e.episodes ?? {}).filter(([k]) => parseEpisodeKey(k)?.season === season)
+
+/** True when a row only counts as seen because of "seen before, no date" (so the tick can be undone safely). */
+export function isRowSeenUndated(library: Library, ref: Row): boolean {
+  const e = library.entries[ref.key]
+  if (!e || e.rewatches?.length) return false
+  const undatedWatch = e.status === 'watched' && !!e.seenBefore && !e.watchedOn
+  if (!ref.season) return undatedWatch
+  if (!ref.episodes || (e.status === 'watched' && !undatedWatch)) return false
+  const ticks = seasonTicks(e, ref.season)
+  if (ticks.length >= ref.episodes) return ticks.every(([, day]) => day === UNDATED)
+  return undatedWatch && ticks.length === 0
+}
+
+/**
+ * Ticks a list row as seen with no date: a film or whole show is marked "seen before", a season
+ * row gets all its episodes ticked with no date. Off undoes only those undated marks.
+ */
+export function markRowSeen(library: Library, ref: Row, on: boolean, now: Date = new Date()): Library {
+  if (ref.season && !ref.episodes) return library
+  const item: LibraryItem = { key: ref.key, type: ref.type, id: ref.id, title: library.entries[ref.key]?.title ?? { name: ref.name, year: ref.year, posterPath: ref.posterPath } }
+  const seasonKeys = ref.season && ref.episodes ? Array.from({ length: ref.episodes }, (_, i) => episodeKey(ref.season!, i + 1)) : null
+  if (on) {
+    if (seasonKeys) {
+      const e = library.entries[ref.key]
+      return setEpisodes(library, item, seasonKeys.filter((k) => !e?.episodes?.[k]), true, now, true)
+    }
+    return markSeenBefore(library, item, now)
+  }
+  if (!isRowSeenUndated(library, ref)) return library
+  const e = library.entries[ref.key]
+  const keep = (x: LibraryEntry): boolean => !!(x.note || x.rating !== undefined || Object.keys(x.episodes ?? {}).length || x.finishBy || x.rewatches?.length)
+  if (seasonKeys) {
+    // Take the season's ticks off. A show that was finished (seen before) is back to Watching;
+    // if nothing's left, it comes off your library.
+    let lib = setEpisodes(library, item, seasonKeys, false, now)
+    if (e.status === 'watched') {
+      lib = changeEntry(
+        lib,
+        ref.key,
+        (x) => {
+          const next: LibraryEntry = { ...x, status: 'watching' }
+          delete next.seenBefore
+          return next
+        },
+        now
+      )
+    }
+    const after = lib.entries[ref.key]
+    return after && after.status === 'watching' && !keep(after) && !isWatchSoonKey(lib, ref.key) ? setStatus(lib, item, null, now) : lib
+  }
+  // A film or show marked seen before: take it back off, unless there's more to keep.
+  if (!keep(e)) return setStatus(library, item, null, now)
+  return changeEntry(
+    library,
+    ref.key,
+    (x) => {
+      const next: LibraryEntry = { ...x, status: 'want' }
+      delete next.seenBefore
+      return next
+    },
+    now
+  )
+}
+
+/**
+ * A show you're "watching" only because you ticked seasons as seen before: once every episode
+ * that's out is ticked, it's Watched (seen before if none of the ticks has a date, otherwise
+ * watched on the latest one). Shows you're genuinely partway through or rewatching are left alone.
+ */
+export function settleSeenShows(library: Library, details: Record<string, Pick<TitleDetails, 'seasons' | 'nextEpisode'>>, today: string, now: Date = new Date()): Library {
+  let lib = library
+  for (const e of Object.values(library.entries)) {
+    const d = details[e.key]
+    if (e.type !== 'tv' || e.status !== 'watching' || !d || currentRewatch(e)) continue
+    const ticks = e.episodes ?? {}
+    if (!Object.values(ticks).includes(UNDATED)) continue
+    const out = airedEpisodes(d, today)
+    if (!out.length || !out.every((k) => ticks[k])) continue
+    const dated = Object.values(ticks).filter((v) => v !== UNDATED).sort()
+    lib = changeEntry(
+      lib,
+      e.key,
+      (x) => {
+        const next: LibraryEntry = { ...x, status: 'watched' }
+        if (!next.watchedOn) {
+          if (dated.length) next.watchedOn = dated[dated.length - 1]
+          else next.seenBefore = true
+        }
+        return next
+      },
+      now
+    )
+  }
+  return lib
+}
+
+/** Every regular episode that's out by today, by episodeKey. */
+function airedEpisodes(d: Pick<TitleDetails, 'seasons' | 'nextEpisode'>, today: string): string[] {
+  const next = d.nextEpisode
+  const upcoming = next && (!next.airDate || next.airDate > today)
+  const out: string[] = []
+  for (const s of d.seasons) {
+    if (s.number <= 0 || (s.airDate && s.airDate > today)) continue
+    for (let n = 1; n <= s.episodeCount; n++) {
+      if (upcoming && (s.number > next.season || (s.number === next.season && n >= next.episode))) continue
+      out.push(episodeKey(s.number, n))
+    }
+  }
+  return out
 }

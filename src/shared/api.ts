@@ -91,7 +91,17 @@ export interface EclipseApi {
   getLibrary(): Promise<Library>
   setStatus(item: Item, status: WatchStatus | null): Promise<Library>
   /** Ticks or unticks episodes ("S1E3"); ticking adds the show as Watching if needed. */
-  setEpisodes(item: Item, keys: string[], watched: boolean): Promise<Library>
+  /** Ticks episodes (on your rewatch, if you're on one). `undated`: seen before Eclipse, no date. */
+  setEpisodes(item: Item, keys: string[], watched: boolean, undated?: boolean): Promise<Library>
+  /** Watched before Eclipse, with no date. */
+  markSeenBefore(item: Item): Promise<Library>
+  /** A list or watch-order row: seen with no date (a season row ticks its episodes), or undo that. */
+  markRowSeen(ref: TitleRef, on: boolean): Promise<Library>
+  /** Starts watching it again (a film counts as watched again today). */
+  startRewatch(item: Item): Promise<Library>
+  /** Finishes the rewatch you're on, or gives it up. */
+  endRewatch(key: string, keep: boolean): Promise<Library>
+  removeRewatch(key: string, index: number): Promise<Library>
   setNote(key: TitleKey, note: string): Promise<Library>
   setWatchedOn(key: TitleKey, day: string | null): Promise<Library>
   /** Sets or clears the day you want to have finished a show by. */

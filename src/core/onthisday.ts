@@ -48,14 +48,19 @@ function sameDay(day: string, today: string): boolean {
   return m === 2 && d === 29 && tm === 2 && td === 28 && !isLeap(ty)
 }
 
-function collect(library: Library, today: string, match: (day: string) => boolean): Memory[] {
+function collect(library: Library, today: string, test: (day: string) => boolean): Memory[] {
   const [ty] = parts(today)
+  // Ticks with no date (seen before Eclipse) are never memories.
+  const match = (day: string): boolean => /^\d{4}-\d{2}-\d{2}$/.test(day) && test(day)
   const out: Memory[] = []
   for (const e of Object.values(library.entries)) {
     const base = { key: e.key, type: e.type, id: e.id, title: e.title, note: e.note ?? null }
-    if (e.watchedOn && match(e.watchedOn)) out.push({ ...base, date: e.watchedOn, yearsAgo: ty - parts(e.watchedOn)[0], kind: 'title', episodes: [] })
+    // The first watch and every rewatch: a film you watched again counts on the day you did.
+    const finished = [e.watchedOn, ...(e.type === 'movie' ? (e.rewatches ?? []).map((r) => r.finishedOn) : [])]
+    for (const day of new Set(finished)) if (day && match(day)) out.push({ ...base, date: day, yearsAgo: ty - parts(day)[0], kind: 'title', episodes: [] })
     const byDay = new Map<string, string[]>()
-    for (const [k, day] of Object.entries(e.episodes ?? {})) if (match(day)) byDay.set(day, [...(byDay.get(day) ?? []), k])
+    for (const ticks of [e.episodes ?? {}, ...(e.rewatches ?? []).map((r) => r.episodes ?? {})])
+      for (const [k, day] of Object.entries(ticks)) if (match(day) && !byDay.get(day)?.includes(k)) byDay.set(day, [...(byDay.get(day) ?? []), k])
     for (const [day, keys] of byDay) {
       // A show marked Watched on the same day as its last episodes is one memory, not two.
       if (e.watchedOn === day && out.some((m) => m.key === e.key && m.date === day)) {

@@ -1,5 +1,5 @@
 import type { Library, LibraryEntry, MediaType, TitleKey, WatchStatus } from './types'
-import { episodeKey, titleKey } from './types'
+import { UNDATED, episodeKey, titleKey } from './types'
 import { localDate } from './library'
 import { addToListNamed, refOf } from './lists'
 
@@ -261,6 +261,7 @@ export function mergeSequel(library: Library, data: SequelImport, now: Date = ne
     let changed = false
     if (!next.watchedOn && item.watchedOn) {
       next.watchedOn = item.watchedOn
+      delete next.seenBefore
       changed = true
     }
     if (next.rating === undefined && item.rating !== null) {
@@ -273,7 +274,7 @@ export function mergeSequel(library: Library, data: SequelImport, now: Date = ne
     }
     const episodes = { ...(old.episodes ?? {}) }
     for (const [k, day] of Object.entries(item.episodes)) {
-      if (!episodes[k] || day < episodes[k]) {
+      if (!episodes[k] || episodes[k] === UNDATED || day < episodes[k]) {
         episodes[k] = day
         changed = true
       }
