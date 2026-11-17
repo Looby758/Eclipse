@@ -18,6 +18,8 @@ let lastText = ''
 let stopWatching: (() => void) | null = null
 /** The file couldn't be read when opened: it's backed up before the first save replaces it. */
 let unreadable = false
+/** Says why saving isn't allowed right now (another computer has Eclipse open), or null. */
+let blocked: () => string | null = () => null
 
 export const isDirectory = (path: string | null | undefined): path is string => {
   try {
@@ -35,7 +37,8 @@ function readFromDisk(file: string): Library {
 }
 
 /** Opens the library in `dataFolder` (or closes it with null). */
-export function openLibrary(dataFolder: string | null, onChange: (library: Library) => void): void {
+export function openLibrary(dataFolder: string | null, onChange: (library: Library) => void, readOnly: () => string | null = () => null): void {
+  blocked = readOnly
   stopWatching?.()
   stopWatching = null
   folder = isDirectory(dataFolder) ? dataFolder : null
@@ -71,6 +74,8 @@ export const getLibrary = (): Library => current
 
 export function saveLibrary(library: Library): Library {
   if (!folder) throw new Error('Choose a data folder first.')
+  const reason = blocked()
+  if (reason) throw new Error(reason)
   current = library
   const file = join(folder, LIBRARY_FILE)
   if (unreadable && existsSync(file)) {

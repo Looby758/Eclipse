@@ -112,6 +112,14 @@ Avoid having Eclipse open on both computers at the same time, so the two copies 
 3. **Make the first release:** after merging, on GitHub open **Actions → Release → Run workflow**. When it finishes, download the installer from **Releases** and install it (see *Installing it* above).
 4. **Updates:** in the installed app, Settings → *Version and updates* → **Check now** says you have the latest version.
 
+## Phase 12: what to try
+
+You need both computers and the shared Google Drive folder.
+
+1. **Open on both:** open Eclipse on the PC, wait a minute for Drive to sync, then open it on the Mac. The Mac shows a *Read-only* banner saying Eclipse is open on the PC. Try ticking something: the banner shakes and nothing changes.
+2. **Close the first:** quit Eclipse on the PC. Within a minute or two (once Drive has synced) the banner on the Mac goes away and it works normally.
+3. **Take over:** with both open again, press **Take over** on the read-only one. Within a minute or two the other one turns read-only and says it was taken over.
+
 ## For development
 
 - `npm test` runs the tests, `npm run typecheck` checks the types.

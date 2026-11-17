@@ -16,6 +16,7 @@ import * as tmdb from './tmdb'
 import { backupLibrary, getLibrary, isDirectory, openLibrary, saveLibrary } from './library'
 import { readSequelExport } from './sequelImport'
 import { setupUpdater } from './updater'
+import { guardStatus, readOnlyReason, startGuard, stopGuard, takeOver } from './guard'
 
 // Window background, matching --bg in src/renderer/src/styles/theme.css so there's no flash on start.
 const BG = '#040309'
@@ -68,7 +69,9 @@ async function settleOnStart(): Promise<void> {
 }
 
 function reopenLibrary(): void {
-  openLibrary(loadSettings().dataFolder, broadcastLibrary)
+  const { dataFolder } = loadSettings()
+  openLibrary(dataFolder, broadcastLibrary, readOnlyReason)
+  startGuard(isDirectory(dataFolder) ? dataFolder : null, (s) => mainWindow?.webContents.send('guard:changed', s))
 }
 
 /** Runs a TMDB call and turns errors into a plain message for the window. */
@@ -135,6 +138,8 @@ function setupIpc(): void {
       return { saved: true, path: result.filePath, count: events.length }
     })
   )
+  ipcMain.handle('guard:status', () => guardStatus())
+  ipcMain.handle('guard:takeOver', () => takeOver())
   ipcMain.handle('data:export', (event) =>
     attempt(async () => {
       const win = BrowserWindow.fromWebContents(event.sender)!
@@ -293,6 +298,8 @@ app.whenReady().then(() => {
     }
   })
 })
+
+app.on('will-quit', () => stopGuard())
 
 app.on('window-all-closed', () => {
   if (!IS_MAC) app.quit()

@@ -18,6 +18,15 @@ export interface AppStatus {
   version: string
 }
 
+/** The two-computer guard (see src/core/guard.ts). */
+export interface GuardStatus {
+  /** Another computer has Eclipse open: changes here aren't saved. */
+  readOnly: boolean
+  other?: { computer: string; platform: 'mac' | 'win' | 'linux'; since: string; seen: string; session: string }
+  /** This copy had it, and the other computer took over. */
+  takenOver?: boolean
+}
+
 /** An answer from TMDB, and whether it's a saved copy shown because TMDB couldn't be reached. */
 export interface Fetched<T> {
   data: T
@@ -130,6 +139,11 @@ export interface EclipseApi {
   /** Merges the picked export into your library (after backing library.json up). */
   applySequel(): Promise<Result<Library>>
   cancelSequel(): Promise<void>
+
+  guardStatus(): Promise<GuardStatus>
+  /** Use this copy and make the other computer's read-only (it was left open by mistake). */
+  takeOver(): Promise<GuardStatus>
+  onGuardChanged(callback: (status: GuardStatus) => void): () => void
 
   /** Asks for a folder and saves everything there (library.json plus CSV spreadsheets). */
   exportData(): Promise<Result<{ saved: boolean; path?: string }>>
