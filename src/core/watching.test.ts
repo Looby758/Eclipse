@@ -52,6 +52,7 @@ describe('recognising services, shows and episodes', () => {
     expect(cleanTitle('Watch Andor | Disney+')).toBe('Andor')
     expect(cleanTitle('Andor - Google Chrome')).toBe('Andor')
     expect(cleanTitle('🔊 The Walking Dead: Daryl Dixon - NOW')).toBe('The Walking Dead: Daryl Dixon')
+    expect(cleanTitle('Andor | Disney+ - Opera')).toBe('Andor')
   })
 
   it('reads episode numbers in the usual forms', () => {

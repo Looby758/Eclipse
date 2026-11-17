@@ -58,8 +58,8 @@ Each computer needs the key pasted once.
 No new packages this time, so no `npm install` needed (just pull and `npm run dev`). These need Windows or a Mac, so try them on your computer.
 
 1. **Settings shortcut:** press **Ctrl+,** anywhere in Eclipse.
-2. **History:** Settings → *Noticing what you watch* → *From your browser history* → **On**, then **Check now**. Go to Tonight: a *Did you watch these?* card lists episodes you watched in Chrome or Edge in the last two weeks. Press **Tick it** on one and **Not this** on another.
-3. **What's playing:** turn **What's playing** on, then play an episode of a show in your library on Disney+ or NOW in Chrome or Edge. Back in Settings, *What Eclipse sees right now* should list it within a few seconds. Screenshot that box for me, whether or not it recognises the show: it tells us what the services give away. The first time, Windows may briefly show a PowerShell window or ask about it: that's Eclipse asking what's playing.
+2. **History:** Settings → *Noticing what you watch* → *From your browser history* → **On**, then **Check now**. Go to Tonight: a *Did you watch these?* card lists episodes you watched in Opera GX, Chrome or Edge in the last two weeks. Press **Tick it** on one and **Not this** on another.
+3. **What's playing:** turn **What's playing** on, then play an episode of a show in your library on Disney+ or NOW in Opera GX, Chrome or Edge. Back in Settings, *What Eclipse sees right now* should list it within a few seconds. Screenshot that box for me, whether or not it recognises the show: it tells us what the services give away. The first time, Windows may briefly show a PowerShell window or ask about it: that's Eclipse asking what's playing.
 4. **Bookmark a moment:** while it plays, press **Ctrl+Alt+B**. A notification says it's saved; the show's page has it under *Saved moments*, where you can add a note.
 5. **Bedtime guard:** turn it on, set your bedtime a few minutes from now (Settings → Your evenings), and start an episode.
 6. **Continue on:** after a history check, a show you watched on NOW or Disney+ gets a **Continue on …** button on its page and in Up next.

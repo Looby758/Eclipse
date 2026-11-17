@@ -51,7 +51,7 @@ export function cleanTitle(title: string): string {
   let t = title.replace(/\s+/g, ' ').trim()
   for (const s of SERVICES) t = t.replace(s.suffix, '')
   // Browser window titles end with the browser's name; a playing tab can start with a sound symbol.
-  t = t.replace(/\s*[-–]\s*(Google Chrome|Microsoft​? Edge|Microsoft Edge|Brave|Safari|Firefox|Mozilla Firefox).*$/i, '')
+  t = t.replace(/\s*[-–]\s*(Google Chrome|Microsoft​? Edge|Microsoft Edge|Brave|Safari|Firefox|Mozilla Firefox|Opera GX|Opera).*$/i, '')
   t = t.replace(/^(🔊|🔈|\(\d+\))\s*/, '')
   return t.replace(/^(Watch|Stream)\s+/i, '').trim()
 }

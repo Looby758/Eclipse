@@ -50,8 +50,8 @@ export default function NoticingCard(): React.JSX.Element {
 
       <h3 className="card-sub">From your browser history</h3>
       <p className="muted small">
-        Reads the Chrome and Edge history on this computer every half hour, looking only at streaming sites. The first time it looks back two weeks.{' '}
-        {status && (status.browsers.length ? `Found: ${status.browsers.join(' and ')}.` : 'No Chrome or Edge history found on this computer.')}
+        Reads the Chrome, Edge and Opera GX history on this computer every half hour, looking only at streaming sites. The first time it looks back two weeks.{' '}
+        {status && (status.browsers.length ? `Found: ${status.browsers.join(' and ')}.` : 'No Chrome, Edge or Opera history found on this computer.')}
       </p>
       <Switch on={!!s?.history} set={(on) => void set({ history: on })} />
       {s?.history && (
@@ -88,7 +88,7 @@ export default function NoticingCard(): React.JSX.Element {
       <p className="muted small">
         {mac
           ? 'Looks at the front tab in Chrome, Edge and Safari every 10 seconds. The Mac asks once whether Eclipse may do that: say OK.'
-          : 'Asks Windows what’s playing every 5 seconds (the same thing the volume pop-up shows), and looks at Chrome and Edge window titles.'}{' '}
+          : 'Asks Windows what’s playing every 5 seconds (the same thing the volume pop-up shows), and looks at Chrome, Edge and Opera window titles.'}{' '}
         When an episode ends, Eclipse asks whether to tick it. Press <kbd>{status?.momentKey ?? (mac ? '⌘⌥B' : 'Ctrl+Alt+B')}</kbd> anywhere to bookmark the moment you’re at.
       </p>
       <Switch on={!!s?.playing} set={(on) => void set({ playing: on })} />

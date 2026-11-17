@@ -6,7 +6,7 @@ import { localDate } from '@core/library'
 import { SERVICES, type Visit } from '@core/watching'
 
 /**
- * Phase 27: Eclipse notices what you watched. Chrome and Edge keep your browsing history in a small
+ * Phase 27: Eclipse notices what you watched. Chrome, Edge and Opera (GX too) keep your browsing history in a small
  * database file on this computer. Eclipse copies it (the browser keeps the original locked while
  * it's open) and reads only visits to streaming sites from it. It never changes the browser's files,
  * and nothing leaves this computer.
@@ -18,35 +18,52 @@ export interface Browser {
   files: string[]
 }
 
-function profileFiles(root: string): string[] {
+/**
+ * Each profile's History file under a browser's folder. Chrome and Edge keep profiles in "Default"
+ * and "Profile 2" …; Opera and Opera GX keep the main one in the folder itself and extra ones
+ * in "_side_profiles".
+ */
+export function profileFiles(root: string): string[] {
   if (!existsSync(root)) return []
-  try {
-    return readdirSync(root)
-      .filter((d) => d === 'Default' || /^Profile \d+$/.test(d))
-      .map((d) => join(root, d, 'History'))
-      .filter((f) => existsSync(f))
-  } catch {
-    return []
+  const out: string[] = []
+  const add = (f: string): void => {
+    if (existsSync(f)) out.push(f)
   }
+  try {
+    add(join(root, 'History'))
+    for (const d of readdirSync(root)) if (d === 'Default' || /^Profile \d+$/.test(d)) add(join(root, d, 'History'))
+    const side = join(root, '_side_profiles')
+    if (existsSync(side)) for (const d of readdirSync(side)) add(join(side, d, 'History'))
+  } catch {
+    // A folder we can't read: use what was found.
+  }
+  return out
 }
 
 export function browsers(): Browser[] {
   const home = homedir()
   const local = process.env.LOCALAPPDATA ?? join(home, 'AppData', 'Local')
+  const roaming = process.env.APPDATA ?? join(home, 'AppData', 'Roaming')
+  const mac = join(home, 'Library', 'Application Support')
   const roots: [string, string][] =
     process.platform === 'win32'
       ? [
           ['Chrome', join(local, 'Google', 'Chrome', 'User Data')],
-          ['Edge', join(local, 'Microsoft', 'Edge', 'User Data')]
+          ['Edge', join(local, 'Microsoft', 'Edge', 'User Data')],
+          ['Opera GX', join(roaming, 'Opera Software', 'Opera GX Stable')],
+          ['Opera', join(roaming, 'Opera Software', 'Opera Stable')]
         ]
       : process.platform === 'darwin'
         ? [
-            ['Chrome', join(home, 'Library', 'Application Support', 'Google', 'Chrome')],
-            ['Edge', join(home, 'Library', 'Application Support', 'Microsoft Edge')]
+            ['Chrome', join(mac, 'Google', 'Chrome')],
+            ['Edge', join(mac, 'Microsoft Edge')],
+            ['Opera GX', join(mac, 'com.operasoftware.OperaGX')],
+            ['Opera', join(mac, 'com.operasoftware.Opera')]
           ]
         : [
             ['Chrome', join(home, '.config', 'google-chrome')],
-            ['Edge', join(home, '.config', 'microsoft-edge')]
+            ['Edge', join(home, '.config', 'microsoft-edge')],
+            ['Opera', join(home, '.config', 'opera')]
           ]
   return roots.map(([name, root]) => ({ name, files: profileFiles(root) })).filter((b) => b.files.length)
 }
@@ -60,7 +77,7 @@ const fromChromeMs = (t: number | bigint): number => Number(t) - EPOCH_GAP_MS
 /** The sites to look for in history ("disneyplus.com", "nowtv.com" …). */
 export const STREAMING_HOSTS = ['disneyplus.com', 'nowtv.com', 'netflix.com', 'primevideo.com', 'bbc.co.uk/iplayer', 'itv.com', 'channel4.com', 'tv.apple.com', 'paramountplus.com']
 
-/** Visits to streaming sites since a time (milliseconds), from every Chrome and Edge profile. */
+/** Visits to streaming sites since a time (milliseconds), from every Chrome, Edge and Opera profile. */
 export async function streamingVisits(sinceMs: number): Promise<{ visits: Visit[]; browsers: string[]; errors: string[] }> {
   // node:sqlite is built into Electron's Node (marked experimental, so loaded only when needed).
   const { DatabaseSync } = await import('node:sqlite')

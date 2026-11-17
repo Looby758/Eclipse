@@ -30,7 +30,7 @@ const WINDOWS_SCRIPT = [
   '      } catch {}',
   '    }',
   '  }',
-  '  foreach ($w in (Get-Process chrome, msedge -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle })) {',
+  '  foreach ($w in (Get-Process chrome, msedge, opera -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle })) {',
   "    $out += [pscustomobject]@{ kind = 'window'; app = $w.ProcessName; title = $w.MainWindowTitle }",
   '  }',
   '  [Console]::Out.WriteLine((ConvertTo-Json -Compress -Depth 3 -InputObject @($out)))',
