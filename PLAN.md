@@ -191,6 +191,13 @@ They're ordered by what they need. Group A ideas stand on their own (they only u
 
 33. **Catch up before the sequel** (added later, numbered after the others so nothing else moves). When the next film in a series or a new season of a show I've seen is coming out, Eclipse works backwards from the UK release date and finds a time to rewatch what comes before it: "Dune: Part Three is in cinemas on 18 Dec. Part Two is 2h46 on NOW TV. It fits this Saturday." For a show it suggests the previous season, or just its last few episodes if a full rewatch won't fit. Shown on Home a few weeks ahead, with one click to add it to Watch soon. Skips anything I watched recently enough not to need it (adjustable, say within the last year). *Needs:* nothing new (uses Phase 8's release dates, Phase 7's watch orders and Phase 9's evenings).
 
+### Look refresh (chosen 17 Nov 2026)
+
+34. **New Home screen ("Spotlight") and new logo.** Only Home changes; Library, Soon, Lists, Settings, Search and title pages keep the current Drift look. *Needs:* nothing new (it reuses Tonight's evening maths from Phase 3).
+    - **Home:** the poster wall fills the whole screen, flat rather than tilted, in rows that drift slowly sideways (alternate rows in opposite directions). A soft pool of shadow in the middle holds a **Tonight dial**: an arc from my evening start (20:00) to bedtime (23:00) with tick marks, one segment per planned episode or film, a dot for "now", and the spare time as an empty track. The poster of tonight's pick sits inside the dial. Underneath, very little text: "Pick up Andor?", one line ("S2 E4 · start by 20:10 · 3 episodes fit before bed") and two buttons (Tick it, Something else). Navigation becomes small glass pills in the top right. Dark and light modes.
+    - **Logo:** "Play eclipse" in **Halo blue**: a crescent of light fading from deep blue (#3F5BFF) to ice blue (#8FE3FF) around a dark moon, with a white play button inside, on a deep navy tile (#151A3D to #0B0D1F). Used for the app icon (Windows and Mac installers), the title bar and the welcome screen.
+    - Drafts: Spotlight is "D" in `designs/eclipse-redraw-2.html` in the project files; the logo is "1 · Halo blue" on the same page.
+
 ### Group B: noticing what I watch (in this order)
 
 I mostly watch on the computer, so this chain is where Eclipse ticks things for me and the dates stay right (the Sequel problem: forgetting to tick, so dates were wrong).
@@ -344,6 +351,8 @@ You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls
 - Phase 25, **your year in Eclipse**: from Lists (top right), Settings → *Your history*, or Home in December and the first week of January. Hours watched, films, episodes, days with something on, hours by month with the busiest highlighted, longest binge and longest run of days, your most-watched director (films) and actor (films and shows), shows and lists finished, and your top five. Any earlier year with dates can be picked at the top. Undated watches don't count.
 - Phase 26, **menu bar and tray**: Settings → *Eclipse in the system tray* (*menu bar* on the Mac) → On. The icon's menu has the next episode of each show you're watching (click to tick it, with a small notification), how long is left before bed and the time to start by, *Open Eclipse* and *Quit Eclipse*. While it's on, closing the window keeps Eclipse running there (so the phone remote keeps working); opening Eclipse again brings the window back.
 - Decisions: the remote and tray settings are kept per computer (not in the synced library). The remote uses port 47823. Ticks from the phone or the tray go on your rewatch if you're on one, and are refused while this copy is read-only (the phone says why).
+
+- Look refresh (17 Nov 2026): from two rounds of design drafts you picked **Spotlight** for Home only (the rest of the app keeps Drift) and the **Play eclipse** logo in **Halo blue**. Added as candidate phase 34 (33 is Catch up). Turned down: Marquee (font, red, too busy), Observatory's layout and flat blue-black (its dial is kept in Spotlight), Sticker deck, Mosaic and Horizon.
 
 **Phase 33: Catch up before the sequel (built, waiting for you to try it)**
 
