@@ -12,6 +12,7 @@ import SequelImportCard from './SequelImportCard'
 import ExportCard from './ExportCard'
 import UpdatesCard from './UpdatesCard'
 import RemoteCard from './RemoteCard'
+import HistoryCard from './HistoryCard'
 
 export default function SettingsView(): React.JSX.Element {
   const status = useApp((s) => s.status)!
@@ -52,6 +53,8 @@ export default function SettingsView(): React.JSX.Element {
       <CalendarCard />
 
       <SequelImportCard />
+
+      <HistoryCard />
 
       <section className="card">
         <h2>Data folder</h2>

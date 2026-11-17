@@ -528,3 +528,8 @@ button.list-seen.undo:hover { background: var(--glass-hover); }
 .remote-pair { display: flex; gap: 20px; align-items: flex-start; margin-top: 16px; flex-wrap: wrap; }
 .remote-pair > div { flex: 1; min-width: 240px; }
 .remote-qr { width: 180px; height: 180px; border-radius: var(--radius-sm); background: #fff; padding: 6px; }
+
+/* Repair old dates (Phase 24) */
+.repair-list { display: flex; flex-direction: column; gap: 12px; max-width: 860px; margin-top: 12px; }
+.repair-batch { margin: 0; }
+.repair-batch h2 { margin-bottom: 8px; }

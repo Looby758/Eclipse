@@ -17,6 +17,7 @@ import { backupLibrary, getLibrary, isDirectory, openLibrary, saveLibrary } from
 import { readSequelExport } from './sequelImport'
 import { setupUpdater } from './updater'
 import { getHistory, startServiceWatch } from './services'
+import { repairBatch, type Batch, type RepairChoice } from '@core/repair'
 import { newRemoteCode, remoteStatus, setRemote, setupRemote, stopRemote } from './remote'
 import { guardStatus, readOnlyReason, startGuard, stopGuard, takeOver } from './guard'
 
@@ -215,6 +216,15 @@ function setupIpc(): void {
   ipcMain.handle('library:setFinishBy', (_e, key: string, day: string | null) => saveLibrary(setFinishBy(getLibrary(), key, day)))
   ipcMain.handle('library:snooze', (_e, key: string, until: string | null) => saveLibrary(snoozeTitle(getLibrary(), key, until)))
   ipcMain.handle('services:history', () => getHistory())
+  let repairBackedUp = false
+  ipcMain.handle('library:repair', (_e, batch: Batch, choice: RepairChoice) => {
+    // Copy library.json aside before the first repair, so it can always be undone by hand.
+    if (!repairBackedUp && choice.kind !== 'leave') {
+      backupLibrary('before-repair')
+      repairBackedUp = true
+    }
+    return saveLibrary(repairBatch(getLibrary(), batch, choice))
+  })
   ipcMain.handle('remote:status', () => remoteStatus())
   ipcMain.handle('remote:set', (_e, on: boolean) => setRemote(!!on, sendRemote))
   ipcMain.handle('remote:newCode', () => newRemoteCode())

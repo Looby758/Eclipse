@@ -2,6 +2,7 @@ import type { ImportSummary } from '@core/sequel'
 import type { ReleaseEvent } from '@core/calendar'
 import type { KnownFrom } from '@core/knownfrom'
 import type { ServiceHistory } from '@core/services'
+import type { Batch, RepairChoice } from '@core/repair'
 import type { CollectionDetails, Credits, ListSource, PersonDetails, TitleRef, TmdbListDetails } from '@core/types'
 import type { Library, MediaType, Preferences, Provider, SearchResult, SeasonDetails, TitleDetails, TitleKey, TitleSnapshot, WatchProviders, WatchStatus } from '@core/types'
 
@@ -157,6 +158,9 @@ export interface EclipseApi {
   /** What arrived on and left your services lately (checked once a day). */
   servicesHistory(): Promise<ServiceHistory>
   onServicesChanged(callback: (history: ServiceHistory) => void): () => void
+
+  /** Repair old dates: spread a batch out, mark it undated, or leave it (library.json is copied aside first). */
+  repairBatch(batch: Batch, choice: RepairChoice): Promise<Library>
 
   remoteStatus(): Promise<RemoteStatus>
   setRemote(on: boolean): Promise<RemoteStatus>

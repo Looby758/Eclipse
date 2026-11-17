@@ -188,6 +188,8 @@ export interface Library {
   watchSoon?: TitleRef[]
   /** Titles dropped while clearing out the watchlist, newest first (the last 30), so they can come back. */
   dropped?: Dropped[]
+  /** Repair old dates: batches you chose to leave as they are ("tv:1396@2023-03-04"), so they aren't offered again. */
+  repairLeft?: string[]
 }
 
 /** A title taken off your library while clearing out the watchlist, kept whole so it can be put back. */
