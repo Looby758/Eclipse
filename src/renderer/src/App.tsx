@@ -38,6 +38,11 @@ export default function App(): React.JSX.Element {
     const onKey = (e: KeyboardEvent): void => {
       const typing = e.target instanceof HTMLInputElement
       if ((e.altKey && e.key === 'ArrowLeft') || (e.key === 'Escape' && !typing)) back()
+      // Ctrl+, (Cmd+, on a Mac) opens Settings, as in most apps.
+      else if ((e.ctrlKey || e.metaKey) && e.key === ',') {
+        e.preventDefault()
+        if (useApp.getState().status?.hasKey) useApp.getState().go({ name: 'settings' })
+      }
     }
     window.addEventListener('mouseup', onMouse)
     window.addEventListener('keydown', onKey)
