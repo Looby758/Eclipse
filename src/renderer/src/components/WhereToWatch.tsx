@@ -45,8 +45,10 @@ export default function WhereToWatch({ type, id }: { type: MediaType; id: number
   }, [type, id, prefs.region])
 
   const mineFirst = (list: Provider[]): Provider[] => [...list.filter((p) => prefs.services.includes(p.id)), ...list.filter((p) => !prefs.services.includes(p.id))]
-  const stream = data ? mineFirst([...data.stream, ...data.free.filter((f) => !data.stream.some((s) => s.id === f.id))]) : []
-  const yours = stream.filter((p) => prefs.services.includes(p.id))
+  const yours = data ? [...data.stream, ...data.free].filter((p, i, all) => prefs.services.includes(p.id) && all.findIndex((x) => x.id === p.id) === i) : []
+  // Free services (BBC iPlayer, ITVX, Channel 4, My5…) get their own group, after yours.
+  const free = data ? data.free.filter((p) => !prefs.services.includes(p.id)) : []
+  const stream = data ? mineFirst(data.stream.filter((p) => !free.some((f) => f.id === p.id))) : []
 
   return (
     <section className="where">
@@ -65,16 +67,30 @@ export default function WhereToWatch({ type, id }: { type: MediaType; id: number
           <p className={`where-verdict ${yours.length ? 'yours' : ''}`}>
             {yours.length
               ? `On ${yours.map((p) => p.name).join(' and ')}, which you have.`
-              : stream.length
+              : free.length
+                ? `Free on ${free.map((p) => p.name).slice(0, 2).join(' and ')}.`
+                : stream.length
                 ? 'Streaming, but not on your services.'
                 : data.rent.length || data.buy.length
                   ? 'Not streaming. You can rent or buy it.'
                   : `Not available to watch in ${prefs.region === 'GB' ? 'the UK' : prefs.region} right now.`}
           </p>
-          {stream.length > 0 && (
+          {yours.length > 0 && (
+            <div className="where-group">
+              <div className="where-label">Yours</div>
+              <Logos list={yours} mine={prefs.services} />
+            </div>
+          )}
+          {free.length > 0 && (
+            <div className="where-group">
+              <div className="where-label">Free</div>
+              <Logos list={free} mine={prefs.services} />
+            </div>
+          )}
+          {stream.filter((p) => !prefs.services.includes(p.id)).length > 0 && (
             <div className="where-group">
               <div className="where-label">Stream</div>
-              <Logos list={stream} mine={prefs.services} />
+              <Logos list={stream.filter((p) => !prefs.services.includes(p.id))} mine={prefs.services} />
             </div>
           )}
           {data.rent.length > 0 && (

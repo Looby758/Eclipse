@@ -1,7 +1,7 @@
 import { Loader2 } from 'lucide-react'
 import { FILTER_LABELS, type AvailabilityFilter as Filter } from '@core/providers'
 
-const FILTERS: Filter[] = ['any', 'mine', 'rentbuy', 'none']
+const FILTERS: Filter[] = ['any', 'mine', 'mineOrFree', 'rentbuy', 'none']
 
 /** Anywhere / On my services / Rent or buy only / Not streaming anywhere. */
 export default function AvailabilityFilter({ value, onChange, checking }: { value: Filter; onChange: (f: Filter) => void; checking?: boolean }): React.JSX.Element {

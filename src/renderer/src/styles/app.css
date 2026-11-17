@@ -502,3 +502,4 @@ button.list-seen.undo:hover { background: var(--glass-hover); }
 .known li { display: flex; align-items: center; gap: 10px; font-size: var(--text-sm); line-height: 1.4; }
 .known img, .known .person-initial { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
 .known .person-initial { display: grid; place-items: center; background: var(--glass-soft); }
+.where-chip.free { color: var(--ok); }

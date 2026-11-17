@@ -73,7 +73,8 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
     if (!p) return null
     const yours = onMyServices(p, services)
     if (yours.length) return <span className="where-chip yours">On {yours[0].name}</span>
-    if (p.stream.length || p.free.length) return <span className="where-chip">On {(p.stream[0] ?? p.free[0]).name}</span>
+    if (p.free.length) return <span className="where-chip free">Free on {p.free[0].name}</span>
+    if (p.stream.length) return <span className="where-chip">On {p.stream[0].name}</span>
     if (p.rent.length || p.buy.length) return <span className="where-chip">Rent or buy</span>
     return <span className="where-chip none">Not streaming</span>
   }

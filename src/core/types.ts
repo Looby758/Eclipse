@@ -314,4 +314,5 @@ export interface WatchProviders {
 }
 
 /** How you can watch something, for the filters. */
-export type Availability = 'mine' | 'stream' | 'rentbuy' | 'none'
+/** On your services, free (BBC iPlayer, ITVX, Channel 4, My5…), streaming elsewhere, rent or buy only, or nowhere. */
+export type Availability = 'mine' | 'free' | 'stream' | 'rentbuy' | 'none'

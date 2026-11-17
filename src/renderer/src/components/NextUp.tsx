@@ -1,7 +1,7 @@
 import { Check } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { localDate, nextEpisodeFor, preferencesOf } from '@core/library'
-import { onMyServices } from '@core/providers'
+import { onMyServices, freeElsewhere } from '@core/providers'
 import { formatRuntime, formatShortDay, plural } from '@core/format'
 import { episodeMinutes, finishPlan, fitTonight, startBy, timeLeft } from '@core/time'
 import { episodeKey, type Episode, type LibraryEntry, type Provider, type TitleDetails } from '@core/types'
@@ -16,6 +16,7 @@ export default function NextUp({ entry }: { entry: LibraryEntry }): React.JSX.El
   const [details, setDetails] = useState<TitleDetails | null>(null)
   const [ep, setEp] = useState<Episode | null>(null)
   const [yours, setYours] = useState<Provider[] | null>(null)
+  const [free, setFree] = useState<Provider[]>([])
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
@@ -23,7 +24,11 @@ export default function NextUp({ entry }: { entry: LibraryEntry }): React.JSX.El
     setDetails(null)
     setYours(null)
     window.api.details(entry.type, entry.id).then((r) => !cancelled && r.ok && setDetails(r.value.data))
-    window.api.providers(entry.type, entry.id).then((r) => !cancelled && r.ok && setYours(onMyServices(r.value.data, services)))
+    window.api.providers(entry.type, entry.id).then((r) => {
+      if (cancelled || !r.ok) return
+      setYours(onMyServices(r.value.data, services))
+      setFree(freeElsewhere(r.value.data, services))
+    })
     return () => {
       cancelled = true
     }
@@ -43,7 +48,7 @@ export default function NextUp({ entry }: { entry: LibraryEntry }): React.JSX.El
     }
   }, [entry.id, next?.season, next?.episode])
 
-  const where = yours === null ? '' : yours.length ? `On ${yours.map((p) => p.name).join(' and ')}, which you have.` : 'Not on your services.'
+  const where = yours === null ? '' : yours.length ? `On ${yours.map((p) => p.name).join(' and ')}, which you have.` : free.length ? `Free on ${free[0].name}.` : 'Not on your services.'
   const now = new Date()
   const today = localDate(now)
   if (entry.type === 'movie') {
