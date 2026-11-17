@@ -3,6 +3,7 @@ import type { ReleaseEvent } from '@core/calendar'
 import type { KnownFrom } from '@core/knownfrom'
 import type { ServiceHistory } from '@core/services'
 import type { Batch, RepairChoice } from '@core/repair'
+import type { YearReview } from '@core/year'
 import type { CollectionDetails, Credits, ListSource, PersonDetails, TitleRef, TmdbListDetails } from '@core/types'
 import type { Library, MediaType, Preferences, Provider, SearchResult, SeasonDetails, TitleDetails, TitleKey, TitleSnapshot, WatchProviders, WatchStatus } from '@core/types'
 
@@ -161,6 +162,9 @@ export interface EclipseApi {
 
   /** Repair old dates: spread a batch out, mark it undated, or leave it (library.json is copied aside first). */
   repairBatch(batch: Batch, choice: RepairChoice): Promise<Library>
+
+  /** Your year in Eclipse: hours, busiest month, most-watched director and actor, longest binge. */
+  yearReview(year: number): Promise<Result<YearReview>>
 
   remoteStatus(): Promise<RemoteStatus>
   setRemote(on: boolean): Promise<RemoteStatus>

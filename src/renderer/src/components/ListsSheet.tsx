@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react'
+import { Plus, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { GUIDES } from '@core/guides'
 import { listIdFor, listsOf, progressOf, sourceOf } from '@core/lists'
@@ -77,6 +77,9 @@ export default function ListsSheet(): React.JSX.Element {
     <Sheet>
       <div className="sheet-head">
         <h1>Lists</h1>
+        <button className="btn glass" onClick={() => useApp.getState().go({ name: 'year' })}>
+          <Sparkles size={15} /> Your year in Eclipse
+        </button>
       </div>
       <p className="muted lists-lede">Watch orders, the directors and actors you follow, and your own lists, with how far through each you are.</p>
 

@@ -232,10 +232,33 @@ function Comebacks(): React.JSX.Element | null {
   )
 }
 
+/** Home in December (and the first week of January): your year in Eclipse is ready. */
+function YearNote(): React.JSX.Element | null {
+  const go = useApp((s) => s.go)
+  const today = localDate(new Date())
+  const month = Number(today.slice(5, 7))
+  const year = month === 12 ? Number(today.slice(0, 4)) : month === 1 && Number(today.slice(8)) <= 7 ? Number(today.slice(0, 4)) - 1 : null
+  if (!year) return null
+  return (
+    <section className="note" aria-label="Your year in Eclipse">
+      <div className="note-kicker">
+        <Sparkles size={14} /> Your {year} in Eclipse
+      </div>
+      <div className="note-line">Your hours, busiest month, longest binge and most-watched director and actor of the year.</div>
+      <div className="row">
+        <button className="chip" onClick={() => go({ name: 'year', year })}>
+          See your year
+        </button>
+      </div>
+    </section>
+  )
+}
+
 /** The small cards above On this day. */
 export default function HomeNotes(): React.JSX.Element {
   return (
     <>
+      <YearNote />
       <Together />
       <Comebacks />
       <ServicesNote />

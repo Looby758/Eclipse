@@ -17,6 +17,7 @@ import { backupLibrary, getLibrary, isDirectory, openLibrary, saveLibrary } from
 import { readSequelExport } from './sequelImport'
 import { setupUpdater } from './updater'
 import { getHistory, startServiceWatch } from './services'
+import { keysWatchedIn, yearInReview } from '@core/year'
 import { repairBatch, type Batch, type RepairChoice } from '@core/repair'
 import { newRemoteCode, remoteStatus, setRemote, setupRemote, stopRemote } from './remote'
 import { guardStatus, readOnlyReason, startGuard, stopGuard, takeOver } from './guard'
@@ -225,6 +226,13 @@ function setupIpc(): void {
     }
     return saveLibrary(repairBatch(getLibrary(), batch, choice))
   })
+  ipcMain.handle('year:review', (_e, year: number) =>
+    attempt(async () => {
+      const lib = getLibrary()
+      const { details, credits, lists } = await tmdb.yearData(lib, keysWatchedIn(lib, year))
+      return yearInReview(getLibrary(), year, details, credits, lists, localDate(new Date()))
+    })
+  )
   ipcMain.handle('remote:status', () => remoteStatus())
   ipcMain.handle('remote:set', (_e, on: boolean) => setRemote(!!on, sendRemote))
   ipcMain.handle('remote:newCode', () => newRemoteCode())

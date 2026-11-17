@@ -57,6 +57,7 @@ const api: EclipseApi = {
   snooze: (key, until) => ipcRenderer.invoke('library:snooze', key, until),
   servicesHistory: () => ipcRenderer.invoke('services:history'),
   repairBatch: (batch, choice) => ipcRenderer.invoke('library:repair', batch, choice),
+  yearReview: (year) => ipcRenderer.invoke('year:review', year),
   remoteStatus: () => ipcRenderer.invoke('remote:status'),
   setRemote: (on) => ipcRenderer.invoke('remote:set', on),
   newRemoteCode: () => ipcRenderer.invoke('remote:newCode'),
