@@ -1,6 +1,6 @@
 import { Check, Hourglass, Library, ListChecks, Moon, Search, Settings, Sparkles, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { entriesWith, nextEpisodeFor, preferencesOf } from '@core/library'
+import { entriesWith, isTogether, nextEpisodeFor, preferencesOf, withTogether } from '@core/library'
 import { formatRuntime, plural } from '@core/format'
 import { episodeMinutes, fitTonight, startBy, tonight } from '@core/time'
 import { episodeKey, type LibraryEntry, type TitleDetails } from '@core/types'
@@ -76,7 +76,8 @@ export default function SpotlightHome(): React.JSX.Element {
   const prefs = preferencesOf(library)
 
   const all = entriesWith(library)
-  const picks = candidates(all, (library.watchSoon ?? []).map((r) => r.key))
+  // Watches with someone ("with Jack") are picks too, with that watch's own progress.
+  const picks = withTogether(candidates(all, (library.watchSoon ?? []).map((r) => r.key)), library)
   const pick: LibraryEntry | null = picks.length ? picks[skip % picks.length] : null
 
   // The dot moves with the clock.
@@ -110,6 +111,7 @@ export default function SpotlightHome(): React.JSX.Element {
   } else if (pick) line = pick.type === 'movie' ? 'Film' : 'Show'
 
   const verb = pick?.status === 'watching' ? 'Pick up' : 'Start'
+  const withWho = isTogether(pick) ? ` with ${pick.together.who}` : ''
   const open = (): void => {
     if (pick) go({ name: 'title', type: pick.type, id: pick.id })
   }
@@ -134,7 +136,8 @@ export default function SpotlightHome(): React.JSX.Element {
           {pick ? (
             <>
               <h1>
-                {verb} {pick.title.name}?
+                {verb} {pick.title.name}
+                {withWho}?
               </h1>
               <p>{line}</p>
               <div className="spot-btns">
@@ -145,7 +148,8 @@ export default function SpotlightHome(): React.JSX.Element {
                     onClick={async () => {
                       setBusy(true)
                       try {
-                        setLibrary(await window.api.setEpisodes(itemOf(details!), [episodeKey(next.season, next.episode)], true))
+                        const ep = [episodeKey(next.season, next.episode)]
+                        setLibrary(isTogether(pick) ? await window.api.tickWith(pick.key, pick.together.index, ep, true) : await window.api.setEpisodes(itemOf(details!), ep, true))
                       } finally {
                         setBusy(false)
                       }

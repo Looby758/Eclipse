@@ -56,3 +56,19 @@ describe('watching with someone', () => {
     expect(lib.entries['tv:1402'].rewatches).toEqual([{ startedOn: '2026-11-01' }, { startedOn: '2026-11-01', with: 'Sam' }])
   })
 })
+
+describe('watching together on Home', () => {
+  it('puts a watch with someone among your picks, newest first', async () => {
+    const { withTogether, isTogether, startWatchWith, tickWith, setEpisodes, emptyLibrary } = await import('./library')
+    const item = (id: number) => ({ key: `tv:${id}` as const, type: 'tv' as const, id, title: { name: `Show ${id}`, year: null, posterPath: null } })
+    let lib = setEpisodes(emptyLibrary(), item(1), ['S1E1'], true, new Date(2026, 10, 10))
+    lib = setEpisodes(lib, item(2), ['S1E1'], true, new Date(2026, 10, 12))
+    lib = startWatchWith(lib, item(3), 'Jack', new Date(2026, 10, 15))
+    lib = tickWith(lib, 'tv:3', 0, ['S1E1', 'S1E2'], true, new Date(2026, 10, 17))
+    const own = Object.values(lib.entries)
+    const picks = withTogether(own.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)), lib)
+    expect(picks.map((p) => (isTogether(p) ? `${p.key} with ${p.together.who}` : p.key))).toEqual(['tv:3 with Jack', 'tv:2', 'tv:1'])
+    const jack = picks[0]
+    expect(isTogether(jack) && Object.keys(jack.episodes ?? {})).toEqual(['S1E1', 'S1E2'])
+  })
+})

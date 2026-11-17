@@ -1,6 +1,6 @@
 import { Search } from 'lucide-react'
 import { useState } from 'react'
-import { entriesWith } from '@core/library'
+import { entriesWith, isTogether, withTogether } from '@core/library'
 import type { LibraryEntry } from '@core/types'
 import { useApp } from '../store/app'
 import Poster from './Poster'
@@ -28,7 +28,7 @@ export default function HomeHero(): React.JSX.Element {
   const [skip, setSkip] = useState(0)
   // A show you're rewatching counts as one you're watching, with the rewatch's progress.
   const all = entriesWith(library)
-  const picks = candidates(all, (library.watchSoon ?? []).map((r) => r.key))
+  const picks = withTogether(candidates(all, (library.watchSoon ?? []).map((r) => r.key)), library)
   const pick = picks.length ? picks[skip % picks.length] : null
   const others = picks.filter((e) => e !== pick).slice(0, 3)
   const watchingCount = all.filter((e) => e.status === 'watching').length
@@ -61,10 +61,13 @@ export default function HomeHero(): React.JSX.Element {
     <div className="hero">
       <div className="hero-kicker">{greeting(new Date())}</div>
       <h1 className="hero-title">
-        {verb} <span className="glow-text">{pick.title.name}</span>?
+        {verb} <span className="glow-text">{pick.title.name}</span>
+        {isTogether(pick) ? ` with ${pick.together.who}` : ''}?
       </h1>
       <p className="hero-line">
-        {pick.status === 'watching'
+        {isTogether(pick)
+          ? `You’re watching this with ${pick.together.who}. Your own progress is kept apart.`
+          : pick.status === 'watching'
           ? `You’re part-way through this ${what}${watchingCount > 1 ? `, one of ${watchingCount} you’re watching` : ''}.`
           : `It’s on your watchlist${pick.title.year ? ` (${pick.title.year})` : ''}.`}
       </p>
@@ -86,7 +89,7 @@ export default function HomeHero(): React.JSX.Element {
           <div className="hero-sub">{others[0].status === 'watching' ? 'Also in progress' : 'Also on your list'}</div>
           <div className="mini-row">
             {others.map((e) => (
-              <button key={e.key} className="mini-card" onClick={() => go({ name: 'title', type: e.type, id: e.id })}>
+              <button key={isTogether(e) ? `${e.key}:${e.together.index}` : e.key} className="mini-card" onClick={() => go({ name: 'title', type: e.type, id: e.id })}>
                 <span className="mini-poster">
                   <Poster path={e.title.posterPath} type={e.type} name={e.title.name} size="w92" />
                 </span>

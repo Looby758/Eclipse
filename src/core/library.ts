@@ -764,3 +764,34 @@ export function clearOutOrder(library: Library, order: 'oldest' | 'newest' | 'no
   if (order === 'oldest') return want.sort(byAdded)
   return want.sort((a, b) => Number(onMine(a.key) === true) - Number(onMine(b.key) === true) || byAdded(a, b))
 }
+
+/** A show you're watching with someone, as Home sees it: that watch's progress, and who it's with. */
+export type TogetherPick = LibraryEntry & { together: { who: string; index: number } }
+
+export const isTogether = (e: LibraryEntry | null | undefined): e is TogetherPick => !!e && 'together' in e && !!(e as TogetherPick).together
+
+const lastDay = (episodes: Record<string, string> | undefined): string | null => {
+  let last: string | null = null
+  for (const [k, day] of Object.entries(episodes ?? {})) if (parseEpisodeKey(k) && day !== UNDATED && (!last || day > last)) last = day
+  return last
+}
+
+/**
+ * Home's picks with your watches with someone mixed in: each one goes just before the first show
+ * you're watching on your own that you last watched earlier, so what you're watching now comes first.
+ */
+export function withTogether(picks: LibraryEntry[], library: Library): LibraryEntry[] {
+  const views: TogetherPick[] = Object.values(library.entries)
+    .filter((e) => e.type === 'tv')
+    .flatMap((e) => watchesWith(e).map(({ index, watch }) => ({ ...e, status: 'watching' as const, episodes: watch.episodes ?? {}, together: { who: watch.with, index } })))
+  if (!views.length) return picks
+  const when = (e: LibraryEntry): string => (isTogether(e) ? (lastDay(e.episodes) ?? e.rewatches![e.together.index].startedOn) : (lastDay(e.episodes) ?? e.updatedAt.slice(0, 10)))
+  // A show you only watch with someone (no ticks of your own) shows up once, as the watch together.
+  const together = new Set(views.map((v) => v.key))
+  const out = picks.filter((p) => !together.has(p.key) || Object.keys(p.episodes ?? {}).length > 0)
+  for (const v of views.sort((a, b) => when(b).localeCompare(when(a)))) {
+    const at = out.findIndex((p) => p.status !== 'watching' || (!isTogether(p) && when(p) < when(v)))
+    out.splice(at < 0 ? out.length : at, 0, v)
+  }
+  return out
+}

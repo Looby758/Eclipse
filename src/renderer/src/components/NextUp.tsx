@@ -1,6 +1,6 @@
 import { Check } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { localDate, nextEpisodeFor, preferencesOf } from '@core/library'
+import { isTogether, localDate, nextEpisodeFor, preferencesOf } from '@core/library'
 import { onMyServices, freeElsewhere } from '@core/providers'
 import { formatRuntime, formatShortDay, plural } from '@core/format'
 import { bedtimeTonight, episodeMinutes, finishPlan, fitTonight, startBy, timeLeft } from '@core/time'
@@ -62,7 +62,7 @@ export default function NextUp({ entry }: { entry: LibraryEntry }): React.JSX.El
   const left = timeLeft(details, entry, today)
   const each = episodeMinutes(details)
   const fits = Math.min(fitTonight(now, prefs, each), left.episodes)
-  const plan = entry.finishBy && entry.finishBy >= today ? finishPlan(left, each, entry.finishBy, now, prefs) : null
+  const plan = !isTogether(entry) && entry.finishBy && entry.finishBy >= today ? finishPlan(left, each, entry.finishBy, now, prefs) : null
 
   return (
     <div className="next-up">
@@ -88,13 +88,14 @@ export default function NextUp({ entry }: { entry: LibraryEntry }): React.JSX.El
           onClick={async () => {
             setBusy(true)
             try {
-              setLibrary(await window.api.setEpisodes(itemOf(details), [episodeKey(next.season, next.episode)], true))
+              const keys = [episodeKey(next.season, next.episode)]
+              setLibrary(isTogether(entry) ? await window.api.tickWith(entry.key, entry.together.index, keys, true) : await window.api.setEpisodes(itemOf(details), keys, true))
             } finally {
               setBusy(false)
             }
           }}
         >
-          <Check size={15} /> Mark S{next.season} E{next.episode} watched
+          <Check size={15} /> Mark S{next.season} E{next.episode} watched{isTogether(entry) ? ` with ${entry.together.who}` : ''}
         </button>
       )}
       <ContinueButton titleKey={entry.key} className="btn glass next-up-tick" />

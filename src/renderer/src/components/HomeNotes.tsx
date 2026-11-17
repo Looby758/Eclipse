@@ -7,7 +7,7 @@ import { daysAgo, formatMonth, formatRuntime, formatShortDay } from '@core/forma
 import type { CatchUp } from '@core/catchup'
 import { onMyServices } from '@core/providers'
 import type { WatchProviders } from '@core/types'
-import { nextRenewal } from '@core/time'
+import { episodeMinutes, fitTonight, nextRenewal } from '@core/time'
 import { episodeKey, type Episode, type LibraryEntry } from '@core/types'
 import { useApp } from '../store/app'
 import { useDetailsMany } from '../lib/availability'
@@ -31,7 +31,8 @@ function Together(): React.JSX.Element | null {
     watchesWith(e).map(({ index, watch }) => {
       const d = map[e.key]
       const next = d ? nextEpisodeFor({ ...e, episodes: watch.episodes }, d.seasons) : null
-      return { e, index, who: watch.with, next }
+      const fits = d && next ? fitTonight(new Date(), preferencesOf(library), episodeMinutes(d)) : 0
+      return { e, index, who: watch.with, next, fits }
     })
   )
   if (!rows.length) return null
@@ -40,11 +41,12 @@ function Together(): React.JSX.Element | null {
       <div className="note-kicker">
         <Users size={14} /> Watching together
       </div>
-      {rows.map(({ e, index, who, next }) => (
+      {rows.map(({ e, index, who, next, fits }) => (
         <div key={`${e.key}:${index}`} className="note-line">
           <button className="note-open" onClick={() => go({ name: 'title', type: e.type, id: e.id })}>
             Next with {who}: <strong>{e.title.name}</strong>
             {next ? ` ${label(next.season, next.episode)}` : ' (all caught up)'}
+            {next && fits > 0 ? ` · ${fits} ${fits === 1 ? 'fits' : 'fit'} before bed` : ''}
           </button>
           {next && (
             <div className="row" style={{ marginTop: 6 }}>
