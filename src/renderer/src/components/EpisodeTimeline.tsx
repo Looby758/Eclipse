@@ -1,5 +1,5 @@
 import { Check, CheckCheck, Eye, Undo2 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { formatDate, formatRuntime, plural } from '@core/format'
 import { localDate, nextEpisodeFor, showProgress } from '@core/library'
 import { imageUrl } from '@core/tmdb'
@@ -11,7 +11,11 @@ import { useApp } from '../store/app'
  * A show's seasons as a row of dots you tick off. Ticking saves today's date; the next episode
  * glows. Episodes you haven't reached keep their summary hidden until you ask (no spoilers).
  */
-export default function EpisodeTimeline({ details }: { details: TitleDetails }): React.JSX.Element | null {
+/** An episode to jump to (from the heatmap); `n` changes on every jump, so the same one can be picked twice. */
+export type EpisodeFocus = { season: number; episode: number; n: number }
+
+export default function EpisodeTimeline({ details, focus }: { details: TitleDetails; focus?: EpisodeFocus | null }): React.JSX.Element | null {
+  const sectionRef = useRef<HTMLElement>(null)
   const entry = useApp((s) => s.library.entries[details.key])
   const setLibrary = useApp((s) => s.setLibrary)
   const counts = useMemo(() => details.seasons.map((s) => ({ number: s.number, episodeCount: s.episodeCount })), [details])
@@ -30,6 +34,14 @@ export default function EpisodeTimeline({ details }: { details: TitleDetails }):
     setSeasonNo(null)
     setPicked(null)
   }, [details.key])
+
+  useEffect(() => {
+    if (!focus) return
+    setSeasonNo(focus.season)
+    setPicked(focus.episode)
+    setReveal(false)
+    sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [focus?.n])
 
   useEffect(() => {
     if (shown === null || loaded[shown]) return
@@ -88,7 +100,7 @@ export default function EpisodeTimeline({ details }: { details: TitleDetails }):
   const spoiler = ep && !pickedSeen && !isNext(ep.number) && !reveal
 
   return (
-    <section className="seasons">
+    <section className="seasons" ref={sectionRef}>
       <div className="seasons-head">
         <div className="season-tabs">
           {details.seasons.map((s) => (

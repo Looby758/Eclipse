@@ -285,3 +285,28 @@ code { font-size: 0.92em; }
 .renewals { margin-top: 14px; display: grid; gap: 8px; }
 .renewal-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: var(--text-sm); }
 .renewal-row select { height: 34px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--glass-soft); color: var(--text); color-scheme: inherit; }
+
+/* ---- Episode heatmap (Phase 4) ---- */
+.heatmap { margin: 0 0 30px; max-width: 100%; }
+.heatmap-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; color: var(--text-muted); }
+.heatmap-head h2 { margin: 0; color: var(--text-strong); }
+.heatmap-head .small { margin-left: 6px; }
+.heatmap-scroll { margin-top: 14px; overflow-x: auto; padding: 6px 4px 8px; }
+.heatmap-grid { border-collapse: separate; border-spacing: 4px; }
+.heatmap-grid th { font: 600 var(--text-xs) var(--font-display); color: var(--text-faint); padding: 0 4px; text-align: center; }
+.heatmap-grid tbody th { text-align: right; color: var(--text-muted); font-size: var(--text-sm); padding-right: 8px; }
+.heatmap-grid td { padding: 0; }
+.heat-cell { position: relative; width: 42px; height: 34px; border-radius: 8px; border: 0; padding: 0; cursor: pointer; font: 700 12px var(--font-display); color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); transition: transform var(--fast) var(--ease), box-shadow var(--fast); }
+.heat-cell:hover { transform: scale(1.15); z-index: 1; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35); }
+.heat-cell.few { background: var(--heat-few); color: var(--text-muted); text-shadow: none; }
+.heat-cell.none { background: transparent; border: 1px dashed var(--rail); color: var(--text-faint); text-shadow: none; }
+.heat-cell.next { box-shadow: 0 0 0 2px var(--cyan), 0 0 18px var(--halo); animation: halo 2s ease-in-out infinite; }
+.heat-seen { position: absolute; right: 3px; top: 3px; opacity: 0.9; }
+.heat-avg, .heat-avg-head { padding-left: 10px !important; }
+.heat-avg { font: 700 var(--text-sm) var(--font-display); color: var(--text-strong); white-space: nowrap; }
+.heat-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; font-size: var(--text-xs); color: var(--text-muted); }
+.heat-scale { width: 90px; height: 10px; border-radius: 5px; }
+.heat-key { display: inline-flex; align-items: center; gap: 4px; }
+.heat-key.few::before { content: ''; width: 12px; height: 12px; border-radius: 3px; background: var(--heat-few); }
+.heat-key.next-key::before { content: ''; width: 10px; height: 10px; border-radius: 3px; box-shadow: 0 0 0 2px var(--cyan), 0 0 8px var(--halo); }
+.seasons { scroll-margin-top: 24px; }

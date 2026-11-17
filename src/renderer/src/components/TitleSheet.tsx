@@ -12,6 +12,8 @@ import EntryDetails from './EntryDetails'
 import EpisodeTimeline from './EpisodeTimeline'
 import WhereToWatch from './WhereToWatch'
 import TimeCard from './TimeCard'
+import Heatmap from './Heatmap'
+import type { EpisodeFocus } from './EpisodeTimeline'
 
 /** A film or show's page: a sheet over the wall, lit in the poster's own colour. */
 export default function TitleSheet({ type, id }: { type: MediaType; id: number }): React.JSX.Element {
@@ -20,6 +22,7 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
   const [stale, setStale] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [glow, setGlow] = useState<Hsl>(DEFAULT_GLOW)
+  const [focus, setFocus] = useState<EpisodeFocus | null>(null)
 
   const load = async (refresh = false): Promise<void> => {
     setRefreshing(refresh)
@@ -127,7 +130,12 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
 
           <TimeCard details={d} />
 
-          {d.type === 'tv' && d.seasons.length > 0 && <EpisodeTimeline details={d} />}
+          {d.type === 'tv' && d.seasons.length > 0 && (
+            <>
+              <Heatmap details={d} onPick={(season, episode) => setFocus((f) => ({ season, episode, n: (f?.n ?? 0) + 1 }))} />
+              <EpisodeTimeline details={d} focus={focus} />
+            </>
+          )}
 
           <WhereToWatch type={d.type} id={d.id} />
 

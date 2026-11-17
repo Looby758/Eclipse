@@ -93,6 +93,16 @@ Show my watchlist as time, not just titles: "Your watchlist is 214 hours long."
 - Break the total down by service (e.g. 80 hours on NOW TV, 40 on Disney+).
 - Sort by "quickest to finish" so I can see what fits in a weekend.
 
+### Watch soon (added later, your idea)
+
+Select a few films and shows I want to watch soon, as a short list separate from the full watchlist. Eclipse then shows:
+
+- The total time for the list (films in full, shows only the episodes I haven't watched).
+- How much of it fits tonight and on each of my watching evenings, and roughly when I'd get through it all.
+- What to put on tonight to fill the evening (e.g. "a film, or three episodes of X").
+
+It reuses the Phase 3 runtime maths and my evening settings (start time, bedtime, watching nights).
+
 ### Watch-order guides
 
 Show a franchise as an ordered list of films and shows, with my progress and where each one streams.
@@ -146,7 +156,8 @@ Build in this order, and finish each phase so the app is usable before moving on
 6. **Completion tracking.** Directors, actors, collections and custom lists.
 7. **Watch-order guides.** TMDB collections first, then curated franchise files and custom orders.
 8. **Release calendar.** .ics export, then decide whether an auto-updating feed is worth it.
-9. **Polish.** Export all data (JSON and CSV), the TMDB and JustWatch credits, and Windows and Mac installers with electron-builder and GitHub Actions releases, as in Orbit.
+9. **Watch soon.** Pick a few films and shows to watch soon; see the total time and how much fits each evening (see Watch soon above).
+10. **Polish.** Export all data (JSON and CSV), the TMDB and JustWatch credits, and Windows and Mac installers with electron-builder and GitHub Actions releases, as in Orbit.
 
 ## Open questions
 

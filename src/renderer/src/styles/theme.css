@@ -35,6 +35,8 @@
   /* "Now": the next episode's glow, and your own services */
   --halo: rgba(79, 216, 255, 0.7);
   --next-bg: rgba(79, 216, 255, 0.1);
+  /* Heatmap: episodes with too few votes to trust */
+  --heat-few: rgba(255, 255, 255, 0.12);
   --accent-gradient: linear-gradient(135deg, var(--accent), var(--accent-2));
   --accent-shadow: 0 10px 30px rgba(130, 110, 255, 0.5);
   --on-accent: #ffffff;
@@ -97,6 +99,7 @@
     --cyan: #0a9ccc;
     --halo: rgba(10, 156, 204, 0.55);
     --next-bg: rgba(10, 156, 204, 0.1);
+    --heat-few: rgba(40, 30, 120, 0.12);
     --accent-shadow: 0 10px 30px rgba(106, 76, 240, 0.3);
     --danger: #d43a74;
     --ok: #0f9c80;
@@ -128,6 +131,7 @@
   --cyan: #0a9ccc;
   --halo: rgba(10, 156, 204, 0.55);
   --next-bg: rgba(10, 156, 204, 0.1);
+  --heat-few: rgba(40, 30, 120, 0.12);
   --accent-shadow: 0 10px 30px rgba(106, 76, 240, 0.3);
   --danger: #d43a74;
   --ok: #0f9c80;
