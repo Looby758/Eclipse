@@ -1,12 +1,12 @@
 import type { Guide } from './index'
 
-/** The Wizarding World films: Fantastic Beasts and Harry Potter. */
+/** The Wizarding World: the Fantastic Beasts and Harry Potter films, and HBO's Harry Potter series. */
 export const HARRY_POTTER: Guide = {
   id: 'harry-potter',
   name: 'Harry Potter',
   aliases: ['harry potter', 'fantastic beasts', 'wizarding world', 'hogwarts'],
-  description: 'All eight Harry Potter films and the three Fantastic Beasts films, in release order or in story order.',
-  sections: ['Harry Potter', 'Fantastic Beasts'],
+  description: 'All eight Harry Potter films, the three Fantastic Beasts films and HBO’s Harry Potter series, in release order or in story order.',
+  sections: ['Harry Potter', 'Fantastic Beasts', 'HBO series'],
   entries: [
     { type: 'movie', id: 259316, name: 'Fantastic Beasts and Where to Find Them', year: 2016, note: 'Set in 1926', sections: ['Fantastic Beasts'] },
     { type: 'movie', id: 338952, name: 'Fantastic Beasts: The Crimes of Grindelwald', year: 2018, sections: ['Fantastic Beasts'] },
@@ -18,6 +18,7 @@ export const HARRY_POTTER: Guide = {
     { type: 'movie', id: 675, name: 'Harry Potter and the Order of the Phoenix', year: 2007, sections: ['Harry Potter'] },
     { type: 'movie', id: 767, name: 'Harry Potter and the Half-Blood Prince', year: 2009, sections: ['Harry Potter'] },
     { type: 'movie', id: 12444, name: 'Harry Potter and the Deathly Hallows: Part 1', year: 2010, sections: ['Harry Potter'] },
-    { type: 'movie', id: 12445, name: 'Harry Potter and the Deathly Hallows: Part 2', year: 2011, sections: ['Harry Potter'] }
+    { type: 'movie', id: 12445, name: 'Harry Potter and the Deathly Hallows: Part 2', year: 2011, sections: ['Harry Potter'] },
+    { type: 'tv', id: 224377, name: 'Harry Potter', year: 2027, note: 'HBO’s retelling of the books, a season per book', sections: ['HBO series'] }
   ]
 }
