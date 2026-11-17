@@ -181,6 +181,16 @@ export interface Library {
   lists?: SavedList[]
   /** Watch soon: the few films and shows you want to get to next, in your order. */
   watchSoon?: TitleRef[]
+  /** Titles dropped while clearing out the watchlist, newest first (the last 30), so they can come back. */
+  dropped?: Dropped[]
+}
+
+/** A title taken off your library while clearing out the watchlist, kept whole so it can be put back. */
+export interface Dropped {
+  entry: LibraryEntry
+  droppedAt: string
+  /** It was on Watch soon too. */
+  soon?: boolean
 }
 
 // ---- Lists, completion and watch orders ----

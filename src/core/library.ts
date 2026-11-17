@@ -1,4 +1,4 @@
-import type { Library, LibraryEntry, MediaType, Preferences, Rewatch, TitleDetails, TitleKey, TitleSnapshot, WatchStatus } from './types'
+import type { Dropped, Library, LibraryEntry, MediaType, Preferences, Rewatch, TitleDetails, TitleKey, TitleSnapshot, WatchStatus } from './types'
 import { DEFAULT_PREFERENCES, UNDATED, WATCH_STATUSES, episodeKey, parseEpisodeKey, parseTitleKey } from './types'
 import type { TitleRef } from './types'
 import { normalizeLists, normalizeWatchSoon, refOf } from './lists'
@@ -277,7 +277,10 @@ export function normalizeLibrary(raw: unknown): Library {
   const legacy: { name: string; ref: TitleRef }[] = []
   const rawLists = raw && typeof raw === 'object' ? (raw as { lists?: unknown }).lists : undefined
   const rawSoon = raw && typeof raw === 'object' ? (raw as { watchSoon?: unknown }).watchSoon : undefined
+  const rawDropped = raw && typeof raw === 'object' ? (raw as { dropped?: unknown }).dropped : undefined
   const finish = (): Library => {
+    const dropped = normalizeDropped(rawDropped)
+    if (dropped) lib.dropped = dropped
     const lists = normalizeLists(rawLists, legacy)
     if (lists) lib.lists = lists
     const soon = normalizeWatchSoon(rawSoon)
@@ -618,4 +621,58 @@ export function endWatchWith(library: Library, key: string, index: number, keep:
     },
     now
   )
+}
+
+// ---- Clearing out the watchlist ----
+
+const DROPPED_KEPT = 30
+
+function normalizeDropped(raw: unknown): Dropped[] | undefined {
+  if (!Array.isArray(raw)) return undefined
+  const out: Dropped[] = []
+  for (const d of raw) {
+    if (!d || typeof d !== 'object') continue
+    const x = d as Partial<Dropped>
+    const key = (x.entry as LibraryEntry | undefined)?.key
+    if (typeof key !== 'string' || typeof x.droppedAt !== 'string' || out.some((o) => o.entry.key === key)) continue
+    const entry = normalizeLibrary({ version: 1, entries: { [key]: x.entry } }).entries[key]
+    if (entry) out.push({ entry, droppedAt: x.droppedAt, ...(x.soon ? { soon: true } : {}) })
+  }
+  return out.length ? out.slice(0, DROPPED_KEPT) : undefined
+}
+
+/** Takes a title off your library, keeping it whole in "recently dropped" so it can come back. */
+export function dropTitle(library: Library, key: string, now: Date = new Date()): Library {
+  const entry = library.entries[key]
+  if (!entry) return library
+  const entries = { ...library.entries }
+  delete entries[key]
+  const soon = (library.watchSoon ?? []).some((r) => r.key === key)
+  const dropped: Dropped[] = [{ entry, droppedAt: now.toISOString(), ...(soon ? { soon: true } : {}) }, ...(library.dropped ?? []).filter((d) => d.entry.key !== key)].slice(0, DROPPED_KEPT)
+  const next: Library = { ...library, entries, dropped }
+  if (soon) next.watchSoon = (library.watchSoon ?? []).filter((r) => r.key !== key)
+  return next
+}
+
+/** Puts a dropped title back as it was (and back on Watch soon if it was there). */
+export function restoreDropped(library: Library, key: string): Library {
+  const d = (library.dropped ?? []).find((x) => x.entry.key === key)
+  if (!d) return library
+  const dropped = (library.dropped ?? []).filter((x) => x !== d)
+  const next: Library = { ...library, entries: { ...library.entries, [key]: library.entries[key] ?? d.entry }, dropped }
+  if (!dropped.length) delete next.dropped
+  if (d.soon && !(library.watchSoon ?? []).some((r) => r.key === key)) next.watchSoon = [...(library.watchSoon ?? []), refOf(d.entry)]
+  return next
+}
+
+/**
+ * The watchlist in the order to go through it: oldest additions first, newest first, or the ones
+ * not on your services first (then oldest). `onMine` says which are on your services.
+ */
+export function clearOutOrder(library: Library, order: 'oldest' | 'newest' | 'notMine', onMine: (key: string) => boolean | undefined): LibraryEntry[] {
+  const want = Object.values(library.entries).filter((e) => e.status === 'want')
+  const byAdded = (a: LibraryEntry, b: LibraryEntry): number => a.addedAt.localeCompare(b.addedAt) || a.key.localeCompare(b.key)
+  if (order === 'newest') return want.sort((a, b) => byAdded(b, a))
+  if (order === 'oldest') return want.sort(byAdded)
+  return want.sort((a, b) => Number(onMine(a.key) === true) - Number(onMine(b.key) === true) || byAdded(a, b))
 }

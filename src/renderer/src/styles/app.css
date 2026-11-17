@@ -481,3 +481,18 @@ button.list-seen.undo:hover { background: var(--glass-hover); }
 /* Stay for the credits */
 .stinger { display: flex; align-items: center; gap: 8px; margin: 8px 0 0; color: var(--cyan); font-size: var(--text-sm); }
 .stinger-chip { margin-left: 8px; padding: 1px 8px; border-radius: 999px; font-size: var(--text-xs); color: var(--cyan); border: 1px solid var(--line); white-space: nowrap; }
+
+/* Clear out the watchlist */
+.clearout-link { margin: 4px 0 14px; }
+.clearout-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.clearout-card { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
+.clearout-poster { width: 220px; flex-shrink: 0; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.clearout-body { flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 8px; }
+.clearout-body h1 { margin: 0; font: 800 40px/1.05 var(--font-display); letter-spacing: -0.02em; }
+.clearout-body p { margin: 0; }
+.clearout-trailer { position: relative; width: 100%; max-width: 720px; aspect-ratio: 16 / 9; border-radius: var(--radius); overflow: hidden; background: #000; margin-top: 6px; }
+.clearout-trailer iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.clearout-overview { max-width: 640px; line-height: 1.6; color: var(--text-muted); }
+.clearout-actions { display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+.dropped ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-width: 760px; }
+.dropped li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 10px; background: var(--glass-soft); font-size: var(--text-sm); }

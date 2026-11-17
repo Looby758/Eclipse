@@ -1,10 +1,10 @@
-import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, session, shell } from 'electron'
 import { join } from 'path'
 import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import { exportFiles } from '@core/export'
 import { toIcs } from '@core/calendar'
 import { moveWatchSoon, setWatchSoon } from '@core/watchsoon'
-import { setFrom, endWatchWith, startWatchWith, tickWith, endRewatch, localDate, markRowSeen, settleSeenShows, markSeenBefore, preferencesOf, removeRewatch, setEpisodes, startRewatch, setFinishBy, setNote, setPreferences, setStatus, setWatchedOn } from '@core/library'
+import { dropTitle, restoreDropped, setFrom, endWatchWith, startWatchWith, tickWith, endRewatch, localDate, markRowSeen, settleSeenShows, markSeenBefore, preferencesOf, removeRewatch, setEpisodes, startRewatch, setFinishBy, setNote, setPreferences, setStatus, setWatchedOn } from '@core/library'
 import { TmdbError } from '@core/tmdb'
 import { createList, followList, moveInList, removeList, renameList, setInList } from '@core/lists'
 import { UNDATED, type TitleRef } from '@core/types'
@@ -173,6 +173,8 @@ function setupIpc(): void {
   })
   ipcMain.handle('library:setStatus', (_e, item, newStatus) => saveLibrary(setStatus(getLibrary(), item, newStatus)))
   ipcMain.handle('library:setEpisodes', (_e, item, keys: string[], watched: boolean, undated?: boolean) => saveLibrary(setEpisodes(getLibrary(), item, keys, watched, new Date(), !!undated)))
+  ipcMain.handle('library:drop', (_e, key) => saveLibrary(dropTitle(getLibrary(), key)))
+  ipcMain.handle('library:restore', (_e, key) => saveLibrary(restoreDropped(getLibrary(), key)))
   ipcMain.handle('library:setFrom', (_e, key, from) => saveLibrary(setFrom(getLibrary(), key, from)))
   ipcMain.handle('library:startWith', (_e, item, name) => saveLibrary(startWatchWith(getLibrary(), item, name)))
   ipcMain.handle('library:tickWith', (_e, key, index, keys, watched) => saveLibrary(tickWith(getLibrary(), key, index, keys, watched)))
@@ -289,6 +291,12 @@ function createWindow(): BrowserWindow {
 }
 
 app.whenReady().then(() => {
+  // Trailers: YouTube's player refuses to play without a Referer, which a page loaded from a file
+  // doesn't send. Name the app's own home page instead.
+  session.defaultSession.webRequest.onBeforeSendHeaders({ urls: ['https://www.youtube-nocookie.com/*'] }, (details, callback) => {
+    details.requestHeaders['Referer'] ??= 'https://github.com/Looby758/Eclipse'
+    callback({ requestHeaders: details.requestHeaders })
+  })
   reopenLibrary()
   setupIpc()
   mainWindow = createWindow()

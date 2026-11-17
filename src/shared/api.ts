@@ -131,6 +131,9 @@ export interface EclipseApi {
   endRewatch(key: string, keep: boolean): Promise<Library>
   removeRewatch(key: string, index: number): Promise<Library>
   setNote(key: TitleKey, note: string): Promise<Library>
+  /** Clear out: take it off your library (it goes to recently dropped), or put it back. */
+  dropTitle(key: TitleKey): Promise<Library>
+  restoreDropped(key: TitleKey): Promise<Library>
   /** Who recommended it (empty clears it). */
   setFrom(key: TitleKey, from: string): Promise<Library>
   setWatchedOn(key: TitleKey, day: string | null): Promise<Library>
