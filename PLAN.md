@@ -320,7 +320,7 @@ You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls
 - Decisions: a file not refreshed for 5 minutes counts as left behind (a crash, a laptop asleep, Drive offline) and is ignored, as is one from an earlier run on the same computer. Read-only copies still show changes arriving from the other computer. Trying to change something while read-only gives the banner a little shake instead of an error.
 
 
-**Phases 13 to 22 (built, waiting for you to try them)**
+**Phases 13 to 22 (done, merged)**
 
 - Phase 13, **watching with someone**: on a show's page, *Watch with someone* starts a watch tagged with a name ("Sam"), with its own episode ticks and dates, kept apart from yours. A show can have several at once. Home shows *Next with Sam: Breaking Bad S1 E3* with a *Watched it with Sam* button. Ticking ahead on your own never moves it. The export has a With column.
 - Phase 14, **stay for the credits**: film pages say *Stay for the credits: there's a scene at the very end* (or mid-credits, or both) from TMDB's tags, and watch orders show a small chip on each film that has one. Details are fetched again once so this and the trailer show up.
