@@ -22,17 +22,26 @@ import ListsSheet from './components/ListsSheet'
 import ListSheet from './components/ListSheet'
 import SpotlightHome from './components/SpotlightHome'
 import Logo from './components/Logo'
+import UndoBar from './components/UndoBar'
+import StartAsk from './components/StartAsk'
 import { useHomeStyle } from './lib/homeStyle'
+import { handleArrows, isTyping } from './lib/keys'
+import { useStartAsk } from './lib/startAsk'
+import { startWelcome, useWelcome } from './lib/welcome'
 
 export default function App(): React.JSX.Element {
   const status = useApp((s) => s.status)
   const view = useApp(currentView)
   const canGoBack = useApp((s) => s.history.length > 1)
   const homeStyle = useHomeStyle((s) => s.style)
+  const welcoming = useWelcome((s) => s.step !== null)
   const { setStatus, setLibrary, back, go } = useApp.getState()
 
   useEffect(() => {
-    window.api.status().then(setStatus)
+    window.api.status().then((s) => {
+      startWelcome(s)
+      setStatus(s)
+    })
     window.api.getLibrary().then(setLibrary)
     const stop = window.api.onLibraryChanged(setLibrary)
     // Mouse back button, Alt+Left and Escape go back, like a browser.
@@ -40,13 +49,15 @@ export default function App(): React.JSX.Element {
       if (e.button === 3) back()
     }
     const onKey = (e: KeyboardEvent): void => {
-      const typing = e.target instanceof HTMLInputElement
-      if ((e.altKey && e.key === 'ArrowLeft') || (e.key === 'Escape' && !typing)) back()
+      const typing = isTyping(e.target)
+      // Escape closes the start-with-computer question before it goes back a page.
+      if (e.key === 'Escape' && useStartAsk.getState().reason) useStartAsk.getState().close()
+      else if ((e.altKey && e.key === 'ArrowLeft') || (e.key === 'Escape' && !typing)) back()
       // Ctrl+, (Cmd+, on a Mac) opens Settings, as in most apps.
       else if ((e.ctrlKey || e.metaKey) && e.key === ',') {
         e.preventDefault()
         if (useApp.getState().status?.hasKey) useApp.getState().go({ name: 'settings' })
-      }
+      } else handleArrows(e)
     }
     window.addEventListener('mouseup', onMouse)
     window.addEventListener('keydown', onKey)
@@ -58,7 +69,7 @@ export default function App(): React.JSX.Element {
   }, [])
 
   if (!status) return <div className="app" />
-  const needsSetup = !status.dataFolder || status.dataFolderMissing || !status.hasKey
+  const needsSetup = welcoming || !status.dataFolder || status.dataFolderMissing || !status.hasKey
   const onHome = !needsSetup && view.name === 'home'
   const spot = onHome && homeStyle === 'spotlight'
 
@@ -115,6 +126,8 @@ export default function App(): React.JSX.Element {
           {view.name === 'list' && <ListSheet key={view.id} id={view.id} />}
           {view.name === 'title' && <TitleSheet key={`${view.type}:${view.id}`} type={view.type} id={view.id} />}
           <Dock tucked={spot} />
+          <UndoBar />
+          <StartAsk />
         </>
       )}
     </div>

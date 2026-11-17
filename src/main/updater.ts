@@ -1,3 +1,4 @@
+import { report } from './health'
 import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import type { AppUpdater } from 'electron-updater'
 import { GITHUB_REPO, type UpdateStatus } from '@shared/api'
@@ -46,11 +47,16 @@ async function check(): Promise<UpdateStatus> {
   try {
     const result = await autoUpdater.checkForUpdates()
     result?.downloadPromise?.catch(() => undefined)
+    report('updates', true, result?.updateInfo?.version && result.updateInfo.version !== app.getVersion() ? `Version ${result.updateInfo.version} is available` : 'Up to date')
   } catch (err) {
     set({ state: 'error', error: friendly(err) })
+    report('updates', false, friendly(err))
   }
   return status
 }
+
+/** Why update checks don't run here (e.g. running from source), or null. */
+export const updatesOff = (): string | null => (supported ? null : (status.reason ?? 'Off'))
 
 export async function setupUpdater(): Promise<void> {
   ipcMain.handle('update:status', () => status)

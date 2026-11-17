@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, session, shell } from 'electron'
+import { app, BrowserWindow, clipboard, dialog, ipcMain, session, shell } from 'electron'
 import { join } from 'path'
 import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import { exportFiles } from '@core/export'
@@ -7,7 +7,7 @@ import { moveWatchSoon, setWatchSoon } from '@core/watchsoon'
 import { dropTitle, restoreDropped, setFrom, endWatchWith, planWatchWith, startWatchWith, tickWith, endRewatch, localDate, markRowSeen, settleSeenShows, markSeenBefore, preferencesOf, removeRewatch, setEpisodes, startRewatch, setFinishBy, snoozeTitle, setNote, setPreferences, setStatus, setWatchedOn } from '@core/library'
 import { TmdbError } from '@core/tmdb'
 import { createList, followList, moveInList, removeList, renameList, setInList } from '@core/lists'
-import { UNDATED, type TitleRef } from '@core/types'
+import { UNDATED, type Library, type TitleRef } from '@core/types'
 import { mergeSequel, summarizeImport, type SequelImport } from '@core/sequel'
 import type { AppStatus, Result } from '@shared/api'
 import { loadSettings, saveSettings } from './settings'
@@ -15,7 +15,7 @@ import { clearCache } from './cacheStore'
 import * as tmdb from './tmdb'
 import { backupLibrary, getLibrary, isDirectory, onSave, openLibrary, saveLibrary } from './library'
 import { readSequelExport } from './sequelImport'
-import { setupUpdater } from './updater'
+import { setupUpdater, updatesOff } from './updater'
 import { getHistory, startServiceWatch } from './services'
 import { keysWatchedIn, yearInReview } from '@core/year'
 import { repairBatch, type Batch, type RepairChoice } from '@core/repair'
@@ -27,6 +27,10 @@ import { CATCH_UP_ID, dismissCatchUp } from '@core/catchup'
 import { hideRecommendation } from '@core/recommend'
 import { newRemoteCode, remoteStatus, setRemote, setupRemote, stopRemote } from './remote'
 import { guardStatus, readOnlyReason, startGuard, stopGuard, takeOver } from './guard'
+import { remember, undoTarget } from './undo'
+import { loginStatus, markAsked, setStartAtLogin, startedHidden } from './login'
+import { backupFor, dailyBackup, listBackups } from './backups'
+import { errorText, healthStatus, log, onHealthChanged, recentLog, report } from './health'
 
 // Window background, matching --bg in src/renderer/src/styles/theme.css so there's no flash on start.
 const BG = '#040309'
@@ -62,6 +66,18 @@ const broadcastLibrary = (): void => {
 }
 const sendRemote = (s: unknown): void => mainWindow?.webContents.send('remote:changed', s)
 
+/** Phase 36: tells the window a change was made that the "Done · Undo" bar can put back. */
+function offerUndo(before: Library, after: Library): Library {
+  const offer = remember(before, after)
+  if (offer) mainWindow?.webContents.send('undo:offer', offer)
+  return after
+}
+/** Makes a change to the library, saves it, and offers to undo it. */
+const change = (fn: (lib: Library) => Library): Library => {
+  const before = getLibrary()
+  return offerUndo(before, saveLibrary(fn(before)))
+}
+
 /** Shows ticked season by season as seen before, all the way through, move from Watching to Watched. */
 async function settleOnStart(): Promise<void> {
   try {
@@ -81,9 +97,30 @@ async function settleOnStart(): Promise<void> {
   }
 }
 
+/** Google Drive can take a minute or two after login: keep looking for the data folder until it's there. */
+function waitForDataFolder(): void {
+  const timer = setInterval(() => {
+    const { dataFolder } = loadSettings()
+    if (!dataFolder) return clearInterval(timer)
+    if (!isDirectory(dataFolder)) return
+    clearInterval(timer)
+    reopenLibrary()
+    broadcastLibrary()
+  }, 20_000)
+  if (isDirectory(loadSettings().dataFolder)) clearInterval(timer)
+}
+
 function reopenLibrary(): void {
   const { dataFolder } = loadSettings()
-  openLibrary(dataFolder, broadcastLibrary, readOnlyReason)
+  openLibrary(
+    dataFolder,
+    () => {
+      report('sync', true, 'Picked up a change from your other computer')
+      broadcastLibrary()
+    },
+    readOnlyReason
+  )
+  dailyBackup(isDirectory(dataFolder) ? dataFolder : null)
   startGuard(isDirectory(dataFolder) ? dataFolder : null, (s) => mainWindow?.webContents.send('guard:changed', s))
 }
 
@@ -92,9 +129,22 @@ async function attempt<T>(job: () => Promise<T>): Promise<Result<T>> {
   try {
     return { ok: true, value: await job() }
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
+    const message = errorText(err)
+    if (err instanceof TmdbError) report('tmdb', false, message)
+    else log(`[error] ${message}`)
     return { ok: false, error: message, kind: err instanceof TmdbError ? err.kind : undefined }
   }
+}
+
+const dataFolderNow = (): string | null => {
+  const { dataFolder } = loadSettings()
+  return isDirectory(dataFolder) ? dataFolder : null
+}
+
+/** Phase 39: every background job, with the ones that are switched off saying so. */
+function healthNow(): ReturnType<typeof healthStatus> {
+  const n = noticingStatus().settings
+  return healthStatus({ history: !n.history && 'Switched off', playing: !n.playing && 'Switched off', updates: updatesOff() ?? false })
 }
 
 function setupIpc(): void {
@@ -116,6 +166,14 @@ function setupIpc(): void {
       reopenLibrary()
       broadcastLibrary()
     }
+    return status()
+  })
+  ipcMain.handle('data:useDefault', () => {
+    const folder = join(app.getPath('documents'), 'Eclipse')
+    mkdirSync(folder, { recursive: true })
+    saveSettings({ dataFolder: folder })
+    reopenLibrary()
+    broadcastLibrary()
     return status()
   })
   ipcMain.handle('data:reveal', async () => {
@@ -185,31 +243,32 @@ function setupIpc(): void {
     if (!Object.keys(getLibrary().entries).length) reopenLibrary()
     return getLibrary()
   })
-  ipcMain.handle('library:setStatus', (_e, item, newStatus) => saveLibrary(setStatus(getLibrary(), item, newStatus)))
-  ipcMain.handle('library:setEpisodes', (_e, item, keys: string[], watched: boolean, undated?: boolean) => saveLibrary(setEpisodes(getLibrary(), item, keys, watched, new Date(), !!undated)))
-  ipcMain.handle('library:drop', (_e, key) => saveLibrary(dropTitle(getLibrary(), key)))
+  ipcMain.handle('library:setStatus', (_e, item, newStatus) => change((lib) => setStatus(lib, item, newStatus)))
+  ipcMain.handle('library:setEpisodes', (_e, item, keys: string[], watched: boolean, undated?: boolean) => change((lib) => setEpisodes(lib, item, keys, watched, new Date(), !!undated)))
+  ipcMain.handle('library:drop', (_e, key) => change((lib) => dropTitle(lib, key)))
   ipcMain.handle('library:restore', (_e, key) => saveLibrary(restoreDropped(getLibrary(), key)))
   ipcMain.handle('library:setFrom', (_e, key, from) => saveLibrary(setFrom(getLibrary(), key, from)))
   ipcMain.handle('library:startWith', (_e, item, name) => saveLibrary(startWatchWith(getLibrary(), item, name)))
-  ipcMain.handle('library:tickWith', (_e, key, index, keys, watched) => saveLibrary(tickWith(getLibrary(), key, index, keys, watched)))
+  ipcMain.handle('library:tickWith', (_e, key, index, keys, watched) => change((lib) => tickWith(lib, key, index, keys, watched)))
   ipcMain.handle('library:planWith', (_e, key, index, planned) => saveLibrary(planWatchWith(getLibrary(), key, index, planned)))
-  ipcMain.handle('library:endWith', (_e, key, index, keep) => saveLibrary(endWatchWith(getLibrary(), key, index, keep)))
-  ipcMain.handle('library:seenBefore', (_e, item) => saveLibrary(markSeenBefore(getLibrary(), item)))
+  ipcMain.handle('library:endWith', (_e, key, index, keep) => change((lib) => endWatchWith(lib, key, index, keep)))
+  ipcMain.handle('library:seenBefore', (_e, item) => change((lib) => markSeenBefore(lib, item)))
   ipcMain.handle('library:markRowSeen', async (_e, ref, on) => {
-    const lib = saveLibrary(markRowSeen(getLibrary(), ref, on))
-    if (!on || ref.type !== 'tv') return lib
+    const before = getLibrary()
+    const lib = saveLibrary(markRowSeen(before, ref, on))
+    if (!on || ref.type !== 'tv') return offerUndo(before, lib)
     // Every season ticked: the show is Watched, not Watching.
     try {
       const d = (await tmdb.details('tv', ref.id)).data
       const settled = settleSeenShows(getLibrary(), { [ref.key]: d }, localDate(new Date()))
-      return settled === getLibrary() ? getLibrary() : saveLibrary(settled)
+      return offerUndo(before, settled === getLibrary() ? getLibrary() : saveLibrary(settled))
     } catch {
-      return getLibrary()
+      return offerUndo(before, getLibrary())
     }
   })
-  ipcMain.handle('library:startRewatch', (_e, item) => saveLibrary(startRewatch(getLibrary(), item)))
-  ipcMain.handle('library:endRewatch', (_e, key: string, keep: boolean) => saveLibrary(endRewatch(getLibrary(), key, keep)))
-  ipcMain.handle('library:removeRewatch', (_e, key: string, index: number) => saveLibrary(removeRewatch(getLibrary(), key, index)))
+  ipcMain.handle('library:startRewatch', (_e, item) => change((lib) => startRewatch(lib, item)))
+  ipcMain.handle('library:endRewatch', (_e, key: string, keep: boolean) => change((lib) => endRewatch(lib, key, keep)))
+  ipcMain.handle('library:removeRewatch', (_e, key: string, index: number) => change((lib) => removeRewatch(lib, key, index)))
   ipcMain.handle('library:setNote', (_e, key: string, note: string) => saveLibrary(setNote(getLibrary(), key, note)))
   ipcMain.handle('library:setWatchedOn', (_e, key: string, day: string | null) => saveLibrary(setWatchedOn(getLibrary(), key, day)))
   ipcMain.handle('lists:create', (_e, name: string, items?: TitleRef[]) => {
@@ -217,7 +276,7 @@ function setupIpc(): void {
     return { library: saveLibrary(made.library), id: made.id }
   })
   ipcMain.handle('lists:follow', (_e, list) => saveLibrary(followList(getLibrary(), list)))
-  ipcMain.handle('lists:remove', (_e, id: string) => saveLibrary(removeList(getLibrary(), id)))
+  ipcMain.handle('lists:remove', (_e, id: string) => change((lib) => removeList(lib, id)))
   ipcMain.handle('lists:rename', (_e, id: string, name: string) => saveLibrary(renameList(getLibrary(), id, name)))
   ipcMain.handle('lists:setIn', (_e, id: string, ref: TitleRef, inList: boolean) => saveLibrary(setInList(getLibrary(), id, ref, inList)))
   ipcMain.handle('lists:move', (_e, id: string, from: number, to: number) => saveLibrary(moveInList(getLibrary(), id, from, to)))
@@ -233,7 +292,7 @@ function setupIpc(): void {
       backupLibrary('before-repair')
       repairBackedUp = true
     }
-    return saveLibrary(repairBatch(getLibrary(), batch, choice))
+    return change((lib) => repairBatch(lib, batch, choice))
   })
   ipcMain.handle('year:review', (_e, year: number) =>
     attempt(async () => {
@@ -264,6 +323,38 @@ function setupIpc(): void {
   ipcMain.handle('remote:status', () => remoteStatus())
   ipcMain.handle('remote:set', (_e, on: boolean) => setRemote(!!on, sendRemote))
   ipcMain.handle('remote:newCode', () => newRemoteCode())
+  ipcMain.handle('library:undo', (_e, id: number) => {
+    const target = undoTarget(Number(id), getLibrary())
+    if (!target.ok) return target
+    try {
+      const lib = saveLibrary(target.library)
+      broadcastLibrary()
+      return { ok: true, value: lib }
+    } catch (err) {
+      return { ok: false, error: errorText(err) }
+    }
+  })
+  ipcMain.handle('backups:list', () => listBackups(dataFolderNow()))
+  ipcMain.handle('backups:restore', (_e, day: string) =>
+    attempt(async () => {
+      const restored = backupFor(dataFolderNow(), String(day))
+      // The current copy is kept aside first, so restoring can always be put back by hand too.
+      backupLibrary('before-restore')
+      const lib = change(() => restored)
+      broadcastLibrary()
+      return lib
+    })
+  )
+  ipcMain.handle('login:status', () => loginStatus())
+  ipcMain.handle('login:set', (_e, on: boolean) => setStartAtLogin(!!on))
+  ipcMain.handle('login:asked', () => markAsked())
+  ipcMain.handle('health:status', () => healthNow())
+  ipcMain.handle('health:copy', () => {
+    const lines = healthNow().map((j) => `${j.ok ? 'ok ' : 'ERR'} ${j.label}: ${j.detail}${j.at ? ` (${new Date(j.at).toLocaleString()})` : ''}`)
+    const text = [`Eclipse ${app.getVersion()} on ${process.platform} ${process.arch}`, '', ...lines, '', 'Recent log:', recentLog() || '(nothing logged)'].join('\n')
+    clipboard.writeText(text)
+    return text
+  })
   ipcMain.handle('library:setPreferences', (_e, patch) => saveLibrary(setPreferences(getLibrary(), patch)))
 
   // Sequel import: pick the export and see what it holds, then apply it (or don't).
@@ -366,10 +457,19 @@ app.whenReady().then(() => {
   })
   reopenLibrary()
   setupIpc()
-  showWindow()
+  const hidden = startedHidden()
+  if (hidden) {
+    // Started with the computer: stay in the tray, and wait for Google Drive to bring the data folder.
+    waitForDataFolder()
+  } else showWindow()
   void settleOnStart()
   setupTray(showWindow, broadcastLibrary)
+  if (hidden && !trayOn()) setTray(true)
   onSave(refreshTray)
+  onSave(() => report('save', true, 'Saved'))
+  onHealthChanged(() => mainWindow?.webContents.send('health:changed'))
+  // Today's backup, checked again every few hours in case Eclipse stays open past midnight.
+  setInterval(() => dailyBackup(dataFolderNow()), 3 * 60 * 60 * 1000)
   setupRemote(broadcastLibrary, sendRemote)
   setupNoticing({ changed: () => mainWindow?.webContents.send('noticing:changed'), show: showWindow, libraryChanged: broadcastLibrary })
   startTogetherReminders(getLibrary, showWindow)

@@ -1,3 +1,4 @@
+import { errorText, report } from './health'
 import { app } from 'electron'
 import { existsSync, readFileSync, renameSync, writeFileSync } from 'fs'
 import { join } from 'path'
@@ -78,8 +79,11 @@ export async function snapshotServices(getLibrary: () => Library): Promise<boole
 export function startServiceWatch(getLibrary: () => Library, onNews: () => void): void {
   const run = (): void => {
     snapshotServices(getLibrary)
-      .then((news) => news && onNews())
-      .catch(() => undefined)
+      .then((news) => {
+        report('services', true, news ? 'Checked: something arrived or left' : 'Checked where your titles are streaming')
+        if (news) onNews()
+      })
+      .catch((err) => report('services', false, `Couldn't check your services: ${errorText(err)}`))
   }
   setTimeout(run, 20_000)
   setInterval(run, 6 * 60 * 60 * 1000)

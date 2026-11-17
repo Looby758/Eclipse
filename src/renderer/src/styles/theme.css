@@ -117,6 +117,7 @@
 
   /* Dropdown lists (native popups need solid colours) */
   --menu-bg: #15132a;
+  --focus: #8fe3ff;
   --menu-text: #f0eeff;
   color-scheme: dark;
 }
@@ -167,6 +168,7 @@
   --frost-rim: inset 0 1px 0 rgba(255, 255, 255, 0.9);
   --frost-on-shadow: 0 4px 14px rgba(40, 30, 120, 0.2);
     --menu-bg: #ffffff;
+    --focus: #2f6bff;
     --menu-text: #130f2e;
     color-scheme: light;
   }
@@ -218,5 +220,6 @@
   --frost-on-shadow: 0 4px 14px rgba(40, 30, 120, 0.2);
   --menu-bg: #ffffff;
   --menu-text: #130f2e;
+  --focus: #2f6bff;
   color-scheme: light;
 }

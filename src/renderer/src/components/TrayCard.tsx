@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { askToStartWithComputer } from '../lib/startAsk'
 
 /** Settings: Eclipse in the menu bar (Mac) or the system tray (Windows), Phase 26. */
 export default function TrayCard(): React.JSX.Element {
@@ -19,7 +20,10 @@ export default function TrayCard(): React.JSX.Element {
         <button className={!on ? 'on' : ''} onClick={async () => setOn(await window.api.setTray(false))}>
           Off
         </button>
-        <button className={on ? 'on' : ''} onClick={async () => setOn(await window.api.setTray(true))}>
+        <button className={on ? 'on' : ''} onClick={async () => {
+            setOn(await window.api.setTray(true))
+            void askToStartWithComputer('keep your next episodes in the ' + (mac ? 'menu bar' : 'tray'))
+          }}>
           On
         </button>
       </div>

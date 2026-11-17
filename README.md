@@ -38,8 +38,12 @@ The app window opens. Close it (or press Ctrl+C in the terminal) to stop.
 
 ## First launch
 
-1. **Choose folder:** pick (or create) a folder for your data, e.g. `G:\My Drive\Eclipse` on Windows or the same folder in Google Drive on your Mac.
+A short welcome walks you through it: what Eclipse is, then:
+
+1. **Where to keep your library:** *On this computer* (an Eclipse folder in Documents), or *In Google Drive* to pick a folder there, e.g. `G:\My Drive\Eclipse` on Windows and the same folder in Google Drive on your Mac.
 2. **TMDB key:** sign in at [themoviedb.org](https://www.themoviedb.org), open *Settings → API*, request a free key for personal use if you haven't, and copy either the **API Key** or the **API Read Access Token**. Paste it in and press **Save key**. Eclipse checks it with TMDB, then stores it encrypted with your computer's own protection (Windows' data protection or the Mac Keychain). It is never written to your data folder or the code.
+
+3. **Your country and services**, then **Import from Sequel** if you used it. Both can be skipped and changed later in Settings.
 
 Each computer needs the key pasted once.
 
@@ -52,6 +56,18 @@ Each computer needs the key pasted once.
 5. **Where to watch:** scroll down a title page. Your services are highlighted.
 6. **Filters:** in Library or Search, pick **On my services**, **Rent or buy only** or **Not streaming anywhere**. The first time it checks every title, which takes a few seconds.
 7. **Home:** the suggestion shows the next episode and a button to tick it.
+
+## Phases 36 to 42: what to try
+
+No new packages, so just pull and `npm run dev`.
+
+1. **Asking before removing, and Undo:** open a show you've ticked episodes of and press the ✕ beside the statuses. It asks first ("This forgets 7 watched episodes…"); press **Keep it**. Now change its status, or tick a few episodes: a "Done · Undo" bar shows for a few seconds at the bottom. Press **Undo** (or Ctrl+Z) and it's back as it was.
+2. **Backups:** Settings → *Backups*. Today's backup is already there (in a *backups* folder inside your data folder). **Restore a backup** lists them with what's in each; restoring copies your current library aside first, and the Undo bar works for it too.
+3. **Start with Windows:** Settings → *Start with Windows* → On, then restart the computer. Eclipse should appear in the tray by the clock with no window. If your data folder is in Google Drive, it waits for Drive. The first time you switch on noticing, the phone remote or the tray, Eclipse asks once whether to do this.
+4. **Is everything working?:** Settings → *Is everything working?* lists the background jobs with when each last ran. **Copy details** puts it and the log on the clipboard to paste to Claude.
+5. **Find in your library:** Library → type in *Find in your library* (try a few letters). The **Sort** menu has A to Z, Last watched, Date added and Release year, and remembers your choice. Typing a name that's in another tab offers a button to jump there.
+6. **Calmer and keyboard:** Settings → Appearance → *Keep the poster wall still* → **Still**. Then press Tab to move around: everything you land on gets a clear outline. Arrow keys move between posters in a grid and along rows of choices; Escape closes or goes back.
+7. **Welcome for someone new:** to see it without touching your setup, rename `%APPDATA%\Eclipse\settings.json` to `settings.old.json`, start Eclipse, go through the steps (choose your existing data folder at *In Google Drive*), then close Eclipse and rename it back. Your TMDB key lives in that file, so renaming it back restores everything.
 
 ## Phase 35: what to try
 
@@ -98,6 +114,8 @@ No new packages this time, so no `npm install` needed (just pull and `npm run de
 | Settings and the encrypted key (`settings.json`) | Windows: `%APPDATA%\Eclipse` · Mac: `~/Library/Application Support/Eclipse` | No |
 | Saved TMDB answers (`tmdb-cache`) | Same app folder | No (can always be rebuilt) |
 | Suggestions from noticing what you watch (`noticing.json`) | Same app folder | No |
+| Daily backups (`backups/library-YYYY-MM-DD.json`) | Inside the folder you chose | Yes, if it's in Google Drive |
+| The problem log (`eclipse.log`) | The app folder | No |
 
 Avoid having Eclipse open on both computers at the same time, so the two copies don't overwrite each other's changes.
 

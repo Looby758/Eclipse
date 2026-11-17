@@ -1,3 +1,4 @@
+import { report as reportHealth } from './health'
 import { app, globalShortcut, Notification } from 'electron'
 import { existsSync, readFileSync, renameSync, writeFileSync } from 'fs'
 import { join } from 'path'
@@ -131,14 +132,25 @@ export async function scanHistory(): Promise<void> {
   const latest = Math.max(since, ...result.visits.map((v) => v.at))
   saveSettings({ historySince: latest + 1 })
   lastScan = { at: Date.now(), browsers: result.browsers, errors: result.errors, visits: result.visits.length }
+  const plural = (n: number, w: string): string => `${n} ${w}${n === 1 ? '' : 's'}`
+  if (!result.browsers.length && result.errors.length) reportHealth('history', false, `Couldn't read browser history: ${result.errors.join('; ')}`)
+  else if (!result.browsers.length) reportHealth('history', false, 'No Chrome, Edge or Opera history found on this computer')
+  else reportHealth('history', true, `Checked ${result.browsers.join(', ')}, found ${plural(fresh, 'episode')}${result.errors.length ? ` (${result.errors.join('; ')})` : ''}`)
   hooks.changed()
   if (fresh) notify('Eclipse', fresh === 1 ? `Did you watch ${found.find((x) => x)?.name}? Tick it in Eclipse.` : `${fresh} things you watched are waiting to be ticked.`, hooks.show)
 }
 
 // ---- Phase 28 and 29: what's playing ----
 
+let playingReported = 0
+
 async function onPlaying(): Promise<void> {
   const report = nowPlaying()
+  if (report.error) reportHealth('playing', false, report.error)
+  else if (Date.now() - playingReported > 5 * 60_000) {
+    playingReported = Date.now()
+    reportHealth('playing', true, report.items.length ? `Watching: ${report.items.length} thing${report.items.length === 1 ? '' : 's'} reported` : 'Watching: nothing playing')
+  }
   const lib = getLibrary()
   const d = await showDetails(lib)
   const today = localDate(new Date())

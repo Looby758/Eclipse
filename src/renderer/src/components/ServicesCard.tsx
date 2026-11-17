@@ -1,6 +1,5 @@
 import { Check } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { guessServices } from '@core/providers'
 import { preferencesOf } from '@core/library'
 import { imageUrl } from '@core/tmdb'
 import type { Provider } from '@core/types'
@@ -23,7 +22,7 @@ const REGIONS: [string, string][] = [
 const ordinal = (n: number): string => `${n}${n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th'}`
 
 /** Your country and the streaming services you pay for (saved in library.json, so both computers share them). */
-export default function ServicesCard(): React.JSX.Element {
+export default function ServicesCard({ welcome }: { welcome?: boolean } = {}): React.JSX.Element {
   const library = useApp((s) => s.library)
   const { setLibrary, setStatus } = useApp.getState()
   const prefs = preferencesOf(library)
@@ -37,12 +36,8 @@ export default function ServicesCard(): React.JSX.Element {
       if (cancelled) return
       if (!r.ok) return setError(r.error)
       setError('')
+      // Nothing is ticked for you: pick your own (Phase 42).
       setAll(r.value.data)
-      // The first time: start with the services from the plan (Disney+ and NOW TV), found by name.
-      if (!useApp.getState().library.preferences) {
-        const guess = guessServices(r.value.data)
-        if (guess.length) setLibrary(await window.api.setPreferences({ services: guess }))
-      }
     })
     return () => {
       cancelled = true
@@ -60,11 +55,15 @@ export default function ServicesCard(): React.JSX.Element {
 
   return (
     <section className="card">
-      <h2>Your services</h2>
-      <p className="muted">Pick the streaming services you pay for. Eclipse lights them up on title pages and uses them for the “On my services” filter.</p>
-      <button className="link-btn" style={{ marginBottom: 12 }} onClick={() => useApp.getState().go({ name: 'services' })}>
-        {prefs.services.length > 0 ? 'Do I still need them? Which services are best for my watchlist?' : 'Which services are best for my watchlist?'}
-      </button>
+      {!welcome && (
+        <>
+          <h2>Your services</h2>
+          <p className="muted">Pick the streaming services you pay for. Eclipse lights them up on title pages and uses them for the “On my services” filter.</p>
+          <button className="link-btn" style={{ marginBottom: 12 }} onClick={() => useApp.getState().go({ name: 'services' })}>
+            {prefs.services.length > 0 ? 'Do I still need them? Which services are best for my watchlist?' : 'Which services are best for my watchlist?'}
+          </button>
+        </>
+      )}
       <label className="region-select">
         <span>Country</span>
         <select value={prefs.region} onChange={(e) => save({ region: e.target.value })}>
@@ -95,7 +94,7 @@ export default function ServicesCard(): React.JSX.Element {
           Show all {all.length} services
         </button>
       )}
-      {mine.length > 0 && (
+      {mine.length > 0 && !welcome && (
         <div className="renewals">
           <div className="muted small">Renewal day (optional): lets a show page offer “finish it before it renews”.</div>
           {mine.map((p) => (
