@@ -165,3 +165,87 @@ export function serviceReports(
     return { provider, queued, queuedMinutes, recentMinutes, recentTitles, renews, daysToRenewal, pause: queuedMinutes === 0 && (daysToRenewal === null || daysToRenewal <= 7) }
   })
 }
+
+// ---- Which services to get (best for your watchlist) ----
+
+export interface WantedTitle {
+  key: string
+  name: string
+  /** What's left of it to watch. */
+  minutes: number
+}
+
+export interface ServiceCover {
+  provider: Provider
+  /** One of the services you already pay for. */
+  mine: boolean
+  titles: WantedTitle[]
+  minutes: number
+}
+
+export interface BestServices {
+  /** Every subscription service with something you want, most hours first. */
+  ranking: ServiceCover[]
+  /** The fewest services that cover the most: each one adds what the ones before it don't have. */
+  combo: (ServiceCover & { adds: WantedTitle[]; addsMinutes: number })[]
+  /** Free to watch (BBC iPlayer, ITVX, Channel 4, My5…), so no subscription needed. */
+  free: WantedTitle[]
+  /** Not on any subscription or free service (rent or buy, or nowhere). */
+  nowhere: WantedTitle[]
+  /** Titles not checked yet. */
+  unchecked: number
+}
+
+const sumMinutes = (ts: WantedTitle[]): number => ts.reduce((n, t) => n + t.minutes, 0)
+
+/**
+ * Which streaming services would get you the most of your watchlist: a ranking of every service by
+ * hours of what you want on it, and a short list (up to `size`) that covers the most between them.
+ * Ad-supported tiers ("Netflix Standard with Ads") count as the service itself.
+ */
+export function bestServices(titles: WantedTitle[], providers: Record<string, WatchProviders | undefined>, myServices: number[], size = 3): BestServices {
+  const byId = new Map<number, ServiceCover>()
+  const free: WantedTitle[] = []
+  const nowhere: WantedTitle[] = []
+  let unchecked = 0
+  for (const t of titles) {
+    if (t.minutes <= 0) continue
+    const p = providers[t.key]
+    if (!p) {
+      unchecked++
+      continue
+    }
+    const stream = p.stream.filter((s) => !/with ads/i.test(s.name))
+    if (!stream.length) {
+      if (p.free.length) free.push(t)
+      else nowhere.push(t)
+      continue
+    }
+    for (const s of stream) {
+      const c = byId.get(s.id) ?? { provider: s, mine: myServices.includes(s.id), titles: [], minutes: 0 }
+      if (!c.titles.some((x) => x.key === t.key)) {
+        c.titles.push(t)
+        c.minutes += t.minutes
+      }
+      byId.set(s.id, c)
+    }
+  }
+  const ranking = [...byId.values()].sort((a, b) => b.minutes - a.minutes || b.titles.length - a.titles.length || a.provider.name.localeCompare(b.provider.name))
+
+  // Greedy: each step takes the service that adds the most hours not already covered.
+  const combo: BestServices['combo'] = []
+  const covered = new Set<string>()
+  while (combo.length < size) {
+    let best: BestServices['combo'][number] | null = null
+    for (const c of ranking) {
+      if (combo.some((x) => x.provider.id === c.provider.id)) continue
+      const adds = c.titles.filter((t) => !covered.has(t.key))
+      const addsMinutes = sumMinutes(adds)
+      if (addsMinutes > 0 && (!best || addsMinutes > best.addsMinutes || (addsMinutes === best.addsMinutes && c.mine && !best.mine))) best = { ...c, adds, addsMinutes }
+    }
+    if (!best) break
+    combo.push(best)
+    for (const t of best.adds) covered.add(t.key)
+  }
+  return { ranking, combo, free, nowhere, unchecked }
+}
