@@ -22,12 +22,12 @@ export const WALKING_DEAD: Guide = {
     { type: 'tv', id: 62286, name: 'Fear the Walking Dead', year: 2015, seasons: [5] },
     { type: 'tv', id: 1402, name: 'The Walking Dead', year: 2010, seasons: [10] },
     { type: 'tv', id: 62286, name: 'Fear the Walking Dead', year: 2015, seasons: [6] },
-    { type: 'tv', id: 94305, name: 'The Walking Dead: World Beyond', year: 2020, note: 'Ten years in' },
     { type: 'tv', id: 1402, name: 'The Walking Dead', year: 2010, seasons: [11] },
     { type: 'tv', id: 206586, name: 'The Walking Dead: The Ones Who Live', year: 2024, note: 'Straight after The Walking Dead ends' },
     { type: 'tv', id: 211684, name: 'The Walking Dead: Daryl Dixon', year: 2023, note: 'Straight after The Walking Dead ends' },
     { type: 'tv', id: 62286, name: 'Fear the Walking Dead', year: 2015, seasons: [7, 8] },
-    { type: 'tv', id: 136248, name: 'Tales of the Walking Dead', year: 2022, note: 'Standalone stories; watch any time' },
-    { type: 'tv', id: 194583, name: 'The Walking Dead: Dead City', year: 2023, note: 'Years after The Walking Dead ends' }
+    { type: 'tv', id: 194583, name: 'The Walking Dead: Dead City', year: 2023, note: 'Years after The Walking Dead ends' },
+    { type: 'tv', id: 94305, name: 'The Walking Dead: World Beyond', year: 2020, note: 'Side story, separate from the main shows' },
+    { type: 'tv', id: 136248, name: 'Tales of the Walking Dead', year: 2022, note: 'Standalone stories, separate from the main shows' }
   ]
 }
