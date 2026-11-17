@@ -12,11 +12,12 @@ function greeting(now: Date): string {
   return h < 5 ? 'Up late.' : h < 12 ? 'Good morning.' : h < 18 ? 'Good afternoon.' : 'Good evening.'
 }
 
-/** What to suggest: things you're watching first (latest first), then your watchlist. */
-function candidates(entries: LibraryEntry[]): LibraryEntry[] {
+/** What to suggest: things you're watching first (latest first), then your Watch soon list (in your order), then your watchlist. */
+function candidates(entries: LibraryEntry[], soon: string[]): LibraryEntry[] {
   const watching = entries.filter((e) => e.status === 'watching')
-  const want = entries.filter((e) => e.status === 'want')
-  return [...watching, ...want]
+  const next = soon.map((k) => entries.find((e) => e.key === k && e.status === 'want')).filter((e): e is LibraryEntry => !!e)
+  const want = entries.filter((e) => e.status === 'want' && !next.includes(e))
+  return [...watching, ...next, ...want]
 }
 
 /** The home screen: one suggestion, big, over the moving poster wall. */
@@ -25,7 +26,7 @@ export default function HomeHero(): React.JSX.Element {
   const go = useApp((s) => s.go)
   const [skip, setSkip] = useState(0)
   const all = entriesWith(library)
-  const picks = candidates(all)
+  const picks = candidates(all, (library.watchSoon ?? []).map((r) => r.key))
   const pick = picks.length ? picks[skip % picks.length] : null
   const others = picks.filter((e) => e !== pick).slice(0, 3)
   const watchingCount = all.filter((e) => e.status === 'watching').length

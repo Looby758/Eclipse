@@ -155,6 +155,8 @@ export interface Library {
   preferences?: Preferences
   /** Lists you're following or made: people, collections, guides, TMDB lists and your own. */
   lists?: SavedList[]
+  /** Watch soon: the few films and shows you want to get to next, in your order. */
+  watchSoon?: TitleRef[]
 }
 
 // ---- Lists, completion and watch orders ----

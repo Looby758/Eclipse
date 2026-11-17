@@ -3,7 +3,7 @@ import type { Library, MediaType } from '@core/types'
 import { emptyLibrary } from '@core/library'
 import type { AppStatus } from '@shared/api'
 
-export type View = { name: 'home' } | { name: 'library' } | { name: 'search' } | { name: 'settings' } | { name: 'lists' } | { name: 'list'; id: string } | { name: 'title'; type: MediaType; id: number }
+export type View = { name: 'home' } | { name: 'library' } | { name: 'search' } | { name: 'settings' } | { name: 'lists' } | { name: 'soon' } | { name: 'list'; id: string } | { name: 'title'; type: MediaType; id: number }
 
 interface AppState {
   status: AppStatus | null
