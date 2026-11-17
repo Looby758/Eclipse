@@ -335,6 +335,15 @@ You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls
 - Decisions: "Remind me later" and "Not now" are saved on the title (`snoozedUntil`), so both computers agree. Arrivals only count titles that were already being watched for, so adding something new isn't "news". If a title can't be checked one day, yesterday's answer is kept rather than calling it gone.
 
 
+**Phases 23 to 26 (built, waiting for you to try them)**
+
+- Phase 23, **your phone as a remote**: Settings → *Your phone as a remote* → On shows a QR code. Scan it with the iPhone camera and a small page opens: how long is left before bed and when to start an episode, the next episode of each show you're watching with a **Watched** button, and Watch soon. It refreshes every 30 seconds and whenever you come back to it. It only works on the home Wi-Fi while Eclipse is open, and the address carries a random pairing code, so nobody else on the network can use it (*New code* changes it). Windows asks once whether Eclipse can use the network: allow private networks.
+- Phase 24, **repair old dates**: Settings → *Your history* → *Repair old dates* lists days where 8 or more episodes of one show were ticked at once. For each: *Spread them out* (over your watching nights before that day, as many a night as fit in your evening, never earlier than your previous tick of that show), *Seen, no date*, or *Leave them* (not offered again). `library.json` is copied aside before the first change (`library.before-repair-….json`).
+- Phase 25, **your year in Eclipse**: from Lists (top right), Settings → *Your history*, or Home in December and the first week of January. Hours watched, films, episodes, days with something on, hours by month with the busiest highlighted, longest binge and longest run of days, your most-watched director (films) and actor (films and shows), shows and lists finished, and your top five. Any earlier year with dates can be picked at the top. Undated watches don't count.
+- Phase 26, **menu bar and tray**: Settings → *Eclipse in the system tray* (*menu bar* on the Mac) → On. The icon's menu has the next episode of each show you're watching (click to tick it, with a small notification), how long is left before bed and the time to start by, *Open Eclipse* and *Quit Eclipse*. While it's on, closing the window keeps Eclipse running there (so the phone remote keeps working); opening Eclipse again brings the window back.
+- Decisions: the remote and tray settings are kept per computer (not in the synced library). The remote uses port 47823. Ticks from the phone or the tray go on your rewatch if you're on one, and are refused while this copy is read-only (the phone says why).
+
+
 **Future ideas**
 
 - Added to the plan (17 Nov 2026): future ideas from a brainstorm, listed under Future ideas as candidate phases 12 to 32. Group A (12 to 26) stand on their own; Group B (27 to 31) is the chain about noticing what I watch, in order; Group C (32, Apple TV) waits until I have a TV. Calendar-aware planning is a maybe. I mostly watch on the computer for now (an Apple TV and iPhone later).

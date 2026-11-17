@@ -107,19 +107,25 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
   send(res, 404, JSON.stringify({ error: 'Not found' }))
 }
 
-function start(notify: (s: RemoteStatus) => void): void {
-  if (server) return
+function start(notify: (s: RemoteStatus) => void): Promise<void> {
+  if (server) return Promise.resolve()
   error = null
   const s = createServer((req, res) => {
     handle(req, res).catch(() => send(res, 500, JSON.stringify({ error: 'Something went wrong.' })))
   })
-  s.on('error', (e: NodeJS.ErrnoException) => {
-    error = e.code === 'EADDRINUSE' ? `Port ${REMOTE_PORT} is already in use by something else on this computer.` : e.message
-    server = null
-    notify(remoteStatus())
-  })
-  s.listen(REMOTE_PORT, '0.0.0.0', () => notify(remoteStatus()))
   server = s
+  return new Promise((resolve) => {
+    s.on('error', (e: NodeJS.ErrnoException) => {
+      error = e.code === 'EADDRINUSE' ? `Port ${REMOTE_PORT} is already in use by something else on this computer.` : e.message
+      server = null
+      notify(remoteStatus())
+      resolve()
+    })
+    s.listen(REMOTE_PORT, '0.0.0.0', () => {
+      notify(remoteStatus())
+      resolve()
+    })
+  })
 }
 
 function stop(): void {
@@ -130,12 +136,12 @@ function stop(): void {
 /** Starts the remote if it was left on. `changed` is called after a tick from the phone. */
 export function setupRemote(changed: () => void, notify: (s: RemoteStatus) => void): void {
   onChange = changed
-  if (loadSettings().remoteOn) start(notify)
+  if (loadSettings().remoteOn) void start(notify)
 }
 
-export function setRemote(on: boolean, notify: (s: RemoteStatus) => void): RemoteStatus {
+export async function setRemote(on: boolean, notify: (s: RemoteStatus) => void): Promise<RemoteStatus> {
   saveSettings({ remoteOn: on })
-  if (on) start(notify)
+  if (on) await start(notify)
   else stop()
   return remoteStatus()
 }

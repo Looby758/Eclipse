@@ -132,6 +132,13 @@ You need both computers and the shared Google Drive folder.
 8. **Keep going or stop:** a show you haven't ticked in 60 days shows on Home. Try **Remind me later**. Change the 60 days in Settings → *Your evenings*.
 9. **Back after a break:** when a show you finished a season of long ago gets a new season, Home reminds you how the last one ended. (This only shows when it happens, so you may not see it straight away.)
 
+## Phases 23 to 26: what to try
+
+1. **Phone remote:** Settings → *Your phone as a remote* → **On**. If Windows asks about the network, allow **private networks**. Point your iPhone camera at the QR code and tap the link (it must be on the same Wi-Fi). Press **Watched** on a show: the app on the computer ticks it too.
+2. **Repair old dates:** Settings → *Your history* → **Repair old dates**. Try **Spread them out** on one batch and look at that show's episodes. A copy of `library.json` is saved beside it first.
+3. **Your year:** Lists → **Your year in Eclipse** (top right). Pick 2025 at the top to see last year.
+4. **Tray:** Settings → *Eclipse in the system tray* → **On**. Find the Eclipse icon by the clock (it may be behind the ^ arrow) and open its menu. Tick an episode from there. Close the window: Eclipse keeps running in the tray until you choose **Quit Eclipse**.
+
 ## For development
 
 - `npm test` runs the tests, `npm run typecheck` checks the types.
