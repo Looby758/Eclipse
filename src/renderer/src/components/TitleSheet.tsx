@@ -5,6 +5,7 @@ import { tmdbPageUrl } from '@core/tmdb'
 import type { MediaType, TitleDetails } from '@core/types'
 import { DEFAULT_GLOW, hsl, posterGlow, type Hsl } from '../lib/posterColour'
 import Poster from './Poster'
+import { useApp } from '../store/app'
 import Sheet from './Sheet'
 import StatusPicker from './StatusPicker'
 import Credits from './Credits'
@@ -13,6 +14,7 @@ import EpisodeTimeline from './EpisodeTimeline'
 import WhereToWatch from './WhereToWatch'
 import TimeCard from './TimeCard'
 import Heatmap from './Heatmap'
+import TitleLinks from './TitleLinks'
 import type { EpisodeFocus } from './EpisodeTimeline'
 
 /** A film or show's page: a sheet over the wall, lit in the poster's own colour. */
@@ -123,7 +125,11 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
             {d.collection && (
               <>
                 <dt>Part of</dt>
-                <dd>{d.collection.name}</dd>
+                <dd>
+                  <button className="link-btn inline" onClick={() => useApp.getState().go({ name: 'list', id: `collection:${d.collection!.id}` })}>
+                    {d.collection.name}
+                  </button>
+                </dd>
               </>
             )}
           </dl>
@@ -138,6 +144,8 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
           )}
 
           <WhereToWatch type={d.type} id={d.id} />
+
+          <TitleLinks details={d} />
 
           <div className="title-actions">
             <button className="btn glass" onClick={() => load(true)} disabled={refreshing}>

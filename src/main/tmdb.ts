@@ -1,9 +1,12 @@
 import { net, safeStorage } from 'electron'
 import { cached, CACHE_TTL } from '@core/cache'
 import { createTmdb, TmdbError, type Tmdb } from '@core/tmdb'
-import type { MediaType, Provider, SearchResult, SeasonDetails, TitleDetails, WatchProviders } from '@core/types'
+import type { CollectionDetails, Credits, MediaType, PersonDetails, Provider, SearchResult, SeasonDetails, TitleDetails, TitleRef, TmdbListDetails, WatchProviders } from '@core/types'
+import { guideById, guideRefs } from '@core/guides'
+import { releaseOrder, sourceOf, findList } from '@core/lists'
+import type { Library } from '@core/types'
 import { parseTitleKey } from '@core/types'
-import type { Fetched } from '@shared/api'
+import type { Fetched, ListView } from '@shared/api'
 import { loadSettings, saveSettings } from './settings'
 import { fileCache } from './cacheStore'
 
@@ -134,4 +137,61 @@ export async function detailsMany(keys: string[]): Promise<Record<string, TitleD
 export async function services(region: string): Promise<Fetched<Provider[]>> {
   const r = await cached(fileCache, `services:${region}`, CACHE_TTL.services, () => tmdb().services(region), { shouldServeStale: serveStaleUnlessKeyProblem })
   return { data: r.data, stale: r.source === 'stale', savedAt: r.savedAt }
+}
+
+async function keep<T>(key: string, ttl: number, job: () => Promise<T>, refresh = false): Promise<Fetched<T>> {
+  const r = await cached(fileCache, key, ttl, job, { force: refresh, shouldServeStale: serveStaleUnlessKeyProblem })
+  return { data: r.data, stale: r.source === 'stale', savedAt: r.savedAt }
+}
+
+export const credits = (type: MediaType, id: number): Promise<Fetched<Credits>> => keep(`credits:${type}:${id}`, CACHE_TTL.credits, () => tmdb().credits(type, id))
+export const person = (id: number, refresh = false): Promise<Fetched<PersonDetails>> => keep(`person:${id}`, CACHE_TTL.person, () => tmdb().person(id), refresh)
+export const collection = (id: number, refresh = false): Promise<Fetched<CollectionDetails>> => keep(`collection:${id}`, CACHE_TTL.collection, () => tmdb().collection(id), refresh)
+export const tmdbList = (id: number, refresh = false): Promise<Fetched<TmdbListDetails>> => keep(`list:${id}`, CACHE_TTL.list, () => tmdb().list(id), refresh)
+
+/** Fills in posters and release dates for titles that only have names (the hand-made guides). */
+async function withPosters(refs: TitleRef[]): Promise<TitleRef[]> {
+  const found = await detailsMany(refs.map((r) => r.key))
+  return refs.map((r) => {
+    const d = found[r.key]
+    return d ? { ...r, name: r.name || d.name, posterPath: d.posterPath, date: d.date, year: d.year ?? r.year } : r
+  })
+}
+
+/** Everything in a list, wherever it comes from. */
+export async function openList(id: string, library: Library, refresh = false): Promise<ListView> {
+  const source = sourceOf(id)
+  if (!source) throw new Error('That list doesn’t exist.')
+  switch (source.kind) {
+    case 'person': {
+      const p = (await person(source.personId, refresh)).data
+      const directing = source.role === 'director'
+      return {
+        id,
+        name: p.name,
+        description: directing ? `Films directed by ${p.name}.` : `Films and shows with ${p.name} in a regular part.`,
+        imagePath: p.profilePath,
+        items: releaseOrder(directing ? p.directed : p.acted)
+      }
+    }
+    case 'collection': {
+      const c = (await collection(source.collectionId, refresh)).data
+      return { id, name: c.name, description: c.overview, imagePath: c.posterPath, items: releaseOrder(c.parts) }
+    }
+    case 'tmdbList': {
+      const l = (await tmdbList(source.listId, refresh)).data
+      return { id, name: l.name, description: l.description, imagePath: l.posterPath, items: l.items }
+    }
+    case 'guide': {
+      const g = guideById(source.guideId)
+      if (!g) throw new Error('That guide doesn’t exist.')
+      const items = await withPosters(guideRefs(g))
+      return { id, name: g.name, description: g.description, imagePath: null, items, releaseItems: releaseOrder(items) }
+    }
+    case 'custom': {
+      const l = findList(library, id)
+      if (!l) throw new Error('That list has been deleted.')
+      return { id, name: l.name, description: '', imagePath: null, items: l.items ?? [] }
+    }
+  }
 }

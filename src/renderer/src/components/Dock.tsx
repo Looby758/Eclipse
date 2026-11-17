@@ -1,10 +1,11 @@
-import { Library, Moon, Search, Settings } from 'lucide-react'
+import { Library, ListChecks, Moon, Search, Settings } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { currentView, useApp, type View } from '../store/app'
 
 const ITEMS: { view: View['name']; label: string; icon: typeof Moon }[] = [
   { view: 'home', label: 'Tonight', icon: Moon },
   { view: 'library', label: 'Library', icon: Library },
+  { view: 'lists', label: 'Lists', icon: ListChecks },
   { view: 'settings', label: 'Settings', icon: Settings }
 ]
 
@@ -37,7 +38,7 @@ export default function Dock(): React.JSX.Element {
   return (
     <nav className="dock" aria-label="Main">
       {ITEMS.map(({ view: name, label, icon: Icon }) => (
-        <button key={name} className={`dock-btn ${view.name === name ? 'on' : ''}`} onClick={() => go({ name } as View)}>
+        <button key={name} className={`dock-btn ${view.name === name || (name === 'lists' && view.name === 'list') ? 'on' : ''}`} onClick={() => go({ name } as View)}>
           <Icon size={21} strokeWidth={1.9} />
           <span>{label}</span>
         </button>

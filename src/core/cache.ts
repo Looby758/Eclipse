@@ -19,7 +19,13 @@ export const CACHE_TTL = {
   /** Where to watch: daily. */
   providers: DAY,
   /** The list of streaming services in your country: weekly. */
-  services: 7 * DAY
+  services: 7 * DAY,
+  /** Cast and directors, filmographies and film series: weekly. */
+  credits: 7 * DAY,
+  person: 7 * DAY,
+  collection: 7 * DAY,
+  /** Public TMDB lists can change any time: daily. */
+  list: DAY
 } as const
 
 export interface CacheEntry<T> {

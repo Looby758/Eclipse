@@ -1,4 +1,5 @@
 import type { ImportSummary } from '@core/sequel'
+import type { CollectionDetails, Credits, ListSource, PersonDetails, TitleRef, TmdbListDetails } from '@core/types'
 import type { Library, MediaType, Preferences, Provider, SearchResult, SeasonDetails, TitleDetails, TitleKey, TitleSnapshot, WatchProviders, WatchStatus } from '@core/types'
 
 type Item = { key: TitleKey; type: MediaType; id: number; title: TitleSnapshot }
@@ -26,6 +27,18 @@ export interface Fetched<T> {
 /** Errors come back as values, so the renderer can show TMDB's plain message. */
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string; kind?: string }
 
+/** A list ready to show, wherever its titles come from. */
+export interface ListView {
+  id: string
+  name: string
+  description: string
+  imagePath: string | null
+  /** In the list's own order: story order for guides, release order for people and collections, yours for your lists. */
+  items: TitleRef[]
+  /** Guides only: the same titles in release order. */
+  releaseItems?: TitleRef[]
+}
+
 /** The bridge between the window and the main process (window.api), like Orbit's NotesApi. */
 export interface EclipseApi {
   status(): Promise<AppStatus>
@@ -49,6 +62,20 @@ export interface EclipseApi {
   detailsMany(keys: string[]): Promise<Record<string, TitleDetails>>
   /** Every streaming service in your region, for picking yours. */
   services(): Promise<Result<Fetched<Provider[]>>>
+
+  /** Who directed it and the main cast. */
+  credits(type: MediaType, id: number): Promise<Result<Fetched<Credits>>>
+  person(id: number): Promise<Result<Fetched<PersonDetails>>>
+  collection(id: number): Promise<Result<Fetched<CollectionDetails>>>
+  tmdbList(id: number): Promise<Result<Fetched<TmdbListDetails>>>
+  /** Everything in a list (person, collection, guide, TMDB list or your own), in its order. */
+  openList(id: string, refresh?: boolean): Promise<Result<ListView>>
+  createList(name: string, items?: TitleRef[]): Promise<{ library: Library; id: string }>
+  followList(list: { name: string; source: ListSource; imagePath?: string | null }): Promise<Library>
+  removeList(id: string): Promise<Library>
+  renameList(id: string, name: string): Promise<Library>
+  setInList(id: string, ref: TitleRef, inList: boolean): Promise<Library>
+  moveInList(id: string, from: number, to: number): Promise<Library>
 
   getLibrary(): Promise<Library>
   setStatus(item: Item, status: WatchStatus | null): Promise<Library>

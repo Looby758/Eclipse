@@ -109,8 +109,6 @@ export interface LibraryEntry {
   episodes?: Record<string, string>
   /** Shows: the day you want to have finished it by (YYYY-MM-DD), for "Finish it by Friday". */
   finishBy?: string
-  /** Your own lists it's on, e.g. "Marvel" (brought over from Sequel's collections). */
-  lists?: string[]
   title: TitleSnapshot
 }
 
@@ -152,6 +150,82 @@ export interface Library {
   version: 1
   entries: Record<string, LibraryEntry>
   preferences?: Preferences
+  /** Lists you're following or made: people, collections, guides, TMDB lists and your own. */
+  lists?: SavedList[]
+}
+
+// ---- Lists, completion and watch orders ----
+
+/** Enough about a title to list it (and order it by release). */
+export interface TitleRef {
+  key: TitleKey
+  type: MediaType
+  id: number
+  name: string
+  year: number | null
+  posterPath: string | null
+  /** Release or first air date, YYYY-MM-DD, when known. */
+  date?: string | null
+}
+
+export type ListSource =
+  | { kind: 'person'; personId: number; role: 'director' | 'actor' }
+  | { kind: 'collection'; collectionId: number }
+  | { kind: 'tmdbList'; listId: number }
+  | { kind: 'guide'; guideId: string }
+  | { kind: 'custom' }
+
+/** A list in your library. Only your own lists keep their titles here; the rest come from TMDB or the guides. */
+export interface SavedList {
+  /** e.g. "person:525:director", "collection:263", "tmdblist:8", "guide:marvel", "custom:x7k2". */
+  id: string
+  name: string
+  source: ListSource
+  addedAt: string
+  /** Your own lists: the titles, in your order. */
+  items?: TitleRef[]
+  /** A picture for the list (a person's photo or a collection's poster). */
+  imagePath?: string | null
+}
+
+export interface PersonRef {
+  id: number
+  name: string
+  profilePath: string | null
+  /** e.g. "Director" or the character played. */
+  role: string
+}
+
+export interface Credits {
+  directors: PersonRef[]
+  cast: PersonRef[]
+}
+
+export interface PersonDetails {
+  id: number
+  name: string
+  profilePath: string | null
+  knownFor: string
+  /** Films they directed. */
+  directed: TitleRef[]
+  /** Films and shows they acted in (appearances as themselves and one-off TV guest spots left out). */
+  acted: TitleRef[]
+}
+
+export interface CollectionDetails {
+  id: number
+  name: string
+  overview: string
+  posterPath: string | null
+  parts: TitleRef[]
+}
+
+export interface TmdbListDetails {
+  id: number
+  name: string
+  description: string
+  posterPath: string | null
+  items: TitleRef[]
 }
 
 // ---- Episodes and where to watch (from TMDB) ----

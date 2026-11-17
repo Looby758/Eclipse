@@ -1,4 +1,4 @@
-import type { Episode, MediaType, NextEpisode, Provider, SearchResult, Season, SeasonDetails, TitleDetails, WatchProviders } from './types'
+import type { CollectionDetails, Credits, Episode, MediaType, NextEpisode, PersonDetails, PersonRef, Provider, SearchResult, Season, SeasonDetails, TitleDetails, TitleRef, TmdbListDetails, WatchProviders } from './types'
 import { titleKey } from './types'
 
 /**
@@ -61,6 +61,14 @@ export interface Tmdb {
   providers(type: MediaType, id: number, region: string): Promise<WatchProviders>
   /** Every streaming service in `region`, for picking your own. */
   services(region: string): Promise<Provider[]>
+  /** Who directed it and the main cast. */
+  credits(type: MediaType, id: number): Promise<Credits>
+  /** A person and their films and shows. */
+  person(id: number): Promise<PersonDetails>
+  /** A film series (TMDB collection), e.g. "The Dark Knight Collection". */
+  collection(id: number): Promise<CollectionDetails>
+  /** A public list on TMDB, by its number. */
+  list(id: number): Promise<TmdbListDetails>
 }
 
 export function createTmdb({ key, fetch, language = 'en-GB' }: TmdbOptions): Tmdb {
@@ -115,6 +123,39 @@ export function createTmdb({ key, fetch, language = 'en-GB' }: TmdbOptions): Tmd
         (['movie', 'tv'] as const).map((t) => get<{ results?: RawProvider[] }>(`/watch/providers/${t}`, { watch_region: region, language }))
       )
       return mergeServices(lists.flatMap((l) => l.results ?? []))
+    },
+
+    async credits(type, id) {
+      // Shows: everyone across all seasons, so the main cast isn't just the latest season's.
+      const raw = await get<RawCredits>(type === 'tv' ? `/tv/${id}/aggregate_credits` : `/movie/${id}/credits`, { language })
+      return parseCredits(raw)
+    },
+
+    async person(id) {
+      const raw = await get<RawPerson>(`/person/${id}`, { language, append_to_response: 'movie_credits,tv_credits' })
+      return parsePerson(raw)
+    },
+
+    async collection(id) {
+      const raw = await get<RawCollection>(`/collection/${id}`, { language })
+      return {
+        id: raw.id,
+        name: raw.name ?? 'Collection',
+        overview: raw.overview ?? '',
+        posterPath: raw.poster_path ?? null,
+        parts: (raw.parts ?? []).map((p) => refFromRaw(p, 'movie')).filter((r): r is TitleRef => !!r)
+      }
+    },
+
+    async list(id) {
+      const raw = await get<RawList>(`/list/${id}`, { language })
+      return {
+        id: Number(raw.id ?? id),
+        name: raw.name ?? `TMDB list ${id}`,
+        description: raw.description ?? '',
+        posterPath: raw.poster_path ?? null,
+        items: (raw.items ?? []).map((p) => refFromRaw(p)).filter((r): r is TitleRef => !!r)
+      }
     },
 
     async details(type, id) {
@@ -308,4 +349,92 @@ export function parseProviders(region: string, raw: RawRegionProviders | undefin
 /** Films' and shows' service lists merged, most popular first. */
 export function mergeServices(list: RawProvider[]): Provider[] {
   return uniqueProviders(list)
+}
+
+// ---- People, collections and lists ----
+
+interface RawTitleCredit {
+  id: number
+  media_type?: string
+  title?: string
+  name?: string
+  release_date?: string
+  first_air_date?: string
+  poster_path?: string | null
+  genre_ids?: number[]
+  character?: string
+  job?: string
+  episode_count?: number
+  order?: number
+  video?: boolean
+}
+
+/** A film or show from any TMDB list-like answer, or null for people and broken rows. */
+export function refFromRaw(raw: RawTitleCredit, fallback?: MediaType): TitleRef | null {
+  const type = raw.media_type === 'movie' || raw.media_type === 'tv' ? raw.media_type : raw.media_type ? null : (fallback ?? (raw.title !== undefined ? 'movie' : raw.name !== undefined ? 'tv' : null))
+  if (!type || !raw.id) return null
+  const date = (type === 'movie' ? raw.release_date : raw.first_air_date) || null
+  return { key: titleKey(type, raw.id), type, id: raw.id, name: (type === 'movie' ? raw.title : raw.name) ?? 'Untitled', year: yearOf(date), posterPath: raw.poster_path ?? null, date }
+}
+
+interface RawCredits {
+  cast?: { id: number; name: string; profile_path?: string | null; character?: string; roles?: { character?: string; episode_count?: number }[]; total_episode_count?: number; order?: number }[]
+  crew?: { id: number; name: string; profile_path?: string | null; job?: string; jobs?: { job?: string }[] }[]
+}
+
+export function parseCredits(raw: RawCredits): Credits {
+  const directors: PersonRef[] = []
+  for (const c of raw.crew ?? []) {
+    const jobs = c.jobs ? c.jobs.map((j) => j.job) : [c.job]
+    if (jobs.includes('Director') && !directors.some((d) => d.id === c.id)) directors.push({ id: c.id, name: c.name, profilePath: c.profile_path ?? null, role: 'Director' })
+  }
+  const cast = [...(raw.cast ?? [])]
+    .sort((a, b) => (b.total_episode_count ?? 0) - (a.total_episode_count ?? 0) || (a.order ?? 999) - (b.order ?? 999))
+    .slice(0, 12)
+    .map((c) => ({ id: c.id, name: c.name, profilePath: c.profile_path ?? null, role: c.character ?? c.roles?.[0]?.character ?? '' }))
+  return { directors, cast }
+}
+
+/** TMDB genre ids for talk, news and reality TV, which don't count as acting work. */
+const NOT_ACTING_GENRES = [10763, 10764, 10767]
+const AS_THEMSELVES = /\b(self|himself|herself|themselves)\b|\(uncredited\)|\(archive footage\)/i
+
+interface RawPerson {
+  id: number
+  name?: string
+  profile_path?: string | null
+  known_for_department?: string
+  movie_credits?: { cast?: RawTitleCredit[]; crew?: RawTitleCredit[] }
+  tv_credits?: { cast?: RawTitleCredit[] }
+}
+
+export function parsePerson(raw: RawPerson): PersonDetails {
+  const unique = (refs: (TitleRef | null)[]): TitleRef[] => {
+    const seen = new Set<string>()
+    return refs.filter((r): r is TitleRef => !!r && !seen.has(r.key) && !!seen.add(r.key))
+  }
+  const directed = unique((raw.movie_credits?.crew ?? []).filter((c) => c.job === 'Director' && !c.video).map((c) => refFromRaw(c, 'movie')))
+  const acting = (c: RawTitleCredit): boolean => !AS_THEMSELVES.test(c.character ?? '') && !(c.genre_ids ?? []).some((g) => NOT_ACTING_GENRES.includes(g))
+  const acted = unique([
+    ...(raw.movie_credits?.cast ?? []).filter((c) => acting(c) && !c.video).map((c) => refFromRaw(c, 'movie')),
+    // Shows: only regular parts (3 or more episodes), not one-off guest spots.
+    ...(raw.tv_credits?.cast ?? []).filter((c) => acting(c) && (c.episode_count ?? 0) >= 3).map((c) => refFromRaw(c, 'tv'))
+  ])
+  return { id: raw.id, name: raw.name ?? 'Unknown', profilePath: raw.profile_path ?? null, knownFor: raw.known_for_department ?? '', directed, acted }
+}
+
+interface RawCollection {
+  id: number
+  name?: string
+  overview?: string
+  poster_path?: string | null
+  parts?: RawTitleCredit[]
+}
+
+interface RawList {
+  id?: number | string
+  name?: string
+  description?: string
+  poster_path?: string | null
+  items?: RawTitleCredit[]
 }

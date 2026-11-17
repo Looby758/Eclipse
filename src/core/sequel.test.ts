@@ -74,7 +74,11 @@ describe('mergeSequel', () => {
     const lib = mergeSequel(emptyLibrary(), data, now)
     expect(Object.keys(lib.entries)).toHaveLength(4)
     expect(lib.entries['tv:333'].episodes).toEqual({ S1E1: '2024-03-02', S1E2: '2024-03-03', S0E1: '2024-03-04' })
-    expect(lib.entries['movie:111']).toMatchObject({ rating: 9, lists: ['Marvel'], updatedAt: '2024-01-01T09:00:00.000Z' })
+    expect(lib.entries['movie:111']).toMatchObject({ rating: 9, updatedAt: '2024-01-01T09:00:00.000Z' })
+    expect(lib.lists?.map((l) => [l.name, l.items?.map((i) => i.key)])).toEqual([
+      ['Marvel', ['movie:111', 'movie:222']],
+      ['Big, Bold', ['movie:222']]
+    ])
     expect(normalizeLibrary(JSON.parse(JSON.stringify(lib)))).toEqual(lib)
   })
   it("lets what's already in Eclipse win, and combines episodes", () => {
@@ -95,5 +99,24 @@ describe('mergeSequel', () => {
     expect(s).toMatchObject({ films: 2, shows: 2, episodes: 3, ratings: 2, notes: 1, added: 4, merged: 0, skippedOther: 2 })
     expect(s.byStatus).toEqual({ want: 1, watching: 1, watched: 1, stopped: 1 })
     expect(s.lists).toEqual({ Marvel: 2, 'Big, Bold': 1 })
+  })
+})
+
+describe('older library files', () => {
+  it('turns list names kept on titles into your own lists', () => {
+    const raw = {
+      version: 1,
+      entries: {
+        'movie:1': { status: 'watched', lists: ['Marvel'], title: { name: 'A', year: 2020, posterPath: null } },
+        'movie:2': { status: 'want', lists: ['Marvel', 'Later'], title: { name: 'B', year: 2021, posterPath: null } }
+      }
+    }
+    const lib = normalizeLibrary(raw)
+    expect(lib.lists?.map((l) => [l.id, l.name, l.items?.map((i) => i.key)])).toEqual([
+      ['custom:marvel', 'Marvel', ['movie:1', 'movie:2']],
+      ['custom:later', 'Later', ['movie:2']]
+    ])
+    expect('lists' in lib.entries['movie:1']).toBe(false)
+    expect(normalizeLibrary(JSON.parse(JSON.stringify(lib)))).toEqual(lib)
   })
 })

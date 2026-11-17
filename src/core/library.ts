@@ -1,5 +1,7 @@
 import type { Library, LibraryEntry, MediaType, Preferences, TitleKey, TitleSnapshot, WatchStatus } from './types'
 import { DEFAULT_PREFERENCES, WATCH_STATUSES, episodeKey, parseEpisodeKey, parseTitleKey } from './types'
+import type { TitleRef } from './types'
+import { normalizeLists, refOf } from './lists'
 
 export type LibraryItem = { key: TitleKey; type: MediaType; id: number; title: TitleSnapshot }
 
@@ -212,7 +214,14 @@ export function normalizeLibrary(raw: unknown): Library {
   const lib = emptyLibrary()
   if (raw && typeof raw === 'object' && 'preferences' in raw) lib.preferences = normalizePreferences((raw as { preferences?: unknown }).preferences)
   const entries = raw && typeof raw === 'object' ? (raw as { entries?: unknown }).entries : null
-  if (!entries || typeof entries !== 'object') return lib
+  const legacy: { name: string; ref: TitleRef }[] = []
+  const rawLists = raw && typeof raw === 'object' ? (raw as { lists?: unknown }).lists : undefined
+  const finish = (): Library => {
+    const lists = normalizeLists(rawLists, legacy)
+    if (lists) lib.lists = lists
+    return lib
+  }
+  if (!entries || typeof entries !== 'object') return finish()
   for (const [key, value] of Object.entries(entries as Record<string, unknown>)) {
     const parsed = parseTitleKey(key)
     if (!parsed || !value || typeof value !== 'object') continue
@@ -232,15 +241,17 @@ export function normalizeLibrary(raw: unknown): Library {
       ...(typeof e.note === 'string' && e.note.trim() ? { note: e.note.trim().slice(0, 300) } : {}),
       ...(typeof e.rating === 'number' && e.rating >= 0 && e.rating <= 10 ? { rating: e.rating } : {}),
       ...(cleanEpisodes(e.episodes) ?? {}),
-      ...cleanLists(e.lists),
       title: {
         name: typeof t.name === 'string' ? t.name : 'Untitled',
         year: typeof t.year === 'number' ? t.year : null,
         posterPath: typeof t.posterPath === 'string' ? t.posterPath : null
       }
     }
+    // Older files kept list names on each title (from the Sequel import): they become your own lists.
+    const old = (e as { lists?: unknown }).lists
+    if (Array.isArray(old)) for (const name of old) if (typeof name === 'string' && name.trim()) legacy.push({ name: name.trim(), ref: refOf(lib.entries[key]) })
   }
-  return lib
+  return finish()
 }
 
 function cleanEpisodes(raw: unknown): { episodes: Record<string, string> } | null {
@@ -251,10 +262,4 @@ function cleanEpisodes(raw: unknown): { episodes: Record<string, string> } | nul
     if (ep && isDay(v)) episodes[episodeKey(ep.season, ep.episode)] = v
   }
   return Object.keys(episodes).length ? { episodes } : null
-}
-
-function cleanLists(raw: unknown): { lists?: string[] } {
-  if (!Array.isArray(raw)) return {}
-  const lists = [...new Set(raw.filter((l): l is string => typeof l === 'string' && !!l.trim()).map((l) => l.trim()))]
-  return lists.length ? { lists } : {}
 }

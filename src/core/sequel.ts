@@ -1,6 +1,7 @@
 import type { Library, LibraryEntry, MediaType, TitleKey, WatchStatus } from './types'
 import { episodeKey, titleKey } from './types'
 import { localDate } from './library'
+import { addToListNamed, refOf } from './lists'
 
 /**
  * Bringing your library over from Sequel (the iPhone app). Sequel exports a zip with a
@@ -252,7 +253,6 @@ export function mergeSequel(library: Library, data: SequelImport, now: Date = ne
       if (item.watchedOn) entry.watchedOn = item.watchedOn
       if (item.rating !== null) entry.rating = item.rating
       if (item.note) entry.note = item.note
-      if (item.lists.length) entry.lists = [...item.lists]
       if (Object.keys(item.episodes).length) entry.episodes = { ...item.episodes }
       entries[item.key] = entry
       continue
@@ -271,11 +271,6 @@ export function mergeSequel(library: Library, data: SequelImport, now: Date = ne
       next.note = item.note
       changed = true
     }
-    const lists = [...new Set([...(old.lists ?? []), ...item.lists])]
-    if (lists.length !== (old.lists ?? []).length) {
-      next.lists = lists
-      changed = true
-    }
     const episodes = { ...(old.episodes ?? {}) }
     for (const [k, day] of Object.entries(item.episodes)) {
       if (!episodes[k] || day < episodes[k]) {
@@ -288,5 +283,10 @@ export function mergeSequel(library: Library, data: SequelImport, now: Date = ne
     if (changed) next.updatedAt = stamp
     entries[item.key] = next
   }
-  return { ...library, entries }
+  // Sequel's collections become your own lists (adding to one with the same name if you have it).
+  let lib: Library = { ...library, entries }
+  const byList = new Map<string, string[]>()
+  for (const item of data.items) for (const l of item.lists) byList.set(l, [...(byList.get(l) ?? []), item.key])
+  for (const [name, keys] of byList) lib = addToListNamed(lib, name, keys.map((k) => refOf(entries[k])), now)
+  return lib
 }
