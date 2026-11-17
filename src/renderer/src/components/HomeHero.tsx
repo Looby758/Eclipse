@@ -13,7 +13,7 @@ function greeting(now: Date): string {
 }
 
 /** What to suggest: things you're watching first (latest first), then your Watch soon list (in your order), then your watchlist. */
-function candidates(entries: LibraryEntry[], soon: string[]): LibraryEntry[] {
+export function candidates(entries: LibraryEntry[], soon: string[]): LibraryEntry[] {
   const watching = entries.filter((e) => e.status === 'watching')
   const next = soon.map((k) => entries.find((e) => e.key === k && e.status === 'want')).filter((e): e is LibraryEntry => !!e)
   const want = entries.filter((e) => e.status === 'want' && !next.includes(e))

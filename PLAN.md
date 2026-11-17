@@ -193,7 +193,7 @@ They're ordered by what they need. Group A ideas stand on their own (they only u
 
 ### Look refresh (chosen 17 Nov 2026)
 
-34. **New Home screen ("Spotlight") and new logo.** Only Home changes; Library, Soon, Lists, Settings, Search and title pages keep the current Drift look. *Needs:* nothing new (it reuses Tonight's evening maths from Phase 3).
+34. **New Home screen ("Spotlight") and new logo.** *(Built.)* Only Home changes; Library, Soon, Lists, Settings, Search and title pages keep the current Drift look. *Needs:* nothing new (it reuses Tonight's evening maths from Phase 3).
     - **Home:** the poster wall fills the whole screen, flat rather than tilted, in rows that drift slowly sideways (alternate rows in opposite directions). A soft pool of shadow in the middle holds a **Tonight dial**: an arc from my evening start (20:00) to bedtime (23:00) with tick marks, one segment per planned episode or film, a dot for "now", and the spare time as an empty track. The poster of tonight's pick sits inside the dial. Underneath, very little text: "Pick up Andor?", one line ("S2 E4 · start by 20:10 · 3 episodes fit before bed") and two buttons (Tick it, Something else). Navigation becomes small glass pills in the top right. Dark and light modes.
     - **Logo:** "Play eclipse" in **Halo blue**: a crescent of light fading from deep blue (#3F5BFF) to ice blue (#8FE3FF) around a dark moon, with a white play button inside, on a deep navy tile (#151A3D to #0B0D1F). Used for the app icon (Windows and Mac installers), the title bar and the welcome screen.
     - Drafts: Spotlight is "D" in `designs/eclipse-redraw-2.html` in the project files; the logo is "1 · Halo blue" on the same page.
@@ -353,6 +353,16 @@ You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls
 - Decisions: the remote and tray settings are kept per computer (not in the synced library). The remote uses port 47823. Ticks from the phone or the tray go on your rewatch if you're on one, and are refused while this copy is read-only (the phone says why).
 
 - Look refresh (17 Nov 2026): from two rounds of design drafts you picked **Spotlight** for Home only (the rest of the app keeps Drift) and the **Play eclipse** logo in **Halo blue**. Added as candidate phase 34 (33 is Catch up). Turned down: Marquee (font, red, too busy), Observatory's layout and flat blue-black (its dial is kept in Spotlight), Sticker deck, Mosaic and Horizon.
+
+**Phase 34: Spotlight Home and the Halo blue logo (built, waiting for you to try it)**
+
+- **Spotlight Home** is the new default. The poster wall becomes flat rows drifting sideways (alternate rows the other way), with a soft pool of shadow in the middle. There sits the **Tonight dial**: an arc from your evening start to bedtime with a tick every 15 minutes, a glowing segment for each episode that fits from now (or the film, if it fits), a dot for now that moves with the clock, and the spare time as empty track. Tonight's pick sits inside it (click the poster to open it).
+- Underneath: "Pick up Breaking Bad?", one line ("S2 E1 · start by 22:13 · 3 episodes fit before bed") and **Tick it** (ticks the next episode) and **Something else**. Films and things not started get **Open it** instead of Tick it, so a misclick never marks a film watched.
+- Navigation is small glass pills in the top right (Tonight, Library, Soon, Lists, search, Settings). Ctrl+K and Ctrl+, still work. The dock comes back on every other page, which keep the Drift look.
+- **For you tonight** (bottom left) opens a side panel with all the Home cards (Did you watch these?, Catch up, Watching together, Back after a break, your services, Keep going or stop, On this day).
+- **Classic (legacy) Home**: Settings → *Appearance* → *Home* → **Classic (legacy)** brings back the Home from before. Remembered per computer.
+- **Logo**: "Play eclipse" in Halo blue, on the app icon (Windows and Mac installers and the Windows title bar), the tray / menu bar icon, and the corner of the app and welcome screen.
+- Decisions: the Spotlight colours, sizes and logo colours are all tokens in theme.css. No new packages; the display font stays Sora rather than the draft's Outfit, so nothing new is downloaded.
 
 **Phase 33: Catch up before the sequel (built, waiting for you to try it)**
 
