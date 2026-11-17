@@ -1,8 +1,8 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'http'
 import { networkInterfaces } from 'os'
 import { randomBytes } from 'crypto'
-import { preferencesOf, setEpisodes } from '@core/library'
-import { newRemoteToken, remoteState, sameToken, type RemoteState } from '@core/remote'
+import { preferencesOf, setEpisodes, setPreferences } from '@core/library'
+import { newRemoteToken, remoteState, sameToken, tonightChange, type RemoteState, type TonightAction } from '@core/remote'
 import { episodeKey } from '@core/types'
 import { watchSoonOf } from '@core/watchsoon'
 import type { RemoteStatus } from '@shared/api'
@@ -102,6 +102,18 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
     } catch (err) {
       // Read-only (open on the other computer) or no data folder: say why.
       return send(res, 409, JSON.stringify({ error: err instanceof Error ? err.message : 'Couldn’t tick it.' }))
+    }
+  }
+  if (req.method === 'POST' && url.pathname === '/api/tonight') {
+    try {
+      const { action } = JSON.parse(await readBody(req)) as { action: TonightAction }
+      if (!['off', 'later', 'usual'].includes(action)) return send(res, 400, JSON.stringify({ error: 'Unknown change.' }))
+      const lib = getLibrary()
+      saveLibrary(setPreferences(lib, { justTonight: tonightChange(preferencesOf(lib), new Date(), action) }))
+      onChange()
+      return send(res, 200, JSON.stringify(await state()))
+    } catch (err) {
+      return send(res, 409, JSON.stringify({ error: err instanceof Error ? err.message : 'Couldn’t change tonight.' }))
     }
   }
   send(res, 404, JSON.stringify({ error: 'Not found' }))

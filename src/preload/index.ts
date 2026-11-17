@@ -58,6 +58,7 @@ const api: EclipseApi = {
   servicesHistory: () => ipcRenderer.invoke('services:history'),
   repairBatch: (batch, choice) => ipcRenderer.invoke('library:repair', batch, choice),
   yearReview: (year) => ipcRenderer.invoke('year:review', year),
+  weekBudget: () => ipcRenderer.invoke('week:budget'),
   catchUps: () => ipcRenderer.invoke('catchup:list'),
   dismissCatchUp: (id) => ipcRenderer.invoke('catchup:dismiss', id),
   trayOn: () => ipcRenderer.invoke('tray:get'),

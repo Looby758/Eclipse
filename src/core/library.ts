@@ -1,4 +1,4 @@
-import type { Dropped, Library, LibraryEntry, MediaType, Preferences, Rewatch, TitleDetails, TitleKey, TitleSnapshot, WatchStatus } from './types'
+import type { Dropped, JustTonight, Library, LibraryEntry, MediaType, Preferences, Rewatch, TitleDetails, TitleKey, TitleSnapshot, WatchSlot, WatchStatus } from './types'
 import { DEFAULT_PREFERENCES, UNDATED, WATCH_STATUSES, episodeKey, parseEpisodeKey, parseTitleKey } from './types'
 import type { TitleRef } from './types'
 import { normalizeLists, normalizeWatchSoon, refOf } from './lists'
@@ -230,7 +230,52 @@ export function setFinishBy(library: Library, key: string, day: string | null, n
 }
 
 export function setPreferences(library: Library, patch: Partial<Preferences>): Library {
-  return { ...library, preferences: normalizePreferences({ ...preferencesOf(library), ...patch }) }
+  const merged: Partial<Preferences> = { ...preferencesOf(library), ...patch }
+  // An older copy of Eclipse (or a test) setting the usual evening directly: rebuild the week from it.
+  if (!patch.schedule && (patch.startTime || patch.bedtime || patch.watchDays)) delete merged.schedule
+  return { ...library, preferences: normalizePreferences(merged) }
+}
+
+const MAX_SLOTS = 3
+
+function normalizeSchedule(p: Partial<Preferences>, start: string, bed: string, days: number[]): WatchSlot[][] {
+  const valid = Array.isArray(p.schedule) && p.schedule.length === 7 && p.schedule.every((d) => Array.isArray(d))
+  if (!valid) return [0, 1, 2, 3, 4, 5, 6].map((d) => (days.includes(d) ? [{ start, end: bed }] : []))
+  return p.schedule!.map((slots) =>
+    slots
+      .filter((x): x is WatchSlot => !!x && isTime(x.start) && isTime(x.end) && x.start !== x.end)
+      .map((x) => ({ start: x.start, end: x.end }))
+      .sort((a, b) => a.start.localeCompare(b.start))
+      .slice(0, MAX_SLOTS)
+  )
+}
+
+/** "Your usual evening" from a week: the evening slot most days have (for older copies and short labels). */
+function usualEvening(schedule: WatchSlot[][], fallback: WatchSlot): WatchSlot {
+  const counts = new Map<string, number>()
+  for (const slots of schedule) {
+    const last = slots[slots.length - 1]
+    if (last) counts.set(`${last.start}-${last.end}`, (counts.get(`${last.start}-${last.end}`) ?? 0) + 1)
+  }
+  const top = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]
+  if (!top) return fallback
+  const [start, end] = top[0].split('-')
+  return { start, end }
+}
+
+const minutesIn = (v: unknown, max: number): number | null => (Number.isInteger(v) && (v as number) >= 0 && (v as number) <= max ? (v as number) : null)
+
+function normalizeJustTonight(v: unknown): JustTonight | undefined {
+  if (!v || typeof v !== 'object') return undefined
+  const j = v as Partial<JustTonight>
+  if (typeof j.day !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(j.day)) return undefined
+  const out: JustTonight = { day: j.day }
+  if (j.off === true) out.off = true
+  else {
+    if (isTime(j.start)) out.start = j.start
+    if (isTime(j.bedtime)) out.bedtime = j.bedtime
+  }
+  return out.off || out.start || out.bedtime ? out : undefined
 }
 
 const isTime = (v: unknown): v is string => typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v)
@@ -242,14 +287,25 @@ function normalizePreferences(raw: unknown): Preferences {
   if (p.renewals && typeof p.renewals === 'object') {
     for (const [id, day] of Object.entries(p.renewals)) if (/^\d+$/.test(id) && Number.isInteger(day) && day >= 1 && day <= 31) renewals[id] = day
   }
+  const start = isTime(p.startTime) ? p.startTime : DEFAULT_PREFERENCES.startTime
+  const bed = isTime(p.bedtime) ? p.bedtime : DEFAULT_PREFERENCES.bedtime
+  const days = Array.isArray(p.watchDays)
+    ? [...new Set(p.watchDays.filter((d): d is number => Number.isInteger(d) && d >= 0 && d <= 6))].sort()
+    : [...DEFAULT_PREFERENCES.watchDays]
+  const schedule = normalizeSchedule(p, start, bed, days)
+  const usual = usualEvening(schedule, { start, end: bed })
+  const justTonight = normalizeJustTonight(p.justTonight)
   return {
     region: typeof p.region === 'string' && /^[A-Z]{2}$/.test(p.region) ? p.region : DEFAULT_PREFERENCES.region,
     services,
-    startTime: isTime(p.startTime) ? p.startTime : DEFAULT_PREFERENCES.startTime,
-    bedtime: isTime(p.bedtime) ? p.bedtime : DEFAULT_PREFERENCES.bedtime,
-    watchDays: Array.isArray(p.watchDays)
-      ? [...new Set(p.watchDays.filter((d): d is number => Number.isInteger(d) && d >= 0 && d <= 6))].sort()
-      : [...DEFAULT_PREFERENCES.watchDays],
+    startTime: usual.start,
+    bedtime: usual.end,
+    watchDays: schedule.map((s, d) => (s.length ? d : -1)).filter((d) => d >= 0),
+    schedule,
+    ...(justTonight ? { justTonight } : {}),
+    gapMinutes: minutesIn(p.gapMinutes, 30) ?? 0,
+    windDownMinutes: minutesIn(p.windDownMinutes, 120) ?? 0,
+    weeklyBudgetMinutes: minutesIn(p.weeklyBudgetMinutes, 7 * 24 * 60) ?? 0,
     renewals,
     calendarEpisodes: p.calendarEpisodes === true,
     stalledDays: Number.isInteger(p.stalledDays) && p.stalledDays! >= 7 && p.stalledDays! <= 730 ? p.stalledDays! : DEFAULT_PREFERENCES.stalledDays,

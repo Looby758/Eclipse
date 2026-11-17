@@ -2,12 +2,13 @@ import { Check, Hourglass, Library, ListChecks, Moon, Search, Settings, Sparkles
 import { useEffect, useState } from 'react'
 import { entriesWith, nextEpisodeFor, preferencesOf } from '@core/library'
 import { formatRuntime, plural } from '@core/format'
-import { episodeMinutes, fitTonight, startBy } from '@core/time'
+import { episodeMinutes, fitTonight, startBy, tonight } from '@core/time'
 import { episodeKey, type LibraryEntry, type TitleDetails } from '@core/types'
 import { useApp, type View } from '../store/app'
 import { itemOf } from '../lib/item'
 import Poster from './Poster'
 import TonightDial from './TonightDial'
+import JustTonight from './JustTonight'
 import HomeNotes from './HomeNotes'
 import OnThisDay from './OnThisDay'
 import { candidates } from './HomeHero'
@@ -99,11 +100,13 @@ export default function SpotlightHome(): React.JSX.Element {
   const each = details ? (isShow ? episodeMinutes(details) : details.runtime || 120) : 45
   const fits = details ? (isShow ? fitTonight(now, prefs, each) : fitTonight(now, prefs, each) > 0 ? 1 : 0) : 0
 
+  const offNight = !tonight(now, prefs).slots.length
   let line = ''
-  if (pick && details) {
-    if (isShow && next) line = `S${next.season} E${next.episode} · start by ${startBy(each, prefs)} · ${fits ? `${plural(fits, 'episode')} ${fits === 1 ? 'fits' : 'fit'} before bed` : 'no time for one tonight'}`
+  if (pick && details && offNight) line = isShow && next ? `S${next.season} E${next.episode} · not a watching night` : `${formatRuntime(each)} · not a watching night`
+  else if (pick && details) {
+    if (isShow && next) line = `S${next.season} E${next.episode} · start by ${startBy(each, prefs, now)} · ${fits ? `${plural(fits, 'episode')} ${fits === 1 ? 'fits' : 'fit'} before bed` : 'no time for one tonight'}`
     else if (isShow) line = 'All caught up'
-    else line = `${formatRuntime(each)} · start by ${startBy(each, prefs)} · ${fits ? 'fits before bed' : 'too long for what’s left of tonight'}`
+    else line = `${formatRuntime(each)} · start by ${startBy(each, prefs, now)} · ${fits ? 'fits before bed' : 'too long for what’s left of tonight'}`
   } else if (pick) line = pick.type === 'movie' ? 'Film' : 'Show'
 
   const verb = pick?.status === 'watching' ? 'Pick up' : 'Start'
@@ -161,6 +164,7 @@ export default function SpotlightHome(): React.JSX.Element {
                   </button>
                 )}
               </div>
+              <JustTonight now={now} />
             </>
           ) : (
             <>

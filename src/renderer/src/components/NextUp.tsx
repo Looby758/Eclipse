@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { localDate, nextEpisodeFor, preferencesOf } from '@core/library'
 import { onMyServices, freeElsewhere } from '@core/providers'
 import { formatRuntime, formatShortDay, plural } from '@core/format'
-import { episodeMinutes, finishPlan, fitTonight, startBy, timeLeft } from '@core/time'
+import { bedtimeTonight, episodeMinutes, finishPlan, fitTonight, startBy, timeLeft } from '@core/time'
 import { episodeKey, type Episode, type LibraryEntry, type Provider, type TitleDetails } from '@core/types'
 import { itemOf } from '../lib/item'
 import { useApp } from '../store/app'
@@ -54,7 +54,7 @@ export default function NextUp({ entry }: { entry: LibraryEntry }): React.JSX.El
   const today = localDate(now)
   if (entry.type === 'movie') {
     const runtime = details?.runtime
-    const timeLine = runtime ? (fitTonight(now, prefs, runtime) ? ` ${formatRuntime(runtime)}: start by ${startBy(runtime, prefs)} to be in bed by ${prefs.bedtime}.` : ` ${formatRuntime(runtime)}, too long for what’s left of tonight.`) : ''
+    const timeLine = runtime ? (fitTonight(now, prefs, runtime) ? ` ${formatRuntime(runtime)}: start by ${startBy(runtime, prefs, now)} to be in bed by ${bedtimeTonight(now, prefs)}.` : ` ${formatRuntime(runtime)}, too long for what’s left of tonight.`) : ''
     return where || timeLine ? <p className="hero-where">{where}{timeLine}</p> : null
   }
   if (!details || !next) return where ? <p className="hero-where">{where}</p> : null

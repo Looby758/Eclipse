@@ -1,6 +1,6 @@
 import { localDate } from './library'
 import { lastTicked } from './nudges'
-import { DEFAULT_EPISODE_MINUTES, dayBefore, eveningMinutes, nightsBetween, nextPremiere, tonight, type Evenings } from './time'
+import { DEFAULT_EPISODE_MINUTES, dayBefore, eveningMinutes, fitTonight, mostAnEvening, nightsBetween, nextPremiere, planFor, tonight, type Evenings } from './time'
 import { parseEpisodeKey, UNDATED, type CollectionDetails, type Library, type LibraryEntry, type MediaType, type TitleDetails, type TitleRef } from './types'
 
 /**
@@ -151,12 +151,12 @@ export function catchUps({ library, details, collections, now, evenings, region,
     const id = `${e.key}@S${prev.number}>${e.key}@S${season}`
     if (dismissed.has(id) || recent(last)) continue
     const each = d.runtime || DEFAULT_EPISODE_MINUTES
-    const perNight = Math.max(1, Math.floor(evening / each))
+    const perNight = Math.max(1, mostAnEvening(evenings, each))
     const nights = nightsBefore(premiere, now, evenings, each)
     if (!nights.length) continue
     // Tonight only has what's left of it.
     const t = tonight(now, evenings)
-    const room = nights.map((n) => (n === t.day ? Math.max(1, Math.floor(t.minutesLeft / each)) : perNight))
+    const room = nights.map((n) => Math.max(1, n === t.day ? planFor(n, evenings, each, fitTonight(now, evenings, each)) : planFor(n, evenings, each)))
     // Work back from the night before it starts until the season fits (or the nights run out).
     const chosen: string[] = []
     let count = 0

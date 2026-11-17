@@ -53,6 +53,16 @@ Each computer needs the key pasted once.
 6. **Filters:** in Library or Search, pick **On my services**, **Rent or buy only** or **Not streaming anywhere**. The first time it checks every title, which takes a few seconds.
 7. **Home:** the suggestion shows the next episode and a button to tick it.
 
+## Phase 35: what to try
+
+No new packages, so just pull and `npm run dev`.
+
+1. **Your week:** Settings → *Your evenings*. Give Friday and Saturday a later bedtime, turn a night off, and press **Add a time** on Saturday for an afternoon slot. The total for each day and the week updates as you go.
+2. **Just for tonight:** on Home, press the small "Tonight …" line under the buttons. Try **Not watching tonight**, then **Back to usual**, then a later **Bedtime tonight**. The dial and "episodes fit" change; tomorrow is back to normal.
+3. **Gaps and wind-down:** set *Between episodes* to 10 minutes and *Wind down* to 30, then look at "start by" and how many episodes fit on Home.
+4. **Weekly budget:** pick "About 10 hours a week". Home shows how much of this week is left, and Watch soon spreads your list out to stay under it.
+5. **Phone remote:** if it's on, the phone page has **Not watching tonight** and **Bed 30 min later**.
+
 ## Phase 34: what to try
 
 1. **Spotlight Home:** open Eclipse. Home is now the Tonight dial with your pick inside it. Try **Tick it**, **Something else**, and clicking the poster.

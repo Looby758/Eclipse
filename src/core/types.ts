@@ -152,6 +152,23 @@ export function parseEpisodeKey(key: string): { season: number; episode: number 
   return m ? { season: Number(m[1]), episode: Number(m[2]) } : null
 }
 
+/** A stretch of watching on one day, "HH:MM" to "HH:MM" (an end before the start is after midnight). */
+export interface WatchSlot {
+  start: string
+  end: string
+}
+
+/** One evening that's different from the usual. */
+export interface JustTonight {
+  /** The evening it applies to, "YYYY-MM-DD". */
+  day: string
+  off?: boolean
+  /** Starting later than usual, "HH:MM". */
+  start?: string
+  /** A different bedtime, "HH:MM". */
+  bedtime?: string
+}
+
 /** Your choices that follow you between computers (kept in library.json). */
 export interface Preferences {
   /** Two-letter country for where-to-watch, e.g. "GB". */
@@ -164,6 +181,19 @@ export interface Preferences {
   bedtime: string
   /** The nights you usually watch: 0 Sunday … 6 Saturday. */
   watchDays: number[]
+  /**
+   * Your week (phase 35): for each day, 0 Sunday … 6 Saturday, the times you watch (none = not
+   * watching). startTime, bedtime and watchDays above are kept in step with it as "your usual evening".
+   */
+  schedule: WatchSlot[][]
+  /** A change to one evening only ("Not watching tonight", "Starting late", "Later bedtime tonight"). */
+  justTonight?: JustTonight | null
+  /** Minutes between episodes. */
+  gapMinutes: number
+  /** Minutes before bed with nothing on. */
+  windDownMinutes: number
+  /** About how much to watch a week, in minutes (0: no budget). */
+  weeklyBudgetMinutes: number
   /** The day of the month each of your services renews, by provider id (optional). */
   renewals: Record<string, number>
   /** Release calendar: every new episode, not just new seasons, finales and films. */
@@ -180,6 +210,10 @@ export const DEFAULT_PREFERENCES: Preferences = {
   startTime: '20:00',
   bedtime: '23:00',
   watchDays: [1, 2, 3, 4, 5],
+  schedule: [0, 1, 2, 3, 4, 5, 6].map((d) => (d >= 1 && d <= 5 ? [{ start: '20:00', end: '23:00' }] : [])),
+  gapMinutes: 0,
+  windDownMinutes: 0,
+  weeklyBudgetMinutes: 0,
   renewals: {},
   calendarEpisodes: false,
   stalledDays: 60,

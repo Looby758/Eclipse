@@ -86,7 +86,7 @@ export default function WatchSoonSheet(): React.JSX.Element {
                   <span className="muted">({formatHours(tonightPlan.minutes)}, done before bed)</span>
                 </p>
               ) : (
-                <p className="muted">{leftTonight > 0 ? 'Nothing from your list fits what’s left of tonight.' : prefs.watchDays.includes(now.getDay()) ? 'It’s past bedtime. ' : 'Tonight isn’t one of your watching nights. '}{first ? `Next up ${whenLabel(first.day, today)}.` : ''}</p>
+                <p className="muted">{leftTonight > 0 ? 'Nothing from your list fits what’s left of tonight. ' : tonight(now, prefs).slots.length ? 'It’s past bedtime. ' : 'Tonight isn’t one of your watching nights. '}{first ? `Next up ${whenLabel(first.day, today)}.` : ''}</p>
               )}
               {options.length > 0 && (
                 <p className="muted small">
@@ -164,7 +164,7 @@ export default function WatchSoonSheet(): React.JSX.Element {
                 ))}
               </ol>
               <p className="muted small">
-                Laid out in your order over the nights you watch ({prefs.startTime} to {prefs.bedtime}), from your settings. A film goes on a night it fits; a show carries on over as many nights as it takes.
+                Laid out in your order over the evenings you watch, from Your evenings in Settings{prefs.weeklyBudgetMinutes ? `, keeping to about ${formatHours(prefs.weeklyBudgetMinutes)} a week` : ''}. A film goes on a night it fits; a show carries on over as many nights as it takes.
               </p>
             </>
           )}

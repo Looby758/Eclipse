@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_PREFERENCES, type Library, type LibraryEntry, type TitleDetails } from './types'
 import { emptyLibrary } from './library'
-import { newRemoteToken, remoteState, sameToken, trayMenuOf } from './remote'
+import { newRemoteToken, remoteState, sameToken, tonightChange, trayMenuOf } from './remote'
 
 const entry = (key: string, status: LibraryEntry['status'], over: Partial<LibraryEntry> = {}): LibraryEntry => {
   const [type, id] = key.split(':')
@@ -32,6 +32,16 @@ describe('phone remote', () => {
     expect(s.soon).toEqual([{ key: 'movie:9', name: 'Dune', film: true, minutes: 0, episodes: 0, done: false }])
   })
 
+  it('changes just tonight from the phone', () => {
+    const tue = new Date(2026, 10, 17, 19, 0)
+    expect(tonightChange(DEFAULT_PREFERENCES, tue, 'off')).toEqual({ day: '2026-11-17', off: true })
+    expect(tonightChange(DEFAULT_PREFERENCES, tue, 'later')).toEqual({ day: '2026-11-17', bedtime: '23:30' })
+    const later = { ...DEFAULT_PREFERENCES, justTonight: { day: '2026-11-17', bedtime: '23:30' } }
+    expect(tonightChange(later, tue, 'later')).toEqual({ day: '2026-11-17', bedtime: '00:00' })
+    expect(tonightChange(later, tue, 'usual')).toBeNull()
+    expect(remoteState(lib, {}, later, tue)).toMatchObject({ bedtime: '23:30', tonightChanged: true, watchingTonight: true })
+  })
+
   it('pairing codes are long and compared safely', () => {
     const t = newRemoteToken((n) => new Uint8Array(n).fill(171))
     expect(t).toBe('ab'.repeat(16))
@@ -44,7 +54,7 @@ describe('phone remote', () => {
 
 describe('menu bar and tray', () => {
   it('lists next episodes to tick and tonight’s time', () => {
-    const state = { bedtime: '23:00', minutesLeft: 130, startBy: '22:15', shows: [
+    const state = { bedtime: '23:00', minutesLeft: 130, startBy: '22:15', watchingTonight: true, tonightChanged: false, shows: [
       { key: 'tv:1', name: 'Severance', posterPath: null, next: { season: 2, episode: 3 }, left: 5, minutesEach: 50, fits: 2 },
       { key: 'tv:2', name: 'Done', posterPath: null, next: null, left: 0, minutesEach: 50, fits: 0 }
     ], soon: [] }
@@ -53,5 +63,6 @@ describe('menu bar and tray', () => {
     expect(m.tonight).toBe('Tonight: 2h 10m left before bed (23:00)')
     expect(m.startBy).toBe('Start an episode by 22:15')
     expect(trayMenuOf({ ...state, minutesLeft: 0 }).startBy).toBeNull()
+    expect(trayMenuOf({ ...state, minutesLeft: 0, watchingTonight: false }).tonight).toBe('Not watching tonight')
   })
 })

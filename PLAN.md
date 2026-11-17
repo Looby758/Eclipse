@@ -200,7 +200,7 @@ They're ordered by what they need. Group A ideas stand on their own (they only u
 
 ### Evenings, more flexible (agreed 17 Nov 2026)
 
-35. **Evenings that fit my real week.** Today "Your evenings" is one start time and bedtime for every watching night. Replace it with: *Needs:* nothing new (everything that uses evenings, the Tonight dial, "fits before bed", Finish it by, Catch up, Repair old dates and the phone remote, reads the new schedule instead).
+35. **Evenings that fit my real week.** *(Built.)* Before this, "Your evenings" is one start time and bedtime for every watching night. Replace it with: *Needs:* nothing new (everything that uses evenings, the Tonight dial, "fits before bed", Finish it by, Catch up, Repair old dates and the phone remote, reads the new schedule instead).
     - **A schedule per day:** each day of the week has its own start and bedtime, or is off (weeknights 20:00 to 23:00, Friday and Saturday until 00:30, Sunday 19:00 to 22:30).
     - **More than one slot a day:** a day can have a second slot, e.g. Saturday 14:00 to 17:00 as well as 20:00 to 00:30, so weekend afternoons count.
     - **Just for tonight:** from Home (and the phone remote), "Not watching tonight", "Starting late" or "Later bedtime tonight". It changes that one evening only, then goes back to the usual schedule.
@@ -375,6 +375,15 @@ You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls
 - Look refresh (17 Nov 2026): from two rounds of design drafts you picked **Spotlight** for Home only (the rest of the app keeps Drift) and the **Play eclipse** logo in **Halo blue**. Added as candidate phase 34 (33 is Catch up). Later the same day you asked for the menus without flat colour and picked **Frosted glass** from four drafts. Turned down: Marquee (font, red, too busy), Observatory's layout and flat blue-black (its dial is kept in Spotlight), Sticker deck, Mosaic and Horizon.
 
 - Evenings (17 Nov 2026): you picked a schedule per day, more than one slot a day, just-for-tonight changes, gaps and wind-down, and a weekly budget. Added as candidate phase 35. Not wanted: date ranges for holidays, and Google Calendar.
+
+**Phase 35: Evenings that fit my real week (built, waiting for you to try it)**
+
+- **Your week:** Settings → *Your evenings* now has a row for each day, Monday first. Each day has its own start and bedtime, or is off. **Add a time** gives a day a second (or third) slot, like Saturday 14:00 to 17:00 as well as the evening. **Copy Monday to every weeknight** saves typing. Your old start time, bedtime and nights were turned into the same times for each of those days, so nothing changes until you edit it.
+- **Just for tonight:** under the buttons on Home (Spotlight and Classic), a small "Tonight 20:00–23:00" line opens **Not watching tonight**, **Starting late**, **Bedtime tonight** and **Back to usual**. It only changes that evening. The phone remote has **Not watching tonight**, **Bed 30 min later** and **Back to usual**, and the tray says "Not watching tonight".
+- **Gaps and wind-down:** *Between episodes* (0 to 15 minutes) and *Wind down before bed* (0 to 60 minutes), both off by default. "3 episodes fit" and "start by" count them.
+- **Weekly budget (optional):** "About 10 hours a week". Finish it by, Watch soon and Catch up split it evenly over your watching nights; the first thing of a night always goes on, even if it's longer than that night's share. Home shows "6h left of your 10 hours this week", counted from your ticks this week (Monday to Sunday), rewatches included.
+- Everything that used the old single evening now reads your week: the Tonight dial (a break between two slots shows as a gap in the track), "fits before bed", Finish it by, Watch soon, Catch up, the bedtime guard, Repair old dates and the phone remote.
+- Decisions: the old start time, bedtime and nights are still saved, as "your usual evening" (the times most days have), so an older copy of Eclipse on the other computer keeps working; if it changes them, the week is rebuilt from them. A day can have up to three slots. No new packages.
 
 **Phase 34: Spotlight Home and the Halo blue logo (built, waiting for you to try it)**
 

@@ -5,6 +5,7 @@ import type { LibraryEntry } from '@core/types'
 import { useApp } from '../store/app'
 import Poster from './Poster'
 import { focusSearch } from './Dock'
+import JustTonight from './JustTonight'
 import NextUp from './NextUp'
 
 function greeting(now: Date): string {
@@ -68,6 +69,7 @@ export default function HomeHero(): React.JSX.Element {
           : `It’s on your watchlist${pick.title.year ? ` (${pick.title.year})` : ''}.`}
       </p>
       <NextUp entry={pick} />
+      <JustTonight now={new Date()} />
       <div className="hero-actions">
         <button className="btn primary big" onClick={() => go({ name: 'title', type: pick.type, id: pick.id })}>
           Open {pick.title.name}

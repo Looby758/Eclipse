@@ -31,6 +31,9 @@ h2 { font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; color: v
 .sub { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
 .tick { flex-shrink: 0; height: 44px; padding: 0 16px; border-radius: 999px; border: 0; font: 600 15px var(--font-ui); color: var(--on-accent); background: var(--accent-gradient); box-shadow: 0 6px 18px var(--accent-shadow); }
 .tick:disabled { opacity: 0.5; }
+.jt { display: flex; flex-wrap: wrap; gap: 8px; margin: -6px 0 18px; }
+.jtb { height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--glass-soft); color: var(--text); font: 500 14px var(--font-ui); }
+.jtb:disabled { opacity: 0.5; }
 .tick.done { background: var(--ok); box-shadow: none; }
 .row { display: flex; justify-content: space-between; gap: 12px; padding: 11px 2px; border-bottom: 1px solid var(--line); font-size: 15px; }
 .row span:last-child { color: var(--text-muted); white-space: nowrap; }
@@ -42,6 +45,7 @@ h2 { font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; color: v
 <div class="top"><h1>Eclipse</h1><span class="muted" id="when"></span></div>
 <div class="error" id="error"></div>
 <div class="tonight" id="tonight">Loading…</div>
+<div class="jt" id="jt"></div>
 <h2>Up next</h2>
 <div id="shows"></div>
 <h2>Watch soon</h2>
@@ -55,9 +59,14 @@ const ep = (n) => 'S' + n.season + ' E' + n.episode
 function showError(msg) { const e = $('error'); e.textContent = msg || ''; e.style.display = msg ? 'block' : 'none' }
 function render(s) {
   $('when').textContent = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-  $('tonight').innerHTML = s.minutesLeft > 0
+  $('tonight').innerHTML = !s.watchingTonight
+    ? 'Not watching tonight.'
+    : s.minutesLeft > 0
     ? '<strong>' + hours(s.minutesLeft) + '</strong> left before bed (' + esc(s.bedtime) + '). Start an episode by <strong>' + esc(s.startBy) + '</strong>.'
     : 'It\\u2019s past bedtime (' + esc(s.bedtime) + '). Tomorrow, then.'
+  $('jt').innerHTML = (s.watchingTonight ? '<button class="jtb" data-a="off">Not watching tonight</button>' : '') +
+    '<button class="jtb" data-a="later">Bed 30 min later</button>' +
+    (s.tonightChanged ? '<button class="jtb" data-a="usual">Back to usual</button>' : '')
   $('shows').innerHTML = s.shows.length ? s.shows.map((x) => {
     const img = x.posterPath ? '<img src="https://image.tmdb.org/t/p/w154' + esc(x.posterPath) + '" alt="">' : '<div class="ph"></div>'
     const sub = x.next ? ep(x.next) + ' \\u00b7 ' + x.left + ' left' + (x.fits ? ' \\u00b7 ' + x.fits + ' fit tonight' : '') : 'All caught up'
@@ -75,6 +84,16 @@ async function load() {
     render(await r.json()); showError('')
   } catch (e) { showError(e.message === 'Failed to fetch' ? 'Can\\u2019t reach Eclipse. Is it open, and is this phone on the same Wi-Fi?' : e.message) }
 }
+document.addEventListener('click', async (ev) => {
+  const j = ev.target.closest('.jtb'); if (!j || j.disabled) return
+  j.disabled = true
+  try {
+    const r = await fetch('/api/tonight?t=' + encodeURIComponent(token), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: j.dataset.a }) })
+    const body = await r.json()
+    if (!r.ok) throw new Error(body.error || 'Couldn\\u2019t change tonight.')
+    render(body); showError('')
+  } catch (e) { j.disabled = false; showError(e.message) }
+})
 document.addEventListener('click', async (ev) => {
   const b = ev.target.closest('.tick'); if (!b || b.disabled) return
   b.disabled = true

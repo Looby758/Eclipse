@@ -104,3 +104,21 @@ describe('planning your evenings', () => {
     ])
   })
 })
+
+describe('planEvenings with your week (phase 35)', () => {
+  it('keeps to a weekly budget, but always puts the first thing on a night', async () => {
+    const { planEvenings } = await import('./watchsoon')
+    const ref = (key: string, name: string) => ({ key, type: key.split(':')[0] as 'movie' | 'tv', id: 1, name, year: null, posterPath: null })
+    const film = { ref: ref('movie:1', 'Long film'), film: true, done: false, unknown: false, minutes: 150, minutesEach: 150, episodes: [] }
+    const show = { ref: ref('tv:2', 'Show'), film: false, done: false, unknown: false, minutes: 6 * 45, minutesEach: 45, episodes: [1, 2, 3, 4, 5, 6].map((e) => ({ season: 1, episode: e })) }
+    const ev = { startTime: '20:00', bedtime: '23:00', watchDays: [1, 2, 3, 4, 5], weeklyBudgetMinutes: 450 }
+    // Tue 17 Nov 19:00: 90 minutes a night. The film gets tonight on its own; then 2 episodes a night.
+    const p = planEvenings([film, show] as never, new Date(2026, 10, 17, 19, 0), ev)
+    expect(p.nights.map((n) => [n.day, n.minutes])).toEqual([
+      ['2026-11-17', 150],
+      ['2026-11-18', 90],
+      ['2026-11-19', 90],
+      ['2026-11-20', 90]
+    ])
+  })
+})

@@ -1,6 +1,6 @@
-import type { Library, Preferences, TitleDetails } from './types'
+import type { JustTonight, Library, Preferences, TitleDetails } from './types'
 import { activeEntry, localDate } from './library'
-import { episodeMinutes, fitTonight, startBy, tonight } from './time'
+import { bedtimeTonight, clock, episodeMinutes, fitTonight, startBy, tonight } from './time'
 import { remainingEpisodes, soonItem, watchSoonOf } from './watchsoon'
 import { lastTicked } from './nudges'
 
@@ -36,6 +36,10 @@ export interface RemoteState {
   minutesLeft: number
   /** Start a 45-minute episode by this time to be in bed on time. */
   startBy: string
+  /** Tonight is a watching night (after any "just tonight" change). */
+  watchingTonight: boolean
+  /** Tonight has been changed from the usual ("just tonight"). */
+  tonightChanged: boolean
   shows: RemoteShow[]
   soon: RemoteSoon[]
 }
@@ -56,7 +60,22 @@ export function remoteState(library: Library, details: Record<string, TitleDetai
     const i = soonItem(ref, details[ref.key], activeEntry(library.entries[ref.key]), today)
     return { key: ref.key, name: ref.name, film: i.film, minutes: i.minutes, episodes: i.episodes.length, done: i.done }
   })
-  return { bedtime: prefs.bedtime, minutesLeft: tonight(now, prefs).minutesLeft, startBy: startBy(45, prefs), shows, soon }
+  const t = tonight(now, prefs)
+  return { bedtime: bedtimeTonight(now, prefs), minutesLeft: t.minutesLeft, startBy: startBy(45, prefs, now), watchingTonight: t.slots.length > 0, tonightChanged: prefs.justTonight?.day === t.day, shows, soon }
+}
+
+export type TonightAction = 'off' | 'later' | 'usual'
+
+/** The phone's "just tonight" buttons: not watching, half an hour later to bed, or back to usual. */
+export function tonightChange(prefs: Preferences, now: Date, action: TonightAction): JustTonight | null {
+  const t = tonight(now, { ...prefs, justTonight: null })
+  if (action === 'usual') return null
+  if (action === 'off') return { day: t.day, off: true }
+  const current = tonight(now, prefs)
+  const last = current.slots[current.slots.length - 1] ?? t.slots[t.slots.length - 1]
+  const bed = last ? last.end + (prefs.windDownMinutes || 0) : null
+  const same = prefs.justTonight?.day === t.day && !prefs.justTonight.off ? prefs.justTonight : null
+  return { day: t.day, ...(same?.start ? { start: same.start } : {}), bedtime: clock((bed ?? 23 * 60) + 30) }
 }
 
 /** A random pairing code for the page's address, so only someone who scanned the QR code can use it. */
@@ -92,7 +111,7 @@ export function trayMenuOf(s: RemoteState, max = 8): TrayMenu {
     })
   return {
     shows,
-    tonight: s.minutesLeft > 0 ? `Tonight: ${hm(s.minutesLeft)} left before bed (${s.bedtime})` : `Past bedtime (${s.bedtime})`,
+    tonight: !s.watchingTonight ? 'Not watching tonight' : s.minutesLeft > 0 ? `Tonight: ${hm(s.minutesLeft)} left before bed (${s.bedtime})` : `Past bedtime (${s.bedtime})`,
     startBy: s.minutesLeft > 0 ? `Start an episode by ${s.startBy}` : null,
     minutesLeft: s.minutesLeft
   }

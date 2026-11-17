@@ -10,6 +10,8 @@ import { followed, seasonsToCheck, upcomingReleases, type ReleaseEvent } from '@
 import { localDate, preferencesOf } from '@core/library'
 import { knownFrom, type KnownFrom } from '@core/knownfrom'
 import { catchUps, type CatchUp } from '@core/catchup'
+import { weekStart } from '@core/time'
+import { weekSoFar, type WeekSoFar } from '@core/week'
 import type { Fetched, ListView } from '@shared/api'
 import { loadSettings, saveSettings } from './settings'
 import { fileCache } from './cacheStore'
@@ -274,6 +276,18 @@ export async function yearData(library: Library, keys: string[]): Promise<{ deta
 }
 
 /** Catch up before the sequel: your films and shows, the series your films are in, and what's coming out in them. */
+/** The weekly budget: how much of this week is watched and left (null with no budget). */
+export async function weekBudget(library: Library, now = new Date()): Promise<WeekSoFar | null> {
+  const prefs = preferencesOf(library)
+  if (!prefs.weeklyBudgetMinutes) return null
+  const from = weekStart(localDate(new Date(now.getTime() - 7 * 86_400_000)))
+  const recent = (day: string | null | undefined): boolean => !!day && day >= from
+  const keys = Object.values(library.entries)
+    .filter((e) => [e.watchedOn, ...Object.values(e.episodes ?? {}), ...(e.rewatches ?? []).flatMap((r) => [r.finishedOn, ...Object.values(r.episodes ?? {})])].some(recent))
+    .map((e) => e.key)
+  return weekSoFar(library, await detailsMany(keys), now, prefs)
+}
+
 export async function catchUpList(library: Library, now = new Date()): Promise<CatchUp[]> {
   const today = localDate(now)
   const prefs = preferencesOf(library)
