@@ -16,6 +16,21 @@ export default function Dock({ tucked = false }: { tucked?: boolean }): React.JS
   const query = useApp((s) => s.query)
   const { go, setQuery } = useApp.getState()
   const input = useRef<HTMLInputElement>(null)
+  const isTucked = useRef(tucked)
+  isTucked.current = tucked
+
+  // On Spotlight Home the dock is tucked away below the window: open Search first, so focusing the
+  // box never scrolls the whole app up to reach it. preventScroll keeps the page still either way.
+  const focus = (select = false): void => {
+    const go = (): void => {
+      input.current?.focus({ preventScroll: true })
+      if (select) input.current?.select()
+    }
+    if (isTucked.current) {
+      useApp.getState().go({ name: 'search' })
+      requestAnimationFrame(() => requestAnimationFrame(go))
+    } else go()
+  }
 
   // Ctrl/Cmd+K or "/" jumps to search from anywhere.
   useEffect(() => {
@@ -23,11 +38,10 @@ export default function Dock({ tucked = false }: { tucked?: boolean }): React.JS
       const typing = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement
       if (((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') || (e.key === '/' && !typing)) {
         e.preventDefault()
-        input.current?.focus()
-        input.current?.select()
+        focus(true)
       }
     }
-    const onFocusSearch = (): void => input.current?.focus()
+    const onFocusSearch = (): void => focus()
     window.addEventListener('keydown', onKey)
     window.addEventListener('eclipse:focus-search', onFocusSearch)
     return () => {
