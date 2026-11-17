@@ -39,6 +39,21 @@ describe('TMDB errors', () => {
   })
 })
 
+describe('trending', () => {
+  it('asks for two pages and keeps films and shows with posters, once each', async () => {
+    const fetch = vi.fn(async (url: string) =>
+      reply(200, {
+        results: url.includes('page=1')
+          ? [{ id: 1, media_type: 'movie', title: 'A', poster_path: '/a.jpg' }, { id: 2, media_type: 'tv', name: 'B', poster_path: null }, { id: 3, media_type: 'person', name: 'C' }]
+          : [{ id: 1, media_type: 'movie', title: 'A', poster_path: '/a.jpg' }, { id: 4, media_type: 'tv', name: 'D', poster_path: '/d.jpg' }]
+      })
+    )
+    const r = await createTmdb({ key: 'k', fetch }).trending()
+    expect(fetch.mock.calls.map((c) => c[0]).every((u) => u.includes('/trending/all/week'))).toBe(true)
+    expect(r.map((x) => x.key)).toEqual(['movie:1', 'tv:4'])
+  })
+})
+
 describe('parsing', () => {
   it('keeps films and shows, drops people', () => {
     const results = parseSearch([

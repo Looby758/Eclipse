@@ -1,10 +1,9 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { imageUrl } from '@core/tmdb'
+import { OWN_ENOUGH, WALL_COLUMNS, WALL_PER_COLUMN, wallPosters } from '../lib/wall'
 import { useApp } from '../store/app'
 
-const COLUMNS = 7
-const PER_COLUMN = 8
-// Cool stand-in colours for empty spots on the wall, before your library fills it.
+// Cool stand-in colours, only used if there are no posters at all (offline on first launch).
 const HUES = [330, 195, 265, 285, 240, 220, 210, 300, 200, 250, 180, 310]
 
 interface Tile {
@@ -14,31 +13,45 @@ interface Tile {
 }
 
 /**
- * The slowly moving, tilted wall of posters behind every screen, made from your library. Each
- * column drifts up or down; the columns hold two copies of their posters so they loop smoothly.
- * Purely decoration: it can't be clicked, and screen readers skip it.
+ * The slowly moving, tilted wall of posters behind every screen: your library, topped up with
+ * this week's trending titles while it's small. Each column drifts up or down and holds two copies
+ * of its posters so it loops smoothly. Decoration only: it can't be clicked and screen readers skip it.
  */
 export default function PosterWall(): React.JSX.Element {
   const library = useApp((s) => s.library)
+  const hasKey = useApp((s) => !!s.status?.hasKey)
+  const [trending, setTrending] = useState<string[]>([])
+
+  const own = useMemo(
+    () =>
+      Object.values(library.entries)
+        .filter((e) => e.title.posterPath)
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+        .map((e) => e.title.posterPath!),
+    [library]
+  )
+  const needTrending = hasKey && new Set(own).size < OWN_ENOUGH
+
+  useEffect(() => {
+    if (!needTrending || trending.length) return
+    window.api.trending().then((r) => {
+      if (r.ok) setTrending(r.value.data.map((t) => t.posterPath!).filter(Boolean))
+    })
+  }, [needTrending])
+
   const columns = useMemo(() => {
-    const posters = Object.values(library.entries)
-      .filter((e) => e.title.posterPath)
-      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-      .map((e) => imageUrl(e.title.posterPath, 'w185'))
+    const posters = wallPosters(own, trending)
     const cols: Tile[][] = []
-    for (let c = 0; c < COLUMNS; c++) {
+    for (let c = 0; c < WALL_COLUMNS; c++) {
       const col: Tile[] = []
-      for (let k = 0; k < PER_COLUMN; k++) {
-        const n = c * PER_COLUMN + k
-        // Your posters, mixed with coloured stand-ins while the library is still small.
-        const usePoster = posters.length > 0 && (posters.length >= 6 || n % 2 === 0)
-        const url = usePoster ? posters[(n * 5 + c) % posters.length] : null
-        col.push({ key: `${c}-${k}`, url, hue: HUES[(c * 5 + k) % HUES.length] })
+      for (let k = 0; k < WALL_PER_COLUMN; k++) {
+        const path = posters[c + k * WALL_COLUMNS]
+        col.push({ key: `${c}-${k}`, url: path ? imageUrl(path, 'w185') : null, hue: HUES[(c * 5 + k) % HUES.length] })
       }
       cols.push([...col, ...col.map((t) => ({ ...t, key: `${t.key}b` }))])
     }
     return cols
-  }, [library])
+  }, [own, trending])
 
   return (
     <div className="wall" aria-hidden>
@@ -47,7 +60,7 @@ export default function PosterWall(): React.JSX.Element {
           <div key={c} className={`wall-col ${c % 2 ? 'down' : 'up'}`} style={{ animationDuration: `calc(var(--wall-speed) + ${c * 6}s)` }}>
             {col.map((t) =>
               t.url ? (
-                <img key={t.key} className="wall-tile" src={t.url} alt="" draggable={false} loading="lazy" />
+                <img key={t.key} className="wall-tile" src={t.url} alt="" draggable={false} />
               ) : (
                 <div key={t.key} className="wall-tile" style={{ background: `linear-gradient(165deg, hsl(${t.hue} 85% 62%), hsl(272 65% 28%) 70%, hsl(250 50% 10%))` }} />
               )

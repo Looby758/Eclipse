@@ -182,4 +182,5 @@ Export this doc as Markdown and save it in the project as `PLAN.md`. Then start 
 - Done: TMDB credit footer; dark and light mode (Settings → Appearance).
 - Decisions: Eclipse is standalone for now; `src/core` has no Electron or UI code so it could move into Orbit. Curated watch orders: Marvel and Star Wars first. No plans to sell. Posters aren't saved for offline use yet (details are).
 - Design: you asked for sleek and futuristic, alive rather than flat, poster-heavy, dark and light, no browns, dark greens or oranges, and its own look (not Orbit's). From six drafts you picked **C · Drift** for both screens: a slowly moving, tilted wall of your posters behind everything, a "Pick up …?" home, a floating dock (Tonight, Library, Settings, search), and pages as sheets that slide up, lit in each poster's colour. Fonts: Sora for headings, Inter for everything else (bundled, so they work offline). All of it lives in `src/renderer/src/styles/theme.css`.
-- Next: you try Phase 1; then Phase 2 (tracking and where to watch, Sequel import).
+- Done (after your try-out): the poster wall is never empty. Until your library has 24 posters it's topped up with this week's trending titles from TMDB (saved for a day, so it works offline too); your own posters come first and gradually replace them.
+- Next: Phase 2 (tracking and where to watch, Sequel import).

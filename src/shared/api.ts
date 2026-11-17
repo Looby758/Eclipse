@@ -35,6 +35,8 @@ export interface EclipseApi {
 
   search(query: string): Promise<Result<Fetched<SearchResult[]>>>
   details(type: MediaType, id: number, refresh?: boolean): Promise<Result<Fetched<TitleDetails>>>
+  /** This week's trending titles (saved for a day), to fill the poster wall. */
+  trending(): Promise<Result<Fetched<SearchResult[]>>>
 
   getLibrary(): Promise<Library>
   setStatus(item: { key: TitleKey; type: MediaType; id: number; title: TitleSnapshot }, status: WatchStatus | null): Promise<Library>

@@ -13,6 +13,7 @@ const api: EclipseApi = {
 
   search: (query) => ipcRenderer.invoke('tmdb:search', query),
   details: (type, id, refresh) => ipcRenderer.invoke('tmdb:details', type, id, refresh),
+  trending: () => ipcRenderer.invoke('tmdb:trending'),
 
   getLibrary: () => ipcRenderer.invoke('library:get'),
   setStatus: (item, status) => ipcRenderer.invoke('library:setStatus', item, status),

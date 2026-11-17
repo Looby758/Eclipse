@@ -73,3 +73,8 @@ export async function details(type: MediaType, id: number, refresh = false): Pro
   })
   return { data: r.data, stale: r.source === 'stale', savedAt: r.savedAt }
 }
+
+export async function trending(): Promise<Fetched<SearchResult[]>> {
+  const r = await cached(fileCache, 'trending:week', CACHE_TTL.trending, () => tmdb().trending(), { shouldServeStale: serveStaleUnlessKeyProblem })
+  return { data: r.data, stale: r.source === 'stale', savedAt: r.savedAt }
+}

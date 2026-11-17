@@ -53,6 +53,8 @@ export interface Tmdb {
   check(): Promise<void>
   search(query: string): Promise<SearchResult[]>
   details(type: MediaType, id: number): Promise<TitleDetails>
+  /** This week's trending films and shows (two pages, about 40), for the poster wall. */
+  trending(): Promise<SearchResult[]>
 }
 
 export function createTmdb({ key, fetch, language = 'en-GB' }: TmdbOptions): Tmdb {
@@ -84,6 +86,12 @@ export function createTmdb({ key, fetch, language = 'en-GB' }: TmdbOptions): Tmd
       if (!q) return []
       const body = await get<{ results?: RawSearchItem[] }>('/search/multi', { query: q, include_adult: 'false', language, page: '1' })
       return parseSearch(body.results ?? [])
+    },
+
+    async trending() {
+      const pages = await Promise.all(['1', '2'].map((page) => get<{ results?: RawSearchItem[] }>('/trending/all/week', { language, page })))
+      const seen = new Set<string>()
+      return parseSearch(pages.flatMap((p) => p.results ?? [])).filter((r) => r.posterPath && !seen.has(r.key) && seen.add(r.key))
     },
 
     async details(type, id) {

@@ -10,6 +10,8 @@ const DAY = 24 * HOUR
 /** How long each kind of answer is trusted before asking TMDB again. */
 export const CACHE_TTL = {
   search: DAY,
+  /** Trending titles for the poster wall: daily. */
+  trending: DAY,
   /** Film and show details (incl. next episode dates): weekly, as the plan says for episode data. */
   details: 7 * DAY,
   /** Where to watch (Phase 2): daily. */
