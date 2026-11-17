@@ -1,9 +1,12 @@
-import { Check, Eye, Hourglass, Play, Sparkles, Tv, Users, X } from 'lucide-react'
+import { Check, Eye, History, Hourglass, Play, Sparkles, Tv, Users, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { localDate, nextEpisodeFor, preferencesOf, watchesWith } from '@core/library'
 import { comebacks, daysAfter, stalledShows, type ComebackShow } from '@core/nudges'
 import { servicesNews } from '@core/services'
-import { daysAgo, formatMonth, formatShortDay } from '@core/format'
+import { daysAgo, formatMonth, formatRuntime, formatShortDay } from '@core/format'
+import type { CatchUp } from '@core/catchup'
+import { onMyServices } from '@core/providers'
+import type { WatchProviders } from '@core/types'
 import { nextRenewal } from '@core/time'
 import { episodeKey, type Episode, type LibraryEntry } from '@core/types'
 import { useApp } from '../store/app'
@@ -233,6 +236,90 @@ function Comebacks(): React.JSX.Element | null {
   )
 }
 
+const listDays = (days: string[], today: string): string => {
+  const names = days.map((d) => (d === today ? 'tonight' : formatShortDay(d)))
+  return names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : (names[0] ?? '')
+}
+
+/** Home: catch up before the sequel, a few weeks before a film or new season comes out. */
+function CatchUpNote(): React.JSX.Element | null {
+  const library = useApp((s) => s.library)
+  const { go, setLibrary } = useApp.getState()
+  const [list, setList] = useState<CatchUp[]>([])
+  const [where, setWhere] = useState<Record<string, WatchProviders>>({})
+  const today = localDate(new Date())
+  const prefs = preferencesOf(library)
+  const count = Object.keys(library.entries).length
+  useEffect(() => {
+    let live = true
+    window.api.catchUps().then((r) => {
+      if (!live || !r.ok) return
+      setList(r.value)
+      if (r.value.length) void window.api.providersMany(r.value.map((c) => c.rewatch.key)).then((p) => live && setWhere(p))
+    })
+    return () => {
+      live = false
+    }
+  }, [count, prefs.catchUpSkipDays, prefs.watchDays.join(','), prefs.bedtime, prefs.startTime])
+  const no = new Set(library.catchUpDismissed ?? [])
+  const shown = list.filter((c) => !no.has(c.id)).slice(0, 2)
+  if (!shown.length) return null
+  return (
+    <>
+      {shown.map((c) => {
+        const r = c.rewatch
+        const mine = onMyServices(where[r.key], prefs.services)
+        const on = mine.length ? `, on ${mine.map((p) => p.name).join(' and ')}` : ''
+        const soon = (library.watchSoon ?? []).some((x) => x.key === r.key)
+        const open = (): void => go({ name: 'title', type: r.type, id: r.id })
+        return (
+          <section key={c.id} className="note" aria-label="Catch up before the sequel">
+            <div className="note-kicker">
+              <History size={14} /> Catch up before it’s out
+            </div>
+            {c.kind === 'film' ? (
+              <div className="note-line">
+                <strong>{c.upcoming.name}</strong> {c.upcoming.cinema ? 'is in cinemas' : 'comes out'} on {formatShortDay(c.upcoming.date)}.{' '}
+                <button className="note-open" onClick={open}>
+                  <strong>{r.name}</strong>
+                </button>{' '}
+                is {formatRuntime(r.minutes)}
+                {on}. It fits {listDays(c.nights, today)}
+                {c.late ? ', though it runs past your usual bedtime' : ''}.
+                {c.lastWatched && <span className="muted"> You last saw it in {formatMonth(c.lastWatched)}.</span>}
+              </div>
+            ) : (
+              <div className="note-line">
+                <button className="note-open" onClick={open}>
+                  <strong>{c.upcoming.name}</strong>
+                </button>{' '}
+                season {c.upcoming.season} starts {formatShortDay(c.upcoming.date)}.{' '}
+                {c.partial
+                  ? `All of season ${r.season} won’t fit before then, so just its last ${c.episodes} episodes (E${c.fromEpisode} to E${r.episodes})`
+                  : `Rewatch season ${r.season} (${r.episodes} episodes${on})`}
+                : {c.perNight} a night on {listDays(c.nights, today)}.
+                {c.lastWatched && <span className="muted"> You finished it in {formatMonth(c.lastWatched)}.</span>}
+              </div>
+            )}
+            <div className="row">
+              <button
+                className={`chip ${soon ? 'on' : ''}`}
+                disabled={soon}
+                onClick={async () => setLibrary(await window.api.setWatchSoon({ key: r.key, type: r.type, id: r.id, name: r.name, year: r.year, posterPath: r.posterPath, date: r.date ?? null }, true))}
+              >
+                <Check size={14} /> {soon ? 'In Watch soon' : 'Add to Watch soon'}
+              </button>
+              <button className="chip" onClick={async () => setLibrary(await window.api.dismissCatchUp(c.id))}>
+                Not now
+              </button>
+            </div>
+          </section>
+        )
+      })}
+    </>
+  )
+}
+
 /** Home in December (and the first week of January): your year in Eclipse is ready. */
 function YearNote(): React.JSX.Element | null {
   const go = useApp((s) => s.go)
@@ -313,6 +400,7 @@ export default function HomeNotes(): React.JSX.Element {
       <Noticed />
       <YearNote />
       <Together />
+      <CatchUpNote />
       <Comebacks />
       <ServicesNote />
       <Stalled />

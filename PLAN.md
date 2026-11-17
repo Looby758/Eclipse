@@ -189,6 +189,8 @@ They're ordered by what they need. Group A ideas stand on their own (they only u
 25. **Your year in Eclipse.** A year-in-review screen built from watch dates: hours watched, busiest month, most-watched director and actor, longest binge, lists and watch orders finished. Works for earlier years too, thanks to the Sequel dates. Shows up on Home in December, and any year can be opened from Lists. *Needs:* nothing new, but comes after 24 so the stats use repaired dates.
 26. **Eclipse in the menu bar or tray.** A small always-there menu in the Mac menu bar and the Windows system tray: my next episode for each show I'm watching with a one-click tick, and tonight's "start by" time. Eclipse keeps running there when the main window is closed, so I don't need the full app open while watching on the same computer. *Needs:* nothing new.
 
+33. **Catch up before the sequel** (added later, numbered after the others so nothing else moves). When the next film in a series or a new season of a show I've seen is coming out, Eclipse works backwards from the UK release date and finds a time to rewatch what comes before it: "Dune: Part Three is in cinemas on 18 Dec. Part Two is 2h46 on NOW TV. It fits this Saturday." For a show it suggests the previous season, or just its last few episodes if a full rewatch won't fit. Shown on Home a few weeks ahead, with one click to add it to Watch soon. Skips anything I watched recently enough not to need it (adjustable, say within the last year). *Needs:* nothing new (uses Phase 8's release dates, Phase 7's watch orders and Phase 9's evenings).
+
 ### Group B: noticing what I watch (in this order)
 
 I mostly watch on the computer, so this chain is where Eclipse ticks things for me and the dates stay right (the Sequel problem: forgetting to tick, so dates were wrong).
@@ -342,6 +344,15 @@ You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls
 - Phase 25, **your year in Eclipse**: from Lists (top right), Settings → *Your history*, or Home in December and the first week of January. Hours watched, films, episodes, days with something on, hours by month with the busiest highlighted, longest binge and longest run of days, your most-watched director (films) and actor (films and shows), shows and lists finished, and your top five. Any earlier year with dates can be picked at the top. Undated watches don't count.
 - Phase 26, **menu bar and tray**: Settings → *Eclipse in the system tray* (*menu bar* on the Mac) → On. The icon's menu has the next episode of each show you're watching (click to tick it, with a small notification), how long is left before bed and the time to start by, *Open Eclipse* and *Quit Eclipse*. While it's on, closing the window keeps Eclipse running there (so the phone remote keeps working); opening Eclipse again brings the window back.
 - Decisions: the remote and tray settings are kept per computer (not in the synced library). The remote uses port 47823. Ticks from the phone or the tray go on your rewatch if you're on one, and are refused while this copy is read-only (the phone says why).
+
+**Phase 33: Catch up before the sequel (built, waiting for you to try it)**
+
+- Home shows *Catch up before it's out* up to six weeks before a film or new season arrives:
+  - **Films:** the next film in a TMDB series (collection) where you've seen an earlier one. It uses the UK release date (*in cinemas* when TMDB has a UK cinema date) and suggests one of your watching nights before then (the second-to-last, so there's a night spare), with the runtime and which of your services has it. It says when the film runs past your usual bedtime.
+  - **Shows:** a new season of a show where you've ticked every episode of the season before. It plans that season over your last watching nights before the premiere, as many a night as fit your evening. If it won't all fit, it suggests just the last few episodes. Tonight counts only for the time left in it.
+- **Add to Watch soon** adds the film or show. **Not now** stops suggesting that one (saved in the library, so both computers agree).
+- Settings → *Your evenings* → *Catch up before a sequel*: it isn't suggested if you watched the one before in the last year (3 months, 6 months, 2 years or "always suggest it").
+- Decisions: watch orders like Marvel's aren't used yet, only TMDB's film series, because a guide's "previous" entry is often a show or a side story. Film details are fetched again once, to pick up the UK release dates.
 
 **Phases 27 to 31 (built, waiting for you to try them on Windows)**
 

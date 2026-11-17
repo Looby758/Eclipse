@@ -160,7 +160,7 @@ export function createTmdb({ key, fetch, language = 'en-GB' }: TmdbOptions): Tmd
 
     async details(type, id) {
       // Keywords say whether a film has a scene during or after the credits; videos give its trailer.
-      const raw = await get<RawDetails>(`/${type}/${id}`, { language, append_to_response: 'keywords,videos', include_video_language: 'en,null' })
+      const raw = await get<RawDetails>(`/${type}/${id}`, { language, append_to_response: type === 'movie' ? 'keywords,videos,release_dates' : 'keywords,videos', include_video_language: 'en,null' })
       return parseDetails(type, raw)
     }
   }
@@ -230,6 +230,7 @@ interface RawDetails {
   belongs_to_collection?: { id: number; name: string } | null
   /** Films: { keywords: [] }; shows: { results: [] }. */
   keywords?: { keywords?: { id: number; name: string }[]; results?: { id: number; name: string }[] }
+  release_dates?: { results?: { iso_3166_1?: string; release_dates?: { type?: number; release_date?: string }[] }[] }
   videos?: { results?: { site?: string; type?: string; key?: string; official?: boolean; iso_639_1?: string | null }[] }
 }
 
@@ -255,6 +256,19 @@ function episodeRuntime(raw: RawDetails): number | null {
 function stingersOf(words: { id: number; name: string }[]): { during: boolean; after: boolean } {
   const has = (id: number, name: string): boolean => words.some((w) => w.id === id || w.name === name)
   return { during: has(DURING_CREDITS, 'duringcreditsstinger'), after: has(AFTER_CREDITS, 'aftercreditsstinger') }
+}
+
+/** Each country's first cinema release (TMDB types 2 and 3) and first release of any kind, as days. */
+export function releasesOf(raw: NonNullable<RawDetails['release_dates']>): Record<string, { cinema: string | null; any: string }> {
+  const out: Record<string, { cinema: string | null; any: string }> = {}
+  for (const c of raw.results ?? []) {
+    if (!c.iso_3166_1) continue
+    const days = (c.release_dates ?? []).filter((r) => r.release_date && /^\d{4}-\d{2}-\d{2}/.test(r.release_date)).map((r) => ({ type: r.type ?? 0, day: r.release_date!.slice(0, 10) }))
+    if (!days.length) continue
+    const first = (list: typeof days): string | null => list.map((r) => r.day).sort()[0] ?? null
+    out[c.iso_3166_1] = { cinema: first(days.filter((r) => r.type === 2 || r.type === 3)), any: first(days)! }
+  }
+  return out
 }
 
 export function parseDetails(type: MediaType, raw: RawDetails): TitleDetails {
@@ -293,7 +307,8 @@ export function parseDetails(type: MediaType, raw: RawDetails): TitleDetails {
     lastAirDate: movie ? null : raw.last_air_date || null,
     collection: movie && raw.belongs_to_collection ? { id: raw.belongs_to_collection.id, name: raw.belongs_to_collection.name } : null,
     stingers: movie && raw.keywords ? stingersOf(raw.keywords.keywords ?? raw.keywords.results ?? []) : null,
-    trailer: raw.videos ? pickTrailer(raw.videos) : null
+    trailer: raw.videos ? pickTrailer(raw.videos) : null,
+    ...(movie && raw.release_dates ? { releases: releasesOf(raw.release_dates) } : {})
   }
 }
 

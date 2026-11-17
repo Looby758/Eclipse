@@ -252,7 +252,8 @@ function normalizePreferences(raw: unknown): Preferences {
       : [...DEFAULT_PREFERENCES.watchDays],
     renewals,
     calendarEpisodes: p.calendarEpisodes === true,
-    stalledDays: Number.isInteger(p.stalledDays) && p.stalledDays! >= 7 && p.stalledDays! <= 730 ? p.stalledDays! : DEFAULT_PREFERENCES.stalledDays
+    stalledDays: Number.isInteger(p.stalledDays) && p.stalledDays! >= 7 && p.stalledDays! <= 730 ? p.stalledDays! : DEFAULT_PREFERENCES.stalledDays,
+    catchUpSkipDays: Number.isInteger(p.catchUpSkipDays) && p.catchUpSkipDays! >= 0 && p.catchUpSkipDays! <= 3650 ? p.catchUpSkipDays! : DEFAULT_PREFERENCES.catchUpSkipDays
   }
 }
 
@@ -297,7 +298,12 @@ export function normalizeLibrary(raw: unknown): Library {
   const rawSoon = raw && typeof raw === 'object' ? (raw as { watchSoon?: unknown }).watchSoon : undefined
   const rawDropped = raw && typeof raw === 'object' ? (raw as { dropped?: unknown }).dropped : undefined
   const rawLeft = raw && typeof raw === 'object' ? (raw as { repairLeft?: unknown }).repairLeft : undefined
+  const rawCatch = raw && typeof raw === 'object' ? (raw as { catchUpDismissed?: unknown }).catchUpDismissed : undefined
   const finish = (): Library => {
+    if (Array.isArray(rawCatch)) {
+      const no = [...new Set(rawCatch.filter((x): x is string => typeof x === 'string' && /^(movie|tv):\d+(@S\d+)?>(movie|tv):\d+(@S\d+)?$/.test(x)))]
+      if (no.length) lib.catchUpDismissed = no.slice(-300)
+    }
     if (Array.isArray(rawLeft)) {
       const left = [...new Set(rawLeft.filter((x): x is string => typeof x === 'string' && /^(movie|tv):\d+@\d{4}-\d{2}-\d{2}$/.test(x)))]
       if (left.length) lib.repairLeft = left

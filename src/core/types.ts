@@ -75,6 +75,8 @@ export interface TitleDetails {
   stingers?: { during: boolean; after: boolean } | null
   /** The YouTube key of its trailer, if TMDB lists one. */
   trailer?: string | null
+  /** Films: release dates by country ("GB"): the first in cinemas, and the first of any kind. Missing in old saved copies. */
+  releases?: Record<string, { cinema: string | null; any: string }>
 }
 
 export type WatchStatus = 'want' | 'watching' | 'watched' | 'stopped'
@@ -168,6 +170,8 @@ export interface Preferences {
   calendarEpisodes: boolean
   /** Ask "keep going or stop?" about a show you haven't watched in this many days. */
   stalledDays: number
+  /** Catch up before the sequel: skip anything you watched within this many days (0 never skips). */
+  catchUpSkipDays: number
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -178,7 +182,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   watchDays: [1, 2, 3, 4, 5],
   renewals: {},
   calendarEpisodes: false,
-  stalledDays: 60
+  stalledDays: 60,
+  catchUpSkipDays: 365
 }
 
 /** Your library file (library.json in your data folder). */
@@ -194,6 +199,8 @@ export interface Library {
   dropped?: Dropped[]
   /** Repair old dates: batches you chose to leave as they are ("tv:1396@2023-03-04"), so they aren't offered again. */
   repairLeft?: string[]
+  /** Catch up before the sequel: ones you said "Not now" to ("movie:438631>movie:1170608"). */
+  catchUpDismissed?: string[]
 }
 
 /** A title taken off your library while clearing out the watchlist, kept whole so it can be put back. */
