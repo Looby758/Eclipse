@@ -1,4 +1,4 @@
-import type { Library, LibraryEntry, MediaType, Preferences, Rewatch, TitleDetails, TitleKey, TitleSnapshot, WatchStatus } from './types'
+import type { Dropped, Library, LibraryEntry, MediaType, Preferences, Rewatch, TitleDetails, TitleKey, TitleSnapshot, WatchStatus } from './types'
 import { DEFAULT_PREFERENCES, UNDATED, WATCH_STATUSES, episodeKey, parseEpisodeKey, parseTitleKey } from './types'
 import type { TitleRef } from './types'
 import { normalizeLists, normalizeWatchSoon, refOf } from './lists'
@@ -138,6 +138,35 @@ export function setNote(library: Library, key: string, note: string, now: Date =
   )
 }
 
+/** Sets or clears who recommended it. */
+export function setFrom(library: Library, key: string, from: string, now: Date = new Date()): Library {
+  const text = from.replace(/\s+/g, ' ').trim().slice(0, 80)
+  if ((library.entries[key]?.from ?? '') === text) return library
+  return changeEntry(
+    library,
+    key,
+    (e) => {
+      const next: LibraryEntry = { ...e, from: text }
+      if (!text) delete next.from
+      return next
+    },
+    now
+  )
+}
+
+/** Everyone (and everywhere) that's recommended you something, with how many, most first. Names match ignoring case. */
+export function recommenders(library: Library): { name: string; count: number }[] {
+  const n = new Map<string, { name: string; count: number }>()
+  for (const e of Object.values(library.entries)) {
+    if (!e.from) continue
+    const k = e.from.toLowerCase()
+    const x = n.get(k) ?? { name: e.from, count: 0 }
+    x.count++
+    n.set(k, x)
+  }
+  return [...n.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+}
+
 /** Sets or clears the day you watched something (YYYY-MM-DD). */
 export function setWatchedOn(library: Library, key: string, day: string | null, now: Date = new Date()): Library {
   if (day !== null && !isDay(day)) return library
@@ -165,6 +194,22 @@ export function preferencesOf(library: Library): Preferences {
   let full = filled.get(p)
   if (!full) filled.set(p, (full = { ...DEFAULT_PREFERENCES, ...p }))
   return full
+}
+
+/** Don't nudge about a title until a day (or nudge again: null). */
+export function snoozeTitle(library: Library, key: string, until: string | null, now: Date = new Date()): Library {
+  if (until !== null && !isDay(until)) return library
+  return changeEntry(
+    library,
+    key,
+    (e) => {
+      const next = { ...e }
+      if (until) next.snoozedUntil = until
+      else delete next.snoozedUntil
+      return next
+    },
+    now
+  )
 }
 
 /** Sets or clears the day you want to have finished a show by. */
@@ -205,7 +250,8 @@ function normalizePreferences(raw: unknown): Preferences {
       ? [...new Set(p.watchDays.filter((d): d is number => Number.isInteger(d) && d >= 0 && d <= 6))].sort()
       : [...DEFAULT_PREFERENCES.watchDays],
     renewals,
-    calendarEpisodes: p.calendarEpisodes === true
+    calendarEpisodes: p.calendarEpisodes === true,
+    stalledDays: Number.isInteger(p.stalledDays) && p.stalledDays! >= 7 && p.stalledDays! <= 730 ? p.stalledDays! : DEFAULT_PREFERENCES.stalledDays
   }
 }
 
@@ -248,7 +294,10 @@ export function normalizeLibrary(raw: unknown): Library {
   const legacy: { name: string; ref: TitleRef }[] = []
   const rawLists = raw && typeof raw === 'object' ? (raw as { lists?: unknown }).lists : undefined
   const rawSoon = raw && typeof raw === 'object' ? (raw as { watchSoon?: unknown }).watchSoon : undefined
+  const rawDropped = raw && typeof raw === 'object' ? (raw as { dropped?: unknown }).dropped : undefined
   const finish = (): Library => {
+    const dropped = normalizeDropped(rawDropped)
+    if (dropped) lib.dropped = dropped
     const lists = normalizeLists(rawLists, legacy)
     if (lists) lib.lists = lists
     const soon = normalizeWatchSoon(rawSoon)
@@ -272,7 +321,9 @@ export function normalizeLibrary(raw: unknown): Library {
       updatedAt: typeof e.updatedAt === 'string' ? e.updatedAt : typeof e.addedAt === 'string' ? e.addedAt : now,
       ...(isDay(e.watchedOn) ? { watchedOn: e.watchedOn } : {}),
       ...(isDay(e.finishBy) ? { finishBy: e.finishBy } : {}),
+      ...(isDay(e.snoozedUntil) ? { snoozedUntil: e.snoozedUntil } : {}),
       ...(typeof e.note === 'string' && e.note.trim() ? { note: e.note.trim().slice(0, 300) } : {}),
+      ...(typeof e.from === 'string' && e.from.trim() ? { from: e.from.trim().slice(0, 80) } : {}),
       ...(typeof e.rating === 'number' && e.rating >= 0 && e.rating <= 10 ? { rating: e.rating } : {}),
       ...(cleanEpisodes(e.episodes) ?? {}),
       ...(e.seenBefore === true ? { seenBefore: true } : {}),
@@ -297,9 +348,10 @@ function cleanRewatches(raw: unknown): { rewatches?: Rewatch[] } {
     if (!r || typeof r !== 'object' || !isDay((r as Rewatch).startedOn)) continue
     const x = r as Rewatch
     const done = isDay(x.finishedOn) ? x.finishedOn : undefined
-    // Only the last one can still be going.
-    if (!done && out.some((o) => !o.finishedOn)) continue
-    out.push({ startedOn: x.startedOn, ...(done ? { finishedOn: done } : {}), ...(cleanEpisodes(x.episodes) ?? {}) })
+    const who = typeof x.with === 'string' && x.with.trim() ? x.with.trim().slice(0, 60) : undefined
+    // Only one of your own rewatches can still be going (and one per person you watch with).
+    if (!done && out.some((o) => !o.finishedOn && o.with === who)) continue
+    out.push({ startedOn: x.startedOn, ...(done ? { finishedOn: done } : {}), ...(cleanEpisodes(x.episodes) ?? {}), ...(who ? { with: who } : {}) })
   }
   out.sort((a, b) => (a.finishedOn ? 0 : 1) - (b.finishedOn ? 0 : 1) || a.startedOn.localeCompare(b.startedOn))
   return out.length ? { rewatches: out } : {}
@@ -318,7 +370,7 @@ function cleanEpisodes(raw: unknown): { episodes: Record<string, string> } | nul
 // ---- Seen before and rewatches ----
 
 /** The rewatch you're part-way through, if any. */
-export const currentRewatch = (e: LibraryEntry | undefined): Rewatch | undefined => e?.rewatches?.find((r) => !r.finishedOn)
+export const currentRewatch = (e: LibraryEntry | undefined): Rewatch | undefined => e?.rewatches?.find((r) => !r.finishedOn && !r.with)
 
 const active = new WeakMap<LibraryEntry, LibraryEntry>()
 
@@ -445,7 +497,7 @@ export function markRowSeen(library: Library, ref: Row, on: boolean, now: Date =
   }
   if (!isRowSeenUndated(library, ref)) return library
   const e = library.entries[ref.key]
-  const keep = (x: LibraryEntry): boolean => !!(x.note || x.rating !== undefined || Object.keys(x.episodes ?? {}).length || x.finishBy || x.rewatches?.length)
+  const keep = (x: LibraryEntry): boolean => !!(x.note || x.from || x.rating !== undefined || Object.keys(x.episodes ?? {}).length || x.finishBy || x.rewatches?.length)
   if (seasonKeys) {
     // Take the season's ticks off. A show that was finished (seen before) is back to Watching;
     // if nothing's left, it comes off your library.
@@ -524,4 +576,121 @@ function airedEpisodes(d: Pick<TitleDetails, 'seasons' | 'nextEpisode'>, today: 
     }
   }
   return out
+}
+
+// ---- Watching with someone ----
+
+/** Shows you're watching with someone, each with its place in the show's rewatches list. */
+export function watchesWith(e: LibraryEntry | undefined): { index: number; watch: Rewatch & { with: string } }[] {
+  return (e?.rewatches ?? []).map((watch, index) => ({ index, watch })).filter((x): x is { index: number; watch: Rewatch & { with: string } } => !x.watch.finishedOn && !!x.watch.with)
+}
+
+/** Everyone you've watched (or are watching) something with, most used first. */
+export function companions(library: Library): string[] {
+  const n = new Map<string, number>()
+  for (const e of Object.values(library.entries)) for (const r of e.rewatches ?? []) if (r.with) n.set(r.with, (n.get(r.with) ?? 0) + 1)
+  return [...n.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([name]) => name)
+}
+
+/** Starts watching a show with someone. Your own progress isn't touched; one watch per person at a time. */
+export function startWatchWith(library: Library, item: LibraryItem, name: string, now: Date = new Date()): Library {
+  const who = name.trim().slice(0, 60)
+  if (!who) return library
+  const e = library.entries[item.key]
+  if (watchesWith(e).some((x) => x.watch.with.toLowerCase() === who.toLowerCase())) return library
+  const lib = e ? library : setStatus(library, item, 'watching', now)
+  return changeEntry(lib, item.key, (x) => ({ ...x, rewatches: [...(x.rewatches ?? []), { startedOn: localDate(now), with: who }] }), now)
+}
+
+/** Ticks (or unticks) episodes on a watch with someone, by its place in the list. */
+export function tickWith(library: Library, key: string, index: number, keys: string[], watched: boolean, now: Date = new Date()): Library {
+  const w = library.entries[key]?.rewatches?.[index]
+  if (!w?.with || w.finishedOn) return library
+  return changeEntry(
+    library,
+    key,
+    (e) => {
+      const episodes = { ...(w.episodes ?? {}) }
+      for (const k of keys) {
+        if (!parseEpisodeKey(k)) continue
+        if (watched) episodes[k] = episodes[k] ?? localDate(now)
+        else delete episodes[k]
+      }
+      const next: Rewatch = { ...w, episodes }
+      if (!Object.keys(episodes).length) delete next.episodes
+      return { ...e, rewatches: (e.rewatches ?? []).map((x, i) => (i === index ? next : x)) }
+    },
+    now
+  )
+}
+
+/** Finishes a watch with someone (it counts), or drops it (`keep` false). */
+export function endWatchWith(library: Library, key: string, index: number, keep: boolean, now: Date = new Date()): Library {
+  const w = library.entries[key]?.rewatches?.[index]
+  if (!w?.with || w.finishedOn) return library
+  return changeEntry(
+    library,
+    key,
+    (e) => {
+      const rewatches = keep ? (e.rewatches ?? []).map((x, i) => (i === index ? { ...x, finishedOn: localDate(now) } : x)) : (e.rewatches ?? []).filter((_, i) => i !== index)
+      const next: LibraryEntry = { ...e, rewatches }
+      if (!rewatches.length) delete next.rewatches
+      return next
+    },
+    now
+  )
+}
+
+// ---- Clearing out the watchlist ----
+
+const DROPPED_KEPT = 30
+
+function normalizeDropped(raw: unknown): Dropped[] | undefined {
+  if (!Array.isArray(raw)) return undefined
+  const out: Dropped[] = []
+  for (const d of raw) {
+    if (!d || typeof d !== 'object') continue
+    const x = d as Partial<Dropped>
+    const key = (x.entry as LibraryEntry | undefined)?.key
+    if (typeof key !== 'string' || typeof x.droppedAt !== 'string' || out.some((o) => o.entry.key === key)) continue
+    const entry = normalizeLibrary({ version: 1, entries: { [key]: x.entry } }).entries[key]
+    if (entry) out.push({ entry, droppedAt: x.droppedAt, ...(x.soon ? { soon: true } : {}) })
+  }
+  return out.length ? out.slice(0, DROPPED_KEPT) : undefined
+}
+
+/** Takes a title off your library, keeping it whole in "recently dropped" so it can come back. */
+export function dropTitle(library: Library, key: string, now: Date = new Date()): Library {
+  const entry = library.entries[key]
+  if (!entry) return library
+  const entries = { ...library.entries }
+  delete entries[key]
+  const soon = (library.watchSoon ?? []).some((r) => r.key === key)
+  const dropped: Dropped[] = [{ entry, droppedAt: now.toISOString(), ...(soon ? { soon: true } : {}) }, ...(library.dropped ?? []).filter((d) => d.entry.key !== key)].slice(0, DROPPED_KEPT)
+  const next: Library = { ...library, entries, dropped }
+  if (soon) next.watchSoon = (library.watchSoon ?? []).filter((r) => r.key !== key)
+  return next
+}
+
+/** Puts a dropped title back as it was (and back on Watch soon if it was there). */
+export function restoreDropped(library: Library, key: string): Library {
+  const d = (library.dropped ?? []).find((x) => x.entry.key === key)
+  if (!d) return library
+  const dropped = (library.dropped ?? []).filter((x) => x !== d)
+  const next: Library = { ...library, entries: { ...library.entries, [key]: library.entries[key] ?? d.entry }, dropped }
+  if (!dropped.length) delete next.dropped
+  if (d.soon && !(library.watchSoon ?? []).some((r) => r.key === key)) next.watchSoon = [...(library.watchSoon ?? []), refOf(d.entry)]
+  return next
+}
+
+/**
+ * The watchlist in the order to go through it: oldest additions first, newest first, or the ones
+ * not on your services first (then oldest). `onMine` says which are on your services.
+ */
+export function clearOutOrder(library: Library, order: 'oldest' | 'newest' | 'notMine', onMine: (key: string) => boolean | undefined): LibraryEntry[] {
+  const want = Object.values(library.entries).filter((e) => e.status === 'want')
+  const byAdded = (a: LibraryEntry, b: LibraryEntry): number => a.addedAt.localeCompare(b.addedAt) || a.key.localeCompare(b.key)
+  if (order === 'newest') return want.sort((a, b) => byAdded(b, a))
+  if (order === 'oldest') return want.sort(byAdded)
+  return want.sort((a, b) => Number(onMine(a.key) === true) - Number(onMine(b.key) === true) || byAdded(a, b))
 }

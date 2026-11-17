@@ -1,5 +1,7 @@
 import type { ImportSummary } from '@core/sequel'
 import type { ReleaseEvent } from '@core/calendar'
+import type { KnownFrom } from '@core/knownfrom'
+import type { ServiceHistory } from '@core/services'
 import type { CollectionDetails, Credits, ListSource, PersonDetails, TitleRef, TmdbListDetails } from '@core/types'
 import type { Library, MediaType, Preferences, Provider, SearchResult, SeasonDetails, TitleDetails, TitleKey, TitleSnapshot, WatchProviders, WatchStatus } from '@core/types'
 
@@ -92,6 +94,8 @@ export interface EclipseApi {
 
   /** Who directed it and the main cast. */
   credits(type: MediaType, id: number): Promise<Result<Fetched<Credits>>>
+  /** Cast you know from other things you've watched. */
+  knownFrom(type: MediaType, id: number): Promise<Result<KnownFrom[]>>
   person(id: number): Promise<Result<Fetched<PersonDetails>>>
   collection(id: number): Promise<Result<Fetched<CollectionDetails>>>
   tmdbList(id: number): Promise<Result<Fetched<TmdbListDetails>>>
@@ -119,6 +123,10 @@ export interface EclipseApi {
   setEpisodes(item: Item, keys: string[], watched: boolean, undated?: boolean): Promise<Library>
   /** Watched before Eclipse, with no date. */
   markSeenBefore(item: Item): Promise<Library>
+  /** Watching a show with someone: its own progress, apart from yours. */
+  startWatchWith(item: Item, name: string): Promise<Library>
+  tickWith(key: TitleKey, index: number, keys: string[], watched: boolean): Promise<Library>
+  endWatchWith(key: TitleKey, index: number, keep: boolean): Promise<Library>
   /** A list or watch-order row: seen with no date (a season row ticks its episodes), or undo that. */
   markRowSeen(ref: TitleRef, on: boolean): Promise<Library>
   /** Starts watching it again (a film counts as watched again today). */
@@ -127,9 +135,19 @@ export interface EclipseApi {
   endRewatch(key: string, keep: boolean): Promise<Library>
   removeRewatch(key: string, index: number): Promise<Library>
   setNote(key: TitleKey, note: string): Promise<Library>
+  /** Clear out: take it off your library (it goes to recently dropped), or put it back. */
+  dropTitle(key: TitleKey): Promise<Library>
+  restoreDropped(key: TitleKey): Promise<Library>
+  /** Who recommended it (empty clears it). */
+  setFrom(key: TitleKey, from: string): Promise<Library>
   setWatchedOn(key: TitleKey, day: string | null): Promise<Library>
   /** Sets or clears the day you want to have finished a show by. */
   setFinishBy(key: TitleKey, day: string | null): Promise<Library>
+  /** Don't nudge about it until a day ("remind me later"), or null to clear. */
+  snooze(key: TitleKey, until: string | null): Promise<Library>
+  /** What arrived on and left your services lately (checked once a day). */
+  servicesHistory(): Promise<ServiceHistory>
+  onServicesChanged(callback: (history: ServiceHistory) => void): () => void
   setPreferences(patch: Partial<Preferences>): Promise<Library>
   /** Called when library.json changes on disk (e.g. Google Drive synced it from your other computer). */
   onLibraryChanged(callback: (library: Library) => void): () => void

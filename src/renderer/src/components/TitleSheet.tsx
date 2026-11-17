@@ -1,6 +1,6 @@
-import { ExternalLink, RefreshCw } from 'lucide-react'
+import { ExternalLink, Popcorn, RefreshCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { formatDate, formatRuntime, plural } from '@core/format'
+import { formatDate, formatRuntime, plural, stingerLine } from '@core/format'
 import { tmdbPageUrl } from '@core/tmdb'
 import type { MediaType, TitleDetails } from '@core/types'
 import { DEFAULT_GLOW, hsl, posterGlow, type Hsl } from '../lib/posterColour'
@@ -12,6 +12,7 @@ import WatchSoonToggle from './WatchSoonToggle'
 import Credits from './Credits'
 import EntryDetails from './EntryDetails'
 import RewatchPanel from './RewatchPanel'
+import WatchWithPanel from './WatchWithPanel'
 import EpisodeTimeline from './EpisodeTimeline'
 import WhereToWatch from './WhereToWatch'
 import TimeCard from './TimeCard'
@@ -92,10 +93,16 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
           {d.originalName && <div className="muted">{d.originalName}</div>}
           <div className="title-facts">{facts.join(' · ')}</div>
           {d.tagline && <p className="tagline">{d.tagline}</p>}
+          {stingerLine(d.stingers) && (
+            <p className="stinger">
+              <Popcorn size={15} /> {stingerLine(d.stingers)}
+            </p>
+          )}
           <StatusPicker details={d} />
           <WatchSoonToggle details={d} />
           <EntryDetails titleKey={d.key} />
           <RewatchPanel details={d} />
+          <WatchWithPanel details={d} />
         </div>
 
         <div className="title-body">

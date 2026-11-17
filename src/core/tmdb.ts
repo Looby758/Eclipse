@@ -159,7 +159,8 @@ export function createTmdb({ key, fetch, language = 'en-GB' }: TmdbOptions): Tmd
     },
 
     async details(type, id) {
-      const raw = await get<RawDetails>(`/${type}/${id}`, { language })
+      // Keywords say whether a film has a scene during or after the credits; videos give its trailer.
+      const raw = await get<RawDetails>(`/${type}/${id}`, { language, append_to_response: 'keywords,videos', include_video_language: 'en,null' })
       return parseDetails(type, raw)
     }
   }
@@ -227,6 +228,21 @@ interface RawDetails {
   number_of_episodes?: number
   next_episode_to_air?: { season_number: number; episode_number: number; name: string; air_date: string | null } | null
   belongs_to_collection?: { id: number; name: string } | null
+  /** Films: { keywords: [] }; shows: { results: [] }. */
+  keywords?: { keywords?: { id: number; name: string }[]; results?: { id: number; name: string }[] }
+  videos?: { results?: { site?: string; type?: string; key?: string; official?: boolean; iso_639_1?: string | null }[] }
+}
+
+/** TMDB's keywords for a scene during the credits and one after them. */
+const DURING_CREDITS = 179431
+const AFTER_CREDITS = 179430
+
+/** The best YouTube trailer: official ones first, then any trailer, then a teaser. */
+export function pickTrailer(videos: RawDetails['videos']): string | null {
+  const yt = (videos?.results ?? []).filter((v) => v.site === 'YouTube' && v.key)
+  const rank = (v: (typeof yt)[number]): number => (v.type === 'Trailer' ? 0 : v.type === 'Teaser' ? 2 : 4) + (v.official ? 0 : 1)
+  const best = yt.filter((v) => v.type === 'Trailer' || v.type === 'Teaser').sort((a, b) => rank(a) - rank(b))[0]
+  return best?.key ?? null
 }
 
 /** A show's usual episode length: TMDB's list (often empty these days), else the latest episode's. */
@@ -234,6 +250,11 @@ function episodeRuntime(raw: RawDetails): number | null {
   const times = (raw.episode_run_time ?? []).filter((n) => n > 0)
   if (times.length) return Math.round(times.reduce((a, b) => a + b, 0) / times.length)
   return raw.last_episode_to_air?.runtime || null
+}
+
+function stingersOf(words: { id: number; name: string }[]): { during: boolean; after: boolean } {
+  const has = (id: number, name: string): boolean => words.some((w) => w.id === id || w.name === name)
+  return { during: has(DURING_CREDITS, 'duringcreditsstinger'), after: has(AFTER_CREDITS, 'aftercreditsstinger') }
 }
 
 export function parseDetails(type: MediaType, raw: RawDetails): TitleDetails {
@@ -270,7 +291,9 @@ export function parseDetails(type: MediaType, raw: RawDetails): TitleDetails {
     numberOfEpisodes: movie ? null : (raw.number_of_episodes ?? null),
     nextEpisode: movie ? null : next,
     lastAirDate: movie ? null : raw.last_air_date || null,
-    collection: movie && raw.belongs_to_collection ? { id: raw.belongs_to_collection.id, name: raw.belongs_to_collection.name } : null
+    collection: movie && raw.belongs_to_collection ? { id: raw.belongs_to_collection.id, name: raw.belongs_to_collection.name } : null,
+    stingers: movie && raw.keywords ? stingersOf(raw.keywords.keywords ?? raw.keywords.results ?? []) : null,
+    trailer: raw.videos ? pickTrailer(raw.videos) : null
   }
 }
 

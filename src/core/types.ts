@@ -71,6 +71,10 @@ export interface TitleDetails {
   lastAirDate: string | null
   /** Films only: the TMDB collection (franchise) it belongs to. */
   collection: { id: number; name: string } | null
+  /** Films: whether TMDB tags a scene during the credits and one after them (null for shows; missing in old saved copies). */
+  stingers?: { during: boolean; after: boolean } | null
+  /** The YouTube key of its trailer, if TMDB lists one. */
+  trailer?: string | null
 }
 
 export type WatchStatus = 'want' | 'watching' | 'watched' | 'stopped'
@@ -103,6 +107,8 @@ export interface LibraryEntry {
   watchedOn?: string
   /** A one-line note, e.g. "watched with Dad at Christmas". */
   note?: string
+  /** Who (or what) recommended it: "Sam", "a podcast", "the trailer before Dune". */
+  from?: string
   /** Your own rating out of 10, if you gave one (e.g. brought over from Sequel). */
   rating?: number
   /** Shows: the episodes you've seen, by episodeKey ("S1E3"), each with the day you ticked it ("seen" when there's no date). */
@@ -113,6 +119,8 @@ export interface LibraryEntry {
   rewatches?: Rewatch[]
   /** Shows: the day you want to have finished it by (YYYY-MM-DD), for "Finish it by Friday". */
   finishBy?: string
+  /** Don't nudge about it ("keep going or stop?", "season 4 is out") before this day (YYYY-MM-DD). */
+  snoozedUntil?: string
   title: TitleSnapshot
 }
 
@@ -123,6 +131,8 @@ export interface Rewatch {
   finishedOn?: string
   /** Shows: this rewatch's own episode ticks, by episodeKey, each with its day. */
   episodes?: Record<string, string>
+  /** Watching with someone ("Sam"): kept apart from your own progress, and several can run at once. */
+  with?: string
 }
 
 /** An episode ticked as seen with no date (watched before Eclipse). */
@@ -152,6 +162,8 @@ export interface Preferences {
   renewals: Record<string, number>
   /** Release calendar: every new episode, not just new seasons, finales and films. */
   calendarEpisodes: boolean
+  /** Ask "keep going or stop?" about a show you haven't watched in this many days. */
+  stalledDays: number
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -161,7 +173,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   bedtime: '23:00',
   watchDays: [1, 2, 3, 4, 5],
   renewals: {},
-  calendarEpisodes: false
+  calendarEpisodes: false,
+  stalledDays: 60
 }
 
 /** Your library file (library.json in your data folder). */
@@ -173,6 +186,16 @@ export interface Library {
   lists?: SavedList[]
   /** Watch soon: the few films and shows you want to get to next, in your order. */
   watchSoon?: TitleRef[]
+  /** Titles dropped while clearing out the watchlist, newest first (the last 30), so they can come back. */
+  dropped?: Dropped[]
+}
+
+/** A title taken off your library while clearing out the watchlist, kept whole so it can be put back. */
+export interface Dropped {
+  entry: LibraryEntry
+  droppedAt: string
+  /** It was on Watch soon too. */
+  soon?: boolean
 }
 
 // ---- Lists, completion and watch orders ----
@@ -201,6 +224,8 @@ export type ListSource =
   | { kind: 'tmdbList'; listId: number }
   | { kind: 'guide'; guideId: string }
   | { kind: 'custom' }
+  /** Everything in your library recommended by one person or place ("from Sam"). Not saved; made from your library. */
+  | { kind: 'from'; name: string }
 
 /** A list in your library. Only your own lists keep their titles here; the rest come from TMDB or the guides. */
 export interface SavedList {
@@ -294,4 +319,5 @@ export interface WatchProviders {
 }
 
 /** How you can watch something, for the filters. */
-export type Availability = 'mine' | 'stream' | 'rentbuy' | 'none'
+/** On your services, free (BBC iPlayer, ITVX, Channel 4, My5…), streaming elsewhere, rent or buy only, or nowhere. */
+export type Availability = 'mine' | 'free' | 'stream' | 'rentbuy' | 'none'

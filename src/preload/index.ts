@@ -21,6 +21,7 @@ const api: EclipseApi = {
   services: () => ipcRenderer.invoke('tmdb:services'),
 
   credits: (type, id) => ipcRenderer.invoke('tmdb:credits', type, id),
+  knownFrom: (type, id) => ipcRenderer.invoke('tmdb:knownFrom', type, id),
   person: (id) => ipcRenderer.invoke('tmdb:person', id),
   collection: (id) => ipcRenderer.invoke('tmdb:collection', id),
   tmdbList: (id) => ipcRenderer.invoke('tmdb:list', id),
@@ -40,13 +41,26 @@ const api: EclipseApi = {
   setStatus: (item, status) => ipcRenderer.invoke('library:setStatus', item, status),
   setEpisodes: (item, keys, watched, undated) => ipcRenderer.invoke('library:setEpisodes', item, keys, watched, undated),
   markSeenBefore: (item) => ipcRenderer.invoke('library:seenBefore', item),
+  startWatchWith: (item, name) => ipcRenderer.invoke('library:startWith', item, name),
+  tickWith: (key, index, keys, watched) => ipcRenderer.invoke('library:tickWith', key, index, keys, watched),
+  endWatchWith: (key, index, keep) => ipcRenderer.invoke('library:endWith', key, index, keep),
   markRowSeen: (ref, on) => ipcRenderer.invoke('library:markRowSeen', ref, on),
   startRewatch: (item) => ipcRenderer.invoke('library:startRewatch', item),
   endRewatch: (key, keep) => ipcRenderer.invoke('library:endRewatch', key, keep),
   removeRewatch: (key, index) => ipcRenderer.invoke('library:removeRewatch', key, index),
   setNote: (key, note) => ipcRenderer.invoke('library:setNote', key, note),
+  dropTitle: (key) => ipcRenderer.invoke('library:drop', key),
+  restoreDropped: (key) => ipcRenderer.invoke('library:restore', key),
+  setFrom: (key, from) => ipcRenderer.invoke('library:setFrom', key, from),
   setWatchedOn: (key, day) => ipcRenderer.invoke('library:setWatchedOn', key, day),
   setFinishBy: (key, day) => ipcRenderer.invoke('library:setFinishBy', key, day),
+  snooze: (key, until) => ipcRenderer.invoke('library:snooze', key, until),
+  servicesHistory: () => ipcRenderer.invoke('services:history'),
+  onServicesChanged: (callback) => {
+    const handler = (_e: unknown, h: Parameters<typeof callback>[0]): void => callback(h)
+    ipcRenderer.on('services:changed', handler)
+    return () => ipcRenderer.removeListener('services:changed', handler)
+  },
   setPreferences: (patch) => ipcRenderer.invoke('library:setPreferences', patch),
   onLibraryChanged: (callback) => {
     const handler = (_e: unknown, library: Parameters<typeof callback>[0]): void => callback(library)

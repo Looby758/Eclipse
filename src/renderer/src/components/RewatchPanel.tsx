@@ -75,7 +75,7 @@ export default function RewatchPanel({ details: d }: { details: TitleDetails }):
           {finished.map(({ r, index }, n) => (
             <li key={index}>
               <span>
-                Rewatch {n + 1}
+                {r.with ? `With ${r.with}` : `Rewatch ${n + 1}`}
                 <span className="muted">
                   {' · '}
                   {film || r.startedOn === r.finishedOn ? formatDate(r.finishedOn) : `${formatDate(r.startedOn)} to ${formatDate(r.finishedOn)}`}

@@ -2,7 +2,7 @@ import { Plus } from 'lucide-react'
 import { useState } from 'react'
 import { GUIDES } from '@core/guides'
 import { listIdFor, listsOf, progressOf, sourceOf } from '@core/lists'
-import { localDate } from '@core/library'
+import { localDate, recommenders } from '@core/library'
 import { imageUrl } from '@core/tmdb'
 import { useApp } from '../store/app'
 import { kindLabel, useList } from '../lib/lists'
@@ -71,6 +71,7 @@ export default function ListsSheet(): React.JSX.Element {
   const people = lists.filter((l) => l.source.kind === 'person')
   const own = lists.filter((l) => l.source.kind === 'custom')
   const tmdb = lists.filter((l) => l.source.kind === 'tmdbList')
+  const picks = recommenders(library)
 
   return (
     <Sheet>
@@ -96,6 +97,17 @@ export default function ListsSheet(): React.JSX.Element {
         </div>
       ) : (
         <p className="muted">Open a film, click a director or actor, then “Add to your lists” to track how many of theirs you’ve seen.</p>
+      )}
+
+      <h2 className="list-sub">Recommended by</h2>
+      {picks.length ? (
+        <div className="list-cards">
+          {picks.map((p) => (
+            <ListCard key={p.name} id={listIdFor({ kind: 'from', name: p.name })} name={`${p.name}’s picks`} />
+          ))}
+        </div>
+      ) : (
+        <p className="muted">On a film or show’s page, fill in <strong>From</strong> (“Sam”, “a podcast”) and everything from the same person or place gathers here.</p>
       )}
 
       <h2 className="list-sub">Your lists</h2>

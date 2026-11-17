@@ -1,10 +1,10 @@
-import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, session, shell } from 'electron'
 import { join } from 'path'
 import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import { exportFiles } from '@core/export'
 import { toIcs } from '@core/calendar'
 import { moveWatchSoon, setWatchSoon } from '@core/watchsoon'
-import { endRewatch, localDate, markRowSeen, settleSeenShows, markSeenBefore, preferencesOf, removeRewatch, setEpisodes, startRewatch, setFinishBy, setNote, setPreferences, setStatus, setWatchedOn } from '@core/library'
+import { dropTitle, restoreDropped, setFrom, endWatchWith, startWatchWith, tickWith, endRewatch, localDate, markRowSeen, settleSeenShows, markSeenBefore, preferencesOf, removeRewatch, setEpisodes, startRewatch, setFinishBy, snoozeTitle, setNote, setPreferences, setStatus, setWatchedOn } from '@core/library'
 import { TmdbError } from '@core/tmdb'
 import { createList, followList, moveInList, removeList, renameList, setInList } from '@core/lists'
 import { UNDATED, type TitleRef } from '@core/types'
@@ -16,6 +16,7 @@ import * as tmdb from './tmdb'
 import { backupLibrary, getLibrary, isDirectory, openLibrary, saveLibrary } from './library'
 import { readSequelExport } from './sequelImport'
 import { setupUpdater } from './updater'
+import { getHistory, startServiceWatch } from './services'
 import { guardStatus, readOnlyReason, startGuard, stopGuard, takeOver } from './guard'
 
 // Window background, matching --bg in src/renderer/src/styles/theme.css so there's no flash on start.
@@ -160,6 +161,7 @@ function setupIpc(): void {
     })
   )
   ipcMain.handle('lists:open', (_e, id: string, refresh?: boolean) => attempt(() => tmdb.openList(id, getLibrary(), refresh)))
+  ipcMain.handle('tmdb:knownFrom', (_e, type: 'movie' | 'tv', id: number) => attempt(() => tmdb.knownFromFor(type, id, getLibrary())))
   ipcMain.handle('tmdb:detailsMany', (_e, keys: string[]) => tmdb.detailsMany(keys))
   ipcMain.handle('tmdb:services', () => attempt(() => tmdb.services(region())))
   ipcMain.handle('tmdb:trending', () => attempt(() => tmdb.trending()))
@@ -173,6 +175,12 @@ function setupIpc(): void {
   })
   ipcMain.handle('library:setStatus', (_e, item, newStatus) => saveLibrary(setStatus(getLibrary(), item, newStatus)))
   ipcMain.handle('library:setEpisodes', (_e, item, keys: string[], watched: boolean, undated?: boolean) => saveLibrary(setEpisodes(getLibrary(), item, keys, watched, new Date(), !!undated)))
+  ipcMain.handle('library:drop', (_e, key) => saveLibrary(dropTitle(getLibrary(), key)))
+  ipcMain.handle('library:restore', (_e, key) => saveLibrary(restoreDropped(getLibrary(), key)))
+  ipcMain.handle('library:setFrom', (_e, key, from) => saveLibrary(setFrom(getLibrary(), key, from)))
+  ipcMain.handle('library:startWith', (_e, item, name) => saveLibrary(startWatchWith(getLibrary(), item, name)))
+  ipcMain.handle('library:tickWith', (_e, key, index, keys, watched) => saveLibrary(tickWith(getLibrary(), key, index, keys, watched)))
+  ipcMain.handle('library:endWith', (_e, key, index, keep) => saveLibrary(endWatchWith(getLibrary(), key, index, keep)))
   ipcMain.handle('library:seenBefore', (_e, item) => saveLibrary(markSeenBefore(getLibrary(), item)))
   ipcMain.handle('library:markRowSeen', async (_e, ref, on) => {
     const lib = saveLibrary(markRowSeen(getLibrary(), ref, on))
@@ -203,6 +211,8 @@ function setupIpc(): void {
   ipcMain.handle('soon:set', (_e, ref: TitleRef, on: boolean) => saveLibrary(setWatchSoon(getLibrary(), ref, on)))
   ipcMain.handle('soon:move', (_e, from: number, to: number) => saveLibrary(moveWatchSoon(getLibrary(), from, to)))
   ipcMain.handle('library:setFinishBy', (_e, key: string, day: string | null) => saveLibrary(setFinishBy(getLibrary(), key, day)))
+  ipcMain.handle('library:snooze', (_e, key: string, until: string | null) => saveLibrary(snoozeTitle(getLibrary(), key, until)))
+  ipcMain.handle('services:history', () => getHistory())
   ipcMain.handle('library:setPreferences', (_e, patch) => saveLibrary(setPreferences(getLibrary(), patch)))
 
   // Sequel import: pick the export and see what it holds, then apply it (or don't).
@@ -285,11 +295,18 @@ function createWindow(): BrowserWindow {
 }
 
 app.whenReady().then(() => {
+  // Trailers: YouTube's player refuses to play without a Referer, which a page loaded from a file
+  // doesn't send. Name the app's own home page instead.
+  session.defaultSession.webRequest.onBeforeSendHeaders({ urls: ['https://www.youtube-nocookie.com/*'] }, (details, callback) => {
+    details.requestHeaders['Referer'] ??= 'https://github.com/Looby758/Eclipse'
+    callback({ requestHeaders: details.requestHeaders })
+  })
   reopenLibrary()
   setupIpc()
   mainWindow = createWindow()
   mainWindow.on('closed', () => (mainWindow = null))
   void settleOnStart()
+  startServiceWatch(getLibrary, () => mainWindow?.webContents.send('services:changed', getHistory()))
   void setupUpdater()
   app.on('activate', () => {
     if (!BrowserWindow.getAllWindows().length) {

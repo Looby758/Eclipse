@@ -19,6 +19,9 @@ describe('where to watch', () => {
     const mine = [337, 39]
     expect(availability(parseProviders('GB', { flatrate: [disney] }), mine)).toBe('mine')
     expect(availability(parseProviders('GB', { flatrate: [netflix] }), mine)).toBe('stream')
+    const iplayer = { provider_id: 38, provider_name: 'BBC iPlayer', logo_path: '/b.png', display_priority: 4 }
+    expect(availability(parseProviders('GB', { flatrate: [netflix], free: [iplayer] }), mine)).toBe('free')
+    expect(availability(parseProviders('GB', { free: [iplayer] }), [38])).toBe('mine')
     expect(availability(parseProviders('GB', { rent: [apple] }), mine)).toBe('rentbuy')
     expect(availability(parseProviders('GB', {}), mine)).toBe('none')
     expect(onMyServices(parseProviders('GB', { flatrate: [netflix, now] }), mine).map((s) => s.name)).toEqual(['Now TV'])
@@ -29,6 +32,9 @@ describe('where to watch', () => {
     expect(passesFilter('mine', 'mine')).toBe(true)
     expect(passesFilter('mine', 'stream')).toBe(false)
     expect(passesFilter('none', undefined)).toBe(false)
+    expect(passesFilter('mineOrFree', 'free')).toBe(true)
+    expect(passesFilter('mineOrFree', 'mine')).toBe(true)
+    expect(passesFilter('mineOrFree', 'stream')).toBe(false)
   })
 
   it('guesses Disney+ and NOW TV from the list', () => {

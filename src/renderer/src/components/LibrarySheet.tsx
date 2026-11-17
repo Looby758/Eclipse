@@ -1,3 +1,4 @@
+import { Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { countByStatus, entriesWith, localDate, preferencesOf } from '@core/library'
 import type { MediaType, WatchStatus } from '@core/types'
@@ -10,6 +11,7 @@ import { useAvailability, useDetailsMany } from '../lib/availability'
 import Sheet from './Sheet'
 import TitleCard from './TitleCard'
 import Credits from './Credits'
+import { RecentlyDropped } from './ClearOutSheet'
 import { focusSearch } from './Dock'
 import AvailabilityFilter from './AvailabilityFilter'
 import WatchlistHours from './WatchlistHours'
@@ -69,6 +71,13 @@ export default function LibrarySheet(): React.JSX.Element {
           </button>
         ))}
       </nav>
+      {tab === 'want' && counts.want > 0 && (
+        <div className="row clearout-link">
+          <button className="btn glass" onClick={() => useApp.getState().go({ name: 'clearout' })}>
+            <Sparkles size={16} /> Clear out the watchlist
+          </button>
+        </div>
+      )}
       {hours && entries.length > 0 && <WatchlistHours tab={tab} hours={hours} loading={loadingTimes} unknown={entries.length - entries.filter((e) => left[e.key]).length} />}
       {!empty && (
         <div className="library-controls">
@@ -106,6 +115,7 @@ export default function LibrarySheet(): React.JSX.Element {
           ))}
         </div>
       )}
+      {tab === 'want' && <RecentlyDropped limit={5} />}
       <Credits justWatch={filter !== 'any' || timed} />
     </Sheet>
   )

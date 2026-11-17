@@ -312,7 +312,8 @@ code { font-size: 0.92em; }
 .seasons { scroll-margin-top: 24px; }
 
 /* ---- On this day (Phase 5) ---- */
-.otd { position: absolute; right: 40px; top: 96px; width: 330px; max-height: calc(100% - 230px); overflow-y: auto; z-index: 2; padding: 18px 18px 14px; border-radius: var(--radius-lg); background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(26px); box-shadow: var(--shadow); animation: sheet-rise 0.8s var(--ease) both; }
+.home-side { position: absolute; right: 40px; top: 96px; width: 330px; max-height: calc(100% - 230px); overflow-y: auto; z-index: 2; display: flex; flex-direction: column; gap: 12px; animation: sheet-rise 0.8s var(--ease) both; }
+.otd { padding: 18px 18px 14px; border-radius: var(--radius-lg); background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(26px); box-shadow: var(--shadow); }
 .otd-kicker { display: flex; align-items: center; gap: 6px; font-size: var(--text-xs); letter-spacing: 0.24em; text-transform: uppercase; color: var(--text-muted); }
 .otd-list { list-style: none; margin: 6px 0 0; padding: 0; }
 .otd-when { margin: 12px 0 6px; font: 700 var(--text-md) var(--font-display); color: var(--text-strong); }
@@ -324,7 +325,7 @@ code { font-size: 0.92em; }
 .otd-line { font-size: var(--text-sm); line-height: 1.4; color: var(--text); }
 .otd-note { font-size: var(--text-sm); font-style: italic; color: var(--cyan); }
 .otd-date { font-size: var(--text-xs); color: var(--text-faint); }
-@media (max-width: 1080px) { .otd { display: none; } }
+@media (max-width: 1080px) { .home-side { display: none; } }
 
 /* ---- Lists, completion and watch orders (Phases 6 and 7) ---- */
 .text-input { height: 38px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--glass-soft); color: var(--text); outline: 0; min-width: 220px; }
@@ -457,3 +458,67 @@ button.list-seen.undo:hover { background: var(--glass-hover); }
 .guard .btn { flex-shrink: 0; }
 .guard.nudge { animation: guard-nudge 0.4s var(--ease); }
 @keyframes guard-nudge { 0%, 100% { transform: translateX(-50%); } 25% { transform: translateX(calc(-50% - 6px)); } 75% { transform: translateX(calc(-50% + 6px)); } }
+
+/* Watching with someone */
+.with { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; max-width: 760px; }
+.with-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 14px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--glass-soft); }
+.with-text { display: flex; flex-direction: column; gap: 2px; }
+.with-text strong { display: inline-flex; align-items: center; gap: 6px; color: var(--text-strong); }
+.with-upto, .with-name { height: 36px; padding: 0 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--glass-soft); color: var(--text); font-size: var(--text-sm); color-scheme: inherit; }
+.with-name { width: 200px; outline: 0; }
+.with-name:focus { border-color: var(--accent); }
+
+/* Home notes: small cards above On this day (watching with someone, stalled shows, new seasons, your services) */
+.note { padding: 14px 16px; border-radius: var(--radius-lg); background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(26px); box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 8px; }
+.note-kicker { display: flex; align-items: center; gap: 6px; font-size: var(--text-xs); letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); }
+.note-line { font-size: var(--text-sm); line-height: 1.45; color: var(--text); }
+.note-line strong { color: var(--text-strong); }
+.note-open { border: 0; background: none; padding: 0; text-align: left; cursor: pointer; color: inherit; font: inherit; }
+.note-open:hover strong { text-decoration: underline; }
+.note-quote { font-size: var(--text-sm); line-height: 1.45; color: var(--text-muted); border-left: 2px solid var(--line); padding-left: 10px; }
+.note .row .chip { height: 32px; padding: 0 12px; }
+
+/* Stay for the credits */
+.stinger { display: flex; align-items: center; gap: 8px; margin: 8px 0 0; color: var(--cyan); font-size: var(--text-sm); }
+.stinger-chip { margin-left: 8px; padding: 1px 8px; border-radius: 999px; font-size: var(--text-xs); color: var(--cyan); border: 1px solid var(--line); white-space: nowrap; }
+
+/* Clear out the watchlist */
+.clearout-link { margin: 4px 0 14px; }
+.clearout-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.clearout-card { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
+.clearout-poster { width: 220px; flex-shrink: 0; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.clearout-body { flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 8px; }
+.clearout-body h1 { margin: 0; font: 800 40px/1.05 var(--font-display); letter-spacing: -0.02em; }
+.clearout-body p { margin: 0; }
+.clearout-trailer { position: relative; width: 100%; max-width: 720px; aspect-ratio: 16 / 9; border-radius: var(--radius); overflow: hidden; background: #000; margin-top: 6px; }
+.clearout-trailer iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.clearout-overview { max-width: 640px; line-height: 1.6; color: var(--text-muted); }
+.clearout-actions { display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+.dropped ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-width: 760px; }
+.dropped li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 10px; background: var(--glass-soft); font-size: var(--text-sm); }
+
+/* Where you know them from */
+.known { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; max-width: 760px; }
+.known li { display: flex; align-items: center; gap: 10px; font-size: var(--text-sm); line-height: 1.4; }
+.known img, .known .person-initial { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.known .person-initial { display: grid; place-items: center; background: var(--glass-soft); }
+.where-chip.free { color: var(--ok); }
+
+/* Your services (Phase 19 and 20) */
+.where-history { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.service-reports { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; margin-top: 16px; }
+.service-report { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.service-report.pause { border-color: var(--danger); }
+.service-report-head { display: flex; align-items: center; gap: 12px; }
+.service-report-head img { width: 40px; height: 40px; border-radius: var(--radius-sm); }
+.service-report-head h2 { margin: 0; }
+.card .service-verdict { margin: 0; font-weight: 600; }
+.service-verdict.pause { color: var(--danger); }
+.service-verdict.keep { color: var(--ok); }
+.service-verdict.quiet { color: var(--text-muted); }
+.service-facts { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.service-facts div { display: flex; justify-content: space-between; gap: 12px; font-size: var(--text-sm); }
+.service-facts dt { color: var(--text-muted); }
+.service-facts dd { margin: 0; text-align: right; color: var(--text); }
+.service-queue { list-style: none; margin: 0; padding: 10px 0 0; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; font-size: var(--text-sm); }
+.stalled-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 16px; font-size: var(--text-sm); color: var(--text-muted); }

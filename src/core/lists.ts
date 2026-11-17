@@ -19,6 +19,8 @@ export function listIdFor(source: ListSource, ownId?: string): string {
       return `guide:${source.guideId}`
     case 'custom':
       return `custom:${ownId ?? Math.random().toString(36).slice(2, 8)}`
+    case 'from':
+      return `from:${encodeURIComponent(source.name)}`
   }
 }
 
@@ -30,6 +32,13 @@ export function sourceOf(id: string): ListSource | null {
   if ((m = /^tmdblist:(\d+)$/.exec(id))) return { kind: 'tmdbList', listId: Number(m[1]) }
   if ((m = /^guide:([a-z0-9-]+)$/.exec(id))) return { kind: 'guide', guideId: m[1] }
   if (/^custom:[a-z0-9-]+$/.test(id)) return { kind: 'custom' }
+  if ((m = /^from:(.+)$/.exec(id))) {
+    try {
+      return { kind: 'from', name: decodeURIComponent(m[1]) }
+    } catch {
+      return null
+    }
+  }
   return null
 }
 

@@ -3,11 +3,12 @@ import { cached, CACHE_TTL } from '@core/cache'
 import { createTmdb, TmdbError, type Tmdb } from '@core/tmdb'
 import type { CollectionDetails, Credits, MediaType, PersonDetails, Provider, SearchResult, SeasonDetails, TitleDetails, TitleRef, TmdbListDetails, WatchProviders } from '@core/types'
 import { expandGuide, guideById, guideRefs, type Guide, type GuideTitleInfo } from '@core/guides'
-import { releaseOrder, sourceOf, findList } from '@core/lists'
+import { releaseOrder, sourceOf, findList, refOf } from '@core/lists'
 import type { Library } from '@core/types'
 import { parseTitleKey } from '@core/types'
 import { followed, seasonsToCheck, upcomingReleases, type ReleaseEvent } from '@core/calendar'
 import { localDate, preferencesOf } from '@core/library'
+import { knownFrom, type KnownFrom } from '@core/knownfrom'
 import type { Fetched, ListView } from '@shared/api'
 import { loadSettings, saveSettings } from './settings'
 import { fileCache } from './cacheStore'
@@ -73,7 +74,7 @@ export async function search(query: string): Promise<Fetched<SearchResult[]>> {
 }
 
 export async function details(type: MediaType, id: number, refresh = false): Promise<Fetched<TitleDetails>> {
-  const r = await cached(fileCache, `details:${type}:${id}`, CACHE_TTL.details, () => tmdb().details(type, id), {
+  const r = await cached(fileCache, `details2:${type}:${id}`, CACHE_TTL.details, () => tmdb().details(type, id), {
     force: refresh,
     shouldServeStale: serveStaleUnlessKeyProblem
   })
@@ -189,6 +190,14 @@ export async function openList(id: string, library: Library, refresh = false): P
       const items = await guideItems(g)
       return { id, name: g.name, description: g.description, imagePath: null, items, releaseItems: releaseOrder(items), sections: g.sections }
     }
+    case 'from': {
+      const k = source.name.toLowerCase()
+      const picks = Object.values(library.entries)
+        .filter((e) => e.from?.toLowerCase() === k)
+        .sort((a, b) => a.addedAt.localeCompare(b.addedAt))
+      const name = picks[0]?.from ?? source.name
+      return { id, name: `${name}’s picks`, description: `Everything you noted as recommended by ${name}, in the order you added them.`, imagePath: null, items: picks.map(refOf) }
+    }
     case 'custom': {
       const l = findList(library, id)
       if (!l) throw new Error('That list has been deleted.')
@@ -214,4 +223,22 @@ export async function calendarEvents(library: Library, today = localDate(new Dat
     )
   }
   return upcomingReleases({ library, details, seasons, today, everyEpisode: preferencesOf(library).calendarEpisodes })
+}
+
+/** The cast of a title you know from other things you've watched (looks up the top 15's filmographies, saved like Lists does). */
+export async function knownFromFor(type: MediaType, id: number, library: Library): Promise<KnownFrom[]> {
+  const cast = (await credits(type, id)).data.cast.slice(0, 15)
+  const people: Record<number, PersonDetails> = {}
+  for (let i = 0; i < cast.length; i += 5) {
+    await Promise.all(
+      cast.slice(i, i + 5).map(async (c) => {
+        try {
+          people[c.id] = (await person(c.id)).data
+        } catch {
+          // Skip anyone TMDB won't give us.
+        }
+      })
+    )
+  }
+  return knownFrom(cast, people, library, `${type}:${id}`)
 }

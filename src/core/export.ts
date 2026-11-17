@@ -32,7 +32,7 @@ const byName = (a: LibraryEntry, b: LibraryEntry): number => a.title.name.locale
 
 export function titlesCsv(library: Library): string {
   const rows: (string | number | boolean | null | undefined)[][] = [
-    ['Title', 'Year', 'Type', 'Status', 'Watched on', 'Seen before (no date)', 'Times watched', 'Episodes ticked', 'Your rating', 'Note', 'Finish by', 'Added', 'TMDB id', 'TMDB page']
+    ['Title', 'Year', 'Type', 'Status', 'Watched on', 'Seen before (no date)', 'Times watched', 'Episodes ticked', 'Your rating', 'Note', 'From', 'Finish by', 'Added', 'TMDB id', 'TMDB page']
   ]
   for (const e of Object.values(library.entries).sort(byName)) {
     rows.push([
@@ -46,6 +46,7 @@ export function titlesCsv(library: Library): string {
       e.type === 'tv' ? Object.keys(e.episodes ?? {}).length : '',
       e.rating,
       e.note,
+      e.from,
       e.finishBy,
       e.addedAt.slice(0, 10),
       e.id,
@@ -67,16 +68,16 @@ export function episodesCsv(library: Library): string {
   for (const e of Object.values(library.entries).filter((x) => x.type === 'tv').sort(byName)) {
     for (const [s, n, v] of order(e.episodes ?? {})) rows.push([e.title.name, s, n, day(v), 'First watch'])
     ;(e.rewatches ?? []).forEach((r, i) => {
-      for (const [s, n, v] of order(r.episodes ?? {})) rows.push([e.title.name, s, n, day(v), `Rewatch ${i + 1}`])
+      for (const [s, n, v] of order(r.episodes ?? {})) rows.push([e.title.name, s, n, day(v), r.with ? `With ${r.with}` : `Rewatch ${i + 1}`])
     })
   }
   return toCsv(rows)
 }
 
 export function rewatchesCsv(library: Library): string {
-  const rows: (string | number | null | undefined)[][] = [['Title', 'Type', 'Rewatch', 'Started', 'Finished']]
+  const rows: (string | number | null | undefined)[][] = [['Title', 'Type', 'Rewatch', 'Started', 'Finished', 'With']]
   for (const e of Object.values(library.entries).sort(byName)) {
-    ;(e.rewatches ?? []).forEach((r, i) => rows.push([e.title.name, e.type === 'movie' ? 'Film' : 'Show', i + 1, r.startedOn, r.finishedOn ?? 'still going']))
+    ;(e.rewatches ?? []).forEach((r, i) => rows.push([e.title.name, e.type === 'movie' ? 'Film' : 'Show', i + 1, r.startedOn, r.finishedOn ?? 'still going', r.with]))
   }
   return toCsv(rows)
 }

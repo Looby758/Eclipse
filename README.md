@@ -120,6 +120,18 @@ You need both computers and the shared Google Drive folder.
 2. **Close the first:** quit Eclipse on the PC. Within a minute or two (once Drive has synced) the banner on the Mac goes away and it works normally.
 3. **Take over:** with both open again, press **Take over** on the read-only one. Within a minute or two the other one turns read-only and says it was taken over.
 
+## Phases 13 to 22: what to try
+
+1. **Watch with someone:** open a show, press **Watch with someone** and type a name. Tick an episode there: Home now says *Next with …* with a button to tick the next one.
+2. **Credits scene:** open a Marvel film. Under the tagline it says whether to stay for the credits. The MCU watch order shows a small chip on those films.
+3. **Who recommended it:** on any title, type a name in **From**. Lists → *Recommended by* now has a list for that person.
+4. **Clear out:** Library → *Want to watch* → **Clear out the watchlist** → Start. Use the buttons or the arrow keys. Anything dropped is under *Recently dropped* with **Put back**.
+5. **Where do I know them from:** open a film, scroll to *Where you know them from*.
+6. **Free TV:** open something on BBC iPlayer: Where to watch has a *Free* group. The Library filter has *On my services or free*.
+7. **Your services:** Settings → *Your services* → **Do I still need them?** Set a renewal day for each service to get the "pause it" advice. After a day or two of use, Home starts saying what arrived on your services and what left.
+8. **Keep going or stop:** a show you haven't ticked in 60 days shows on Home. Try **Remind me later**. Change the 60 days in Settings → *Your evenings*.
+9. **Back after a break:** when a show you finished a season of long ago gets a new season, Home reminds you how the last one ended. (This only shows when it happens, so you may not see it straight away.)
+
 ## For development
 
 - `npm test` runs the tests, `npm run typecheck` checks the types.

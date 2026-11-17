@@ -3,11 +3,11 @@ import { useState } from 'react'
 import { findList, isItemSeen, itemKey, progressOf, sourceOf } from '@core/lists'
 import { isRowSeenUndated, localDate, preferencesOf } from '@core/library'
 import { onMyServices, type AvailabilityFilter as Filter, passesFilter, FILTER_LABELS } from '@core/providers'
-import { formatShortDay } from '@core/format'
+import { formatShortDay, stingerShort } from '@core/format'
 import { imageUrl } from '@core/tmdb'
 import { parseEpisodeKey, STATUS_LABELS, type TitleRef } from '@core/types'
 import { useApp } from '../store/app'
-import { useAvailability } from '../lib/availability'
+import { useAvailability, useDetailsMany } from '../lib/availability'
 import { kindLabel, progressSentence, useList } from '../lib/lists'
 import Sheet from './Sheet'
 import Poster from './Poster'
@@ -44,6 +44,9 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
   const progress = progressOf(items, library, today)
   const unseenKeys = [...new Set(progress.released.filter((i) => !isItemSeen(library, i)).map((i) => i.key))]
   const { map, providers, checking } = useAvailability(unseenKeys, unseenKeys.length > 0)
+  // Films' details (saved copies), for "stay for the credits" on each row.
+  const filmKeys = [...new Set(progress.released.filter((r) => r.type === 'movie').map((r) => r.key))]
+  const { map: films } = useDetailsMany(filmKeys, filmKeys.length > 0)
 
   if (!view) {
     return (
@@ -70,7 +73,8 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
     if (!p) return null
     const yours = onMyServices(p, services)
     if (yours.length) return <span className="where-chip yours">On {yours[0].name}</span>
-    if (p.stream.length || p.free.length) return <span className="where-chip">On {(p.stream[0] ?? p.free[0]).name}</span>
+    if (p.free.length) return <span className="where-chip free">Free on {p.free[0].name}</span>
+    if (p.stream.length) return <span className="where-chip">On {p.stream[0].name}</span>
     if (p.rent.length || p.buy.length) return <span className="where-chip">Rent or buy</span>
     return <span className="where-chip none">Not streaming</span>
   }
@@ -108,6 +112,7 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
               {r.year ? ` · ${r.year}` : ''}
               {r.season ? (ticked ? ` · ${ticked} of ${r.episodes ?? '?'} episodes` : '') : entry && !seen ? ` · ${STATUS_LABELS[entry.status]}` : ''}
               {next ? ' · Up next' : ''}
+              {r.type === 'movie' && stingerShort(films[r.key]?.stingers) && <span className="stinger-chip">{stingerShort(films[r.key]?.stingers)}</span>}
             </span>
           </span>
         </button>
@@ -182,7 +187,7 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
             </div>
           </div>
           <div className="row list-actions">
-            {!own && source?.kind !== 'guide' && (
+            {!own && source?.kind !== 'guide' && source?.kind !== 'from' && (
               <button className={`btn ${saved ? 'glass' : 'primary'}`} onClick={follow}>
                 {saved ? <Check size={15} /> : <Plus size={15} />} {saved ? 'In your lists' : 'Add to your lists'}
               </button>

@@ -8,6 +8,9 @@ import HomeHero from './components/HomeHero'
 import OnThisDay from './components/OnThisDay'
 import { HomeCredit } from './components/Credits'
 import GuardBanner from './components/GuardBanner'
+import HomeNotes from './components/HomeNotes'
+import ClearOutSheet from './components/ClearOutSheet'
+import ServicesSheet from './components/ServicesSheet'
 import LibrarySheet from './components/LibrarySheet'
 import SearchSheet from './components/SearchSheet'
 import TitleSheet from './components/TitleSheet'
@@ -74,7 +77,10 @@ export default function App(): React.JSX.Element {
           {view.name === 'home' && (
             <>
               <HomeHero />
-              <OnThisDay />
+              <aside className="home-side">
+                <HomeNotes />
+                <OnThisDay />
+              </aside>
               <HomeCredit />
             </>
           )}
@@ -83,6 +89,8 @@ export default function App(): React.JSX.Element {
           {view.name === 'settings' && <SettingsView />}
           {view.name === 'lists' && <ListsSheet />}
           {view.name === 'soon' && <WatchSoonSheet />}
+          {view.name === 'clearout' && <ClearOutSheet />}
+          {view.name === 'services' && <ServicesSheet />}
           {view.name === 'list' && <ListSheet key={view.id} id={view.id} />}
           {view.name === 'title' && <TitleSheet key={`${view.type}:${view.id}`} type={view.type} id={view.id} />}
           <Dock />

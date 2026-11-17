@@ -25,7 +25,7 @@ describe('export', () => {
     const lines = titlesCsv(sample()).slice(1).trim().split('\r\n')
     expect(lines[0]).toMatch(/^Title,Year,Type,Status,Watched on,/)
     expect(lines[1]).toMatch(/^Breaking Bad,2008,Show,Watched,2024-03-03,,1,2,/)
-    expect(lines[2]).toMatch(/^Dune,2021,Film,Watched,,yes,1,,,"with Dad, ""the long cut"", =great"/)
+    expect(lines[2]).toMatch(/^Dune,2021,Film,Watched,,yes,1,,,"with Dad, ""the long cut"", =great",,/)
   })
 
   it('lists every episode ticked, first watch and rewatches', () => {
