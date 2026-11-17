@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Check, GripVertical, Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, Check, Copy, GripVertical, Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
 import { findList, isSeen, progressOf, sourceOf } from '@core/lists'
 import { localDate, preferencesOf } from '@core/library'
@@ -29,7 +29,7 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
   const source = sourceOf(id)
   const saved = findList(library, id)
   const own = source?.kind === 'custom'
-  const [order, setOrder] = useState<'story' | 'release'>('story')
+  const [order, setOrder] = useState<'story' | 'release'>('release')
   const [show, setShow] = useState<Show>('all')
   const [filter, setFilter] = useState<Filter>('any')
   const [renaming, setRenaming] = useState<string | null>(null)
@@ -49,7 +49,7 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
         <div className="sheet-head">
           <h1>{saved?.name ?? 'List'}</h1>
         </div>
-        {error ? <p className="error">{error}</p> : <p className="muted">Loading{source?.kind === 'guide' ? ' the watch order (the first time takes a few seconds)' : ''}…</p>}
+        {error ? <p className="error">{error}</p> : <p className="muted">Loading{source?.kind === 'guide' || source?.kind === 'franchise' ? ' the watch order (the first time takes a few seconds)' : ''}…</p>}
       </Sheet>
     )
   }
@@ -199,6 +199,19 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
                   <Trash2 size={15} /> Delete list
                 </button>
               ))}
+            {(source?.kind === 'guide' || source?.kind === 'franchise') && (
+              <button
+                className="btn glass"
+                title="Make a copy you can reorder, add to and take things off"
+                onClick={async () => {
+                  const made = await window.api.createList(view.name, items)
+                  setLibrary(made.library)
+                  go({ name: 'list', id: made.id })
+                }}
+              >
+                <Copy size={15} /> Copy to your lists
+              </button>
+            )}
             {!own && (
               <button className="btn glass" onClick={() => reload(true)} title="Get the latest from TMDB">
                 <RefreshCw size={15} />

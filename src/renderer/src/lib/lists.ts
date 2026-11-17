@@ -37,7 +37,8 @@ export function progressSentence(id: string, name: string, seen: number, total: 
     case 'collection':
       return `You’ve seen ${of} films in ${name}`
     case 'guide':
-      return `You’ve seen ${of} in the ${name} watch order`
+    case 'franchise':
+      return `You’ve seen ${of} in the ${name.replace(/^the /i, '')} watch order`
     default:
       return `You’ve seen ${of} on ${name}`
   }
@@ -53,6 +54,8 @@ export function kindLabel(id: string): string {
       return 'Film series'
     case 'guide':
       return 'Watch order'
+    case 'franchise':
+      return 'Watch order · automatic'
     case 'tmdbList':
       return 'TMDB list'
     default:

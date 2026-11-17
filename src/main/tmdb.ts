@@ -2,11 +2,12 @@ import { net, safeStorage } from 'electron'
 import { cached, CACHE_TTL } from '@core/cache'
 import { createTmdb, TmdbError, type Tmdb } from '@core/tmdb'
 import type { CollectionDetails, Credits, MediaType, PersonDetails, Provider, SearchResult, SeasonDetails, TitleDetails, TitleRef, TmdbListDetails, WatchProviders } from '@core/types'
-import { guideById, guideRefs } from '@core/guides'
-import { releaseOrder, sourceOf, findList } from '@core/lists'
+import { guideById, guideForQuery, guideRefs } from '@core/guides'
+import { franchiseName, franchisePhrases, matchesPhrase, normalizeName, pickFranchise } from '@core/franchise'
+import { releaseOrder, sourceOf, findList, listIdFor as idOfList } from '@core/lists'
 import type { Library } from '@core/types'
 import { parseTitleKey } from '@core/types'
-import type { Fetched, ListView } from '@shared/api'
+import type { Fetched, FranchiseMatch, ListView } from '@shared/api'
 import { loadSettings, saveSettings } from './settings'
 import { fileCache } from './cacheStore'
 
@@ -158,6 +159,64 @@ async function withPosters(refs: TitleRef[]): Promise<TitleRef[]> {
   })
 }
 
+interface Franchise {
+  name: string
+  items: TitleRef[]
+}
+
+/**
+ * Every film and show in a franchise, in release order: titles with the phrase in their name,
+ * plus the whole film series of any film among them (so "Harry Potter" also brings in the
+ * later films' collection). `mustKeep` makes sure a title you came from isn't filtered out.
+ */
+function franchise(phrase: string, refresh = false, mustKeep: string[] = []): Promise<Fetched<Franchise | null>> {
+  return keep(`franchise:${phrase}${mustKeep.length ? `:${mustKeep.join(',')}` : ''}`, CACHE_TTL.franchise, async () => {
+    const picked = pickFranchise(await tmdb().searchTitles(phrase), phrase, mustKeep)
+    if (!picked || !picked.length) return null
+    const byKey = new Map<string, TitleRef>(picked.map(({ votes: _v, genres: _g, language: _l, ...ref }) => [ref.key, ref]))
+    const films = picked.filter((h) => h.type === 'movie').sort((a, b) => b.votes - a.votes).slice(0, 20)
+    const found = await detailsMany(films.map((f) => f.key))
+    const collections = [...new Set(Object.values(found).map((d) => d.collection?.id).filter((c): c is number => !!c))]
+    for (const c of collections.slice(0, 5)) {
+      try {
+        for (const part of (await collection(c)).data.parts) if (!byKey.has(part.key)) byKey.set(part.key, part)
+      } catch {
+        // A series that can't be fetched just isn't added.
+      }
+    }
+    const byVotes = [...picked].sort((a, b) => b.votes - a.votes)
+    return { name: franchiseName(byVotes, phrase), items: releaseOrder([...byKey.values()]) }
+  }, refresh)
+}
+
+/** The watch order a search is after: a curated guide, or an automatic franchise if two or more titles share the name. */
+export async function franchiseForQuery(query: string): Promise<FranchiseMatch | null> {
+  const guide = guideForQuery(query)
+  if (guide) return { id: idOfList({ kind: 'guide', guideId: guide.id }), name: guide.name, count: guide.entries.length, curated: true }
+  const phrase = normalizeName(query)
+  if (phrase.length < 3) return null
+  const f = (await franchise(phrase)).data
+  return f && f.items.length >= 2 ? { id: idOfList({ kind: 'franchise', phrase }), name: f.name, count: f.items.length, curated: false } : null
+}
+
+/** The automatic watch order a title belongs to, if its name is shared by at least one other film or show. */
+export async function franchiseForTitle(type: MediaType, id: number): Promise<FranchiseMatch | null> {
+  const d = (await details(type, id)).data
+  for (const phrase of franchisePhrases(d.name)) {
+    if (!matchesPhrase(d.name, phrase)) continue
+    const f = (await franchise(phrase, false, [d.key])).data
+    if (!f || f.items.length < 2) continue
+    // Just its own film series: the "Part of" link already covers that.
+    if (d.collection && f.items.every((i) => i.type === 'movie')) {
+      const parts = new Set((await collection(d.collection.id)).data.parts.map((p) => p.key))
+      if (f.items.every((i) => parts.has(i.key))) return null
+    }
+    const position = f.items.findIndex((i) => i.key === d.key) + 1
+    return { id: idOfList({ kind: 'franchise', phrase }), name: f.name, count: f.items.length, curated: false, position: position || undefined }
+  }
+  return null
+}
+
 /** Everything in a list, wherever it comes from. */
 export async function openList(id: string, library: Library, refresh = false): Promise<ListView> {
   const source = sourceOf(id)
@@ -187,6 +246,17 @@ export async function openList(id: string, library: Library, refresh = false): P
       if (!g) throw new Error('That guide doesn’t exist.')
       const items = await withPosters(guideRefs(g))
       return { id, name: g.name, description: g.description, imagePath: null, items, releaseItems: releaseOrder(items) }
+    }
+    case 'franchise': {
+      const f = (await franchise(source.phrase, refresh)).data
+      if (!f) throw new Error('No films or shows share that name.')
+      return {
+        id,
+        name: f.name,
+        description: `Every film and show with “${f.name}” in its name, plus their film series, in release order. Worked out from TMDB, so make a copy as your own list if you want to change it.`,
+        imagePath: f.items.find((i) => i.posterPath)?.posterPath ?? null,
+        items: f.items
+      }
     }
     case 'custom': {
       const l = findList(library, id)

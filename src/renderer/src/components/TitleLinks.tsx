@@ -4,6 +4,7 @@ import { guidesWith, guideRefs } from '@core/guides'
 import { customListsWith, listIdFor, listsOf } from '@core/lists'
 import { imageUrl } from '@core/tmdb'
 import type { Credits, TitleDetails, TitleRef } from '@core/types'
+import type { FranchiseMatch } from '@shared/api'
 import { useApp } from '../store/app'
 
 /**
@@ -15,11 +16,15 @@ export default function TitleLinks({ details: d }: { details: TitleDetails }): R
   const { go, setLibrary } = useApp.getState()
   const [credits, setCredits] = useState<Credits | null>(null)
   const [newList, setNewList] = useState<string | null>(null)
+  const [franchise, setFranchise] = useState<FranchiseMatch | null>(null)
 
   useEffect(() => {
     let cancelled = false
     setCredits(null)
+    setFranchise(null)
     window.api.credits(d.type, d.id).then((r) => !cancelled && r.ok && setCredits(r.value.data))
+    // Titles in a curated guide already have their watch order.
+    if (!guidesWith(d.key).length) window.api.franchiseForTitle(d.type, d.id).then((r) => !cancelled && r.ok && setFranchise(r.value))
     return () => {
       cancelled = true
     }
@@ -57,7 +62,7 @@ export default function TitleLinks({ details: d }: { details: TitleDetails }): R
         </div>
       )}
 
-      {(d.collection || guides.length > 0) && (
+      {(d.collection || guides.length > 0 || franchise) && (
         <div className="links-block">
           <h2>
             <Clapperboard size={17} /> Watch orders
@@ -66,6 +71,12 @@ export default function TitleLinks({ details: d }: { details: TitleDetails }): R
             {d.collection && (
               <button className="chip" onClick={() => go({ name: 'list', id: listIdFor({ kind: 'collection', collectionId: d.collection!.id }) })}>
                 {d.collection.name}
+              </button>
+            )}
+            {franchise && (
+              <button className="chip" onClick={() => go({ name: 'list', id: franchise.id })}>
+                {franchise.name}
+                {franchise.position ? ` · #${franchise.position} of ${franchise.count}` : ` · ${franchise.count}`}
               </button>
             )}
             {guides.map((g) => {

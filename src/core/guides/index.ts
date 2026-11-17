@@ -2,6 +2,7 @@ import type { MediaType, TitleRef } from '../types'
 import { titleKey } from '../types'
 import { MARVEL } from './marvel'
 import { STAR_WARS } from './starWars'
+import { normalizeName } from '../franchise'
 
 /**
  * Hand-made watch orders for franchises that mix films and shows, which TMDB doesn't cover.
@@ -21,6 +22,8 @@ export interface GuideEntry {
 export interface Guide {
   id: string
   name: string
+  /** What you might search for to find it (already lower case, without "The"). */
+  aliases: string[]
   description: string
   /** In story order. */
   entries: GuideEntry[]
@@ -35,3 +38,9 @@ export const guideRefs = (g: Guide): TitleRef[] =>
 
 /** The guides a title appears in. */
 export const guidesWith = (key: string): Guide[] => GUIDES.filter((g) => g.entries.some((e) => titleKey(e.type, e.id) === key))
+
+/** The guide a search is after ("star wars", "MCU"), if any. */
+export function guideForQuery(query: string): Guide | undefined {
+  const q = normalizeName(query)
+  return q ? GUIDES.find((g) => g.aliases.some((a) => q === a || q.startsWith(`${a} `))) : undefined
+}

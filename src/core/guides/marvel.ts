@@ -4,7 +4,8 @@ import type { Guide } from './index'
 export const MARVEL: Guide = {
   id: 'marvel',
   name: 'Marvel Cinematic Universe',
-  description: 'Every MCU film and Disney+ series in story order. After Endgame the timeline overlaps, so that part follows Disney+’s own order.',
+  aliases: ['marvel', 'mcu', 'marvel cinematic universe', 'avengers'],
+  description: 'Every MCU film and Disney+ series, in release order or story order. In story order, after Endgame the timeline overlaps, so that part follows Disney+’s own order.',
   entries: [
     { type: 'movie', id: 1771, name: 'Captain America: The First Avenger', year: 2011, note: 'Set in the 1940s' },
     { type: 'movie', id: 299537, name: 'Captain Marvel', year: 2019, note: 'Set in 1995' },

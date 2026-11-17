@@ -4,7 +4,8 @@ import type { Guide } from './index'
 export const STAR_WARS: Guide = {
   id: 'star-wars',
   name: 'Star Wars',
-  description: 'The films and series in story order, from the High Republic to the sequel trilogy.',
+  aliases: ['star wars'],
+  description: 'The films and series, in release order or in story order from the High Republic to the sequel trilogy.',
   entries: [
     { type: 'tv', id: 114479, name: 'The Acolyte', year: 2024, note: 'A century before Episode I' },
     { type: 'tv', id: 203085, name: 'Tales of the Jedi', year: 2022, note: 'Short stories across the prequel era' },

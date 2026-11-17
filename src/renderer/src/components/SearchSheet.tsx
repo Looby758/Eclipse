@@ -1,4 +1,8 @@
+import { Clapperboard } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { guideForQuery } from '@core/guides'
+import { matchesPhrase, normalizeName } from '@core/franchise'
+import type { FranchiseMatch } from '@shared/api'
 import type { SearchResult } from '@core/types'
 import { useApp } from '../store/app'
 import Sheet from './Sheet'
@@ -18,6 +22,21 @@ export default function SearchSheet(): React.JSX.Element {
   const [filter, setFilter] = useState<Filter>('any')
   const { map, checking } = useAvailability(results.map((r) => r.key), filter !== 'any')
   const shown = results.filter((r) => passesFilter(filter, map[r.key]))
+  const go = useApp((s) => s.go)
+  const [order, setOrder] = useState<FranchiseMatch | null>(null)
+
+  // A watch order for what you searched: a curated one, or worked out when two or more results share the name.
+  useEffect(() => {
+    setOrder(null)
+    const q = query.trim()
+    const phrase = normalizeName(q)
+    if (!guideForQuery(q) && results.filter((r) => matchesPhrase(r.name, phrase)).length < 2) return
+    let cancelled = false
+    window.api.franchiseForQuery(q).then((r) => !cancelled && r.ok && setOrder(r.value))
+    return () => {
+      cancelled = true
+    }
+  }, [results])
 
   useEffect(() => {
     const q = query.trim()
@@ -58,6 +77,17 @@ export default function SearchSheet(): React.JSX.Element {
       {stale && <p className="notice">Offline: showing results saved earlier.</p>}
       {error && <p className="error">{error}</p>}
       {!query.trim() && <p className="muted">Type a film or show in the search box below.</p>}
+      {order && (
+        <button className="order-card" onClick={() => go({ name: 'list', id: order.id })}>
+          <Clapperboard size={22} />
+          <span className="order-card-text">
+            <span className="order-card-name">{order.name} watch order</span>
+            <span className="muted small">
+              {order.count} titles{order.curated ? ', in release or story order' : ' in release order'}
+            </span>
+          </span>
+        </button>
+      )}
       {results.length > 0 && <AvailabilityFilter value={filter} onChange={setFilter} checking={checking} />}
       {query.trim() && !loading && !error && results.length === 0 && <p className="muted">No films or shows found.</p>}
       {results.length > 0 && shown.length === 0 && !checking && <p className="muted">None of these are {FILTER_LABELS[filter].toLowerCase()}.</p>}

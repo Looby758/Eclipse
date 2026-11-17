@@ -28,6 +28,16 @@ export interface Fetched<T> {
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string; kind?: string }
 
 /** A list ready to show, wherever its titles come from. */
+/** A watch order to offer: a curated guide, or one worked out from a shared name. */
+export interface FranchiseMatch {
+  id: string
+  name: string
+  count: number
+  curated: boolean
+  /** Where the title you're looking at comes in it (release order). */
+  position?: number
+}
+
 export interface ListView {
   id: string
   name: string
@@ -70,6 +80,10 @@ export interface EclipseApi {
   tmdbList(id: number): Promise<Result<Fetched<TmdbListDetails>>>
   /** Everything in a list (person, collection, guide, TMDB list or your own), in its order. */
   openList(id: string, refresh?: boolean): Promise<Result<ListView>>
+  /** The watch order a search is after, if there is one. */
+  franchiseForQuery(query: string): Promise<Result<FranchiseMatch | null>>
+  /** The automatic watch order a title belongs to, if there is one. */
+  franchiseForTitle(type: MediaType, id: number): Promise<Result<FranchiseMatch | null>>
   createList(name: string, items?: TitleRef[]): Promise<{ library: Library; id: string }>
   followList(list: { name: string; source: ListSource; imagePath?: string | null }): Promise<Library>
   removeList(id: string): Promise<Library>

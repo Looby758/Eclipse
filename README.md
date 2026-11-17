@@ -62,7 +62,8 @@ Avoid having Eclipse open on both computers at the same time, so the two copies 
 3. **People (Phase 6):** open any film. Under *Where to watch*, click a director or actor. You'll see all their films with how many you've seen. Press **Add to your lists**.
 4. **Lists (Phase 6):** press **Lists** in the dock. Try *What's left* and *On my services* on a list. Make your own list with *New list*, then add films to it from their pages (under *Your lists*) and drag them into your own order. Your Sequel "Marvel" collection is already there.
 5. **TMDB lists (Phase 6):** on the Lists page, paste a public list's link from themoviedb.org (for example a "Best Picture winners" list) into *TMDB lists*.
-6. **Watch orders (Phase 7):** on the Lists page, open *Marvel Cinematic Universe* or *Star Wars*. It shows how far through you are and what's next. Switch between *Story order* and *Release order*. Open a film like *Interstellar* and click *Part of …* to see its film series. Please tell me anything in the Marvel or Star Wars order you'd change.
+6. **Watch orders (Phase 7):** on the Lists page, open *Marvel Cinematic Universe* or *Star Wars*. It shows how far through you are and what's next, in release order; press *Story order* to switch. Open a film like *Interstellar* and click *Part of …* to see its film series. Please tell me anything in the Marvel or Star Wars order you'd change.
+7. **Any franchise:** search for *The Walking Dead*. A *watch order* card appears above the results; open it to see every show in release order. Press **Add to your lists** to keep it, or **Copy to your lists** to make your own version you can rearrange.
 
 ## For development
 
