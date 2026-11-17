@@ -1,4 +1,5 @@
-import { Check, Clapperboard, ListPlus, Plus, Users } from 'lucide-react'
+import { Check, Clapperboard, ListPlus, Lightbulb, Plus, Users } from 'lucide-react'
+import type { KnownFrom } from '@core/knownfrom'
 import { useEffect, useState } from 'react'
 import { guidesWith } from '@core/guides'
 import { customListsWith, listIdFor, listsOf } from '@core/lists'
@@ -15,11 +16,14 @@ export default function TitleLinks({ details: d }: { details: TitleDetails }): R
   const { go, setLibrary } = useApp.getState()
   const [credits, setCredits] = useState<Credits | null>(null)
   const [newList, setNewList] = useState<string | null>(null)
+  const [known, setKnown] = useState<KnownFrom[]>([])
 
   useEffect(() => {
     let cancelled = false
     setCredits(null)
     window.api.credits(d.type, d.id).then((r) => !cancelled && r.ok && setCredits(r.value.data))
+    setKnown([])
+    window.api.knownFrom(d.type, d.id).then((r) => !cancelled && r.ok && setKnown(r.value))
     return () => {
       cancelled = true
     }
@@ -54,6 +58,36 @@ export default function TitleLinks({ details: d }: { details: TitleDetails }): R
             {credits.directors.slice(0, 3).map((p) => person(p, 'director'))}
             {credits.cast.slice(0, 8).map((p) => person(p, 'actor'))}
           </div>
+        </div>
+      )}
+
+      {known.length > 0 && (
+        <div className="links-block">
+          <h2>
+            <Lightbulb size={17} /> Where you know them from
+          </h2>
+          <ul className="known">
+            {known.map(({ person: p, titles }) => {
+              const face = imageUrl(p.profilePath, 'w92')
+              return (
+                <li key={p.id}>
+                  {face ? <img src={face} alt="" draggable={false} /> : <span className="person-initial">{p.name.slice(0, 1)}</span>}
+                  <span>
+                    You know <strong>{p.name}</strong> from{' '}
+                    {titles.map((t, i) => (
+                      <span key={t.key}>
+                        {i > 0 ? (i === titles.length - 1 ? ' and ' : ', ') : ''}
+                        <button className="link-btn inline" onClick={() => go({ name: 'title', type: t.type, id: t.id })}>
+                          {t.name}
+                        </button>
+                      </span>
+                    ))}
+                    .
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
         </div>
       )}
 

@@ -1,5 +1,6 @@
 import type { ImportSummary } from '@core/sequel'
 import type { ReleaseEvent } from '@core/calendar'
+import type { KnownFrom } from '@core/knownfrom'
 import type { CollectionDetails, Credits, ListSource, PersonDetails, TitleRef, TmdbListDetails } from '@core/types'
 import type { Library, MediaType, Preferences, Provider, SearchResult, SeasonDetails, TitleDetails, TitleKey, TitleSnapshot, WatchProviders, WatchStatus } from '@core/types'
 
@@ -92,6 +93,8 @@ export interface EclipseApi {
 
   /** Who directed it and the main cast. */
   credits(type: MediaType, id: number): Promise<Result<Fetched<Credits>>>
+  /** Cast you know from other things you've watched. */
+  knownFrom(type: MediaType, id: number): Promise<Result<KnownFrom[]>>
   person(id: number): Promise<Result<Fetched<PersonDetails>>>
   collection(id: number): Promise<Result<Fetched<CollectionDetails>>>
   tmdbList(id: number): Promise<Result<Fetched<TmdbListDetails>>>

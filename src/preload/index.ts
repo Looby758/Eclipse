@@ -21,6 +21,7 @@ const api: EclipseApi = {
   services: () => ipcRenderer.invoke('tmdb:services'),
 
   credits: (type, id) => ipcRenderer.invoke('tmdb:credits', type, id),
+  knownFrom: (type, id) => ipcRenderer.invoke('tmdb:knownFrom', type, id),
   person: (id) => ipcRenderer.invoke('tmdb:person', id),
   collection: (id) => ipcRenderer.invoke('tmdb:collection', id),
   tmdbList: (id) => ipcRenderer.invoke('tmdb:list', id),

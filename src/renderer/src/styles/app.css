@@ -496,3 +496,9 @@ button.list-seen.undo:hover { background: var(--glass-hover); }
 .clearout-actions { display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
 .dropped ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-width: 760px; }
 .dropped li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 10px; background: var(--glass-soft); font-size: var(--text-sm); }
+
+/* Where you know them from */
+.known { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; max-width: 760px; }
+.known li { display: flex; align-items: center; gap: 10px; font-size: var(--text-sm); line-height: 1.4; }
+.known img, .known .person-initial { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.known .person-initial { display: grid; place-items: center; background: var(--glass-soft); }
