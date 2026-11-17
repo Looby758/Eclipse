@@ -1,3 +1,4 @@
+import { askToStartWithComputer } from '../lib/startAsk'
 import { RefreshCw, Smartphone } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
@@ -28,7 +29,10 @@ export default function RemoteCard(): React.JSX.Element {
         <button className={!status?.on ? 'on' : ''} onClick={async () => setStatus(await window.api.setRemote(false))}>
           Off
         </button>
-        <button className={status?.on ? 'on' : ''} onClick={async () => setStatus(await window.api.setRemote(true))}>
+        <button className={status?.on ? 'on' : ''} onClick={async () => {
+            setStatus(await window.api.setRemote(true))
+            void askToStartWithComputer('be ready for your phone remote')
+          }}>
           On
         </button>
       </div>

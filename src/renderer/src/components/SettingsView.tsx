@@ -1,6 +1,7 @@
 import { FolderOpen } from 'lucide-react'
 import { useState } from 'react'
 import { applyThemeMode, savedThemeMode, type ThemeMode } from '../lib/themeMode'
+import { applyStill, savedStill } from '../lib/motion'
 import { useApp } from '../store/app'
 import { useHomeStyle } from '../lib/homeStyle'
 import KeyForm from './KeyForm'
@@ -16,6 +17,9 @@ import RemoteCard from './RemoteCard'
 import HistoryCard from './HistoryCard'
 import TrayCard from './TrayCard'
 import NoticingCard from './NoticingCard'
+import StartupCard from './StartupCard'
+import BackupsCard from './BackupsCard'
+import HealthCard from './HealthCard'
 
 export default function SettingsView(): React.JSX.Element {
   const status = useApp((s) => s.status)!
@@ -23,6 +27,7 @@ export default function SettingsView(): React.JSX.Element {
   const [mode, setMode] = useState<ThemeMode>(savedThemeMode())
   const [cleared, setCleared] = useState(false)
   const home = useHomeStyle()
+  const [still, setStill] = useState(savedStill)
 
   return (
     <Sheet className="settings">
@@ -56,6 +61,16 @@ export default function SettingsView(): React.JSX.Element {
             Classic (legacy)
           </button>
         </div>
+        <h3 className="card-sub">Keep the poster wall still</h3>
+        <p className="muted small">Stops the drifting posters, the glowing dots and the pages sliding in. Your computer’s own “reduce animations” setting does this too.</p>
+        <div className="segmented" role="radiogroup" aria-label="Keep the poster wall still">
+          <button role="radio" aria-checked={!still} className={!still ? 'on' : ''} onClick={() => (setStill(false), applyStill(false))}>
+            Moving
+          </button>
+          <button role="radio" aria-checked={still} className={still ? 'on' : ''} onClick={() => (setStill(true), applyStill(true))}>
+            Still
+          </button>
+        </div>
       </section>
 
       <ServicesCard />
@@ -67,6 +82,8 @@ export default function SettingsView(): React.JSX.Element {
       <RemoteCard />
 
       <TrayCard />
+
+      <StartupCard />
 
       <CalendarCard />
 
@@ -94,6 +111,8 @@ export default function SettingsView(): React.JSX.Element {
         </div>
       </section>
 
+      <BackupsCard />
+
       <ExportCard />
 
       <section className="card">
@@ -120,6 +139,8 @@ export default function SettingsView(): React.JSX.Element {
           {cleared ? 'Cleared' : 'Clear saved TMDB data'}
         </button>
       </section>
+
+      <HealthCard />
 
       <UpdatesCard />
 

@@ -1,3 +1,4 @@
+import { errorText, report } from './health'
 import { net, safeStorage } from 'electron'
 import { cached, CACHE_TTL } from '@core/cache'
 import { createTmdb, TmdbError, type Tmdb } from '@core/tmdb'
@@ -26,7 +27,26 @@ import { fileCache } from './cacheStore'
 const encrypt = (text: string): string => safeStorage.encryptString(text).toString('base64')
 const decrypt = (text: string): string => safeStorage.decryptString(Buffer.from(text, 'base64'))
 
-const fetchWithElectron = (url: string, init?: { headers?: Record<string, string> }) => net.fetch(url, init)
+let lastTmdbOk = 0
+/** Every TMDB request goes through here, so "Is everything working?" knows how the last one went. */
+const fetchWithElectron = async (url: string, init?: { headers?: Record<string, string> }) => {
+  try {
+    const res = await net.fetch(url, init)
+    if (res.ok) {
+      // Once a minute is plenty for a job that runs constantly.
+      if (Date.now() - lastTmdbOk > 60_000) report('tmdb', true, 'Reached TMDB')
+      lastTmdbOk = Date.now()
+    } else if (res.status !== 404) {
+      lastTmdbOk = 0
+      report('tmdb', false, `TMDB answered ${res.status}${res.status === 401 ? ' (the key was refused)' : res.status === 429 ? ' (too many requests, it slows down and tries again)' : ''}`)
+    }
+    return res
+  } catch (err) {
+    lastTmdbOk = 0
+    report('tmdb', false, `Couldn't reach TMDB: ${errorText(err)}. Saved copies are shown meanwhile.`)
+    throw err
+  }
+}
 
 export const canEncrypt = (): boolean => safeStorage.isEncryptionAvailable()
 export const hasKey = (): boolean => !!loadSettings().tmdbKey

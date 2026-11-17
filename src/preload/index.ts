@@ -5,6 +5,7 @@ import type { EclipseApi } from '@shared/api'
 const api: EclipseApi = {
   status: () => ipcRenderer.invoke('app:status'),
   pickDataFolder: () => ipcRenderer.invoke('data:pick'),
+  useDefaultDataFolder: () => ipcRenderer.invoke('data:useDefault'),
   revealDataFolder: () => ipcRenderer.invoke('data:reveal'),
 
   setTmdbKey: (key) => ipcRenderer.invoke('tmdb:setKey', key),
@@ -95,6 +96,25 @@ const api: EclipseApi = {
     const handler = (_e: unknown, library: Parameters<typeof callback>[0]): void => callback(library)
     ipcRenderer.on('library:changed', handler)
     return () => ipcRenderer.removeListener('library:changed', handler)
+  },
+
+  undo: (id) => ipcRenderer.invoke('library:undo', id),
+  onUndoOffer: (callback) => {
+    const handler = (_e: unknown, offer: Parameters<typeof callback>[0]): void => callback(offer)
+    ipcRenderer.on('undo:offer', handler)
+    return () => ipcRenderer.removeListener('undo:offer', handler)
+  },
+  listBackups: () => ipcRenderer.invoke('backups:list'),
+  restoreBackup: (day) => ipcRenderer.invoke('backups:restore', day),
+  loginStatus: () => ipcRenderer.invoke('login:status'),
+  setStartAtLogin: (on) => ipcRenderer.invoke('login:set', on),
+  markStartAsked: () => ipcRenderer.invoke('login:asked'),
+  health: () => ipcRenderer.invoke('health:status'),
+  copyHealth: () => ipcRenderer.invoke('health:copy'),
+  onHealthChanged: (callback) => {
+    const handler = (): void => callback()
+    ipcRenderer.on('health:changed', handler)
+    return () => ipcRenderer.removeListener('health:changed', handler)
   },
 
   pickSequel: (folder) => ipcRenderer.invoke('import:pickSequel', folder),

@@ -102,11 +102,45 @@ export interface NoticingStatus {
   momentKey: string
 }
 
+/** Phase 36: a change the "Done · Undo" bar can put back. */
+export interface UndoOffer {
+  id: number
+  label: string
+}
+
+/** Phase 37: one daily backup, with what's in it. */
+export interface BackupInfo {
+  day: string
+  file: string
+  bytes: number
+  titles: number
+  episodes: number
+  watched: number
+}
+
+/** Phase 38: starting with the computer. */
+export interface LoginStatus {
+  supported: boolean
+  on: boolean
+  asked: boolean
+}
+
+/** Phase 39: one background job and how it last went. */
+export interface JobState {
+  id: string
+  label: string
+  at: number | null
+  ok: boolean
+  detail: string
+}
+
 export const GITHUB_REPO = 'Looby758/Eclipse'
 
 export interface EclipseApi {
   status(): Promise<AppStatus>
   pickDataFolder(): Promise<AppStatus>
+  /** Phase 42: an Eclipse folder in Documents, for keeping it on this computer. */
+  useDefaultDataFolder(): Promise<AppStatus>
   revealDataFolder(): Promise<void>
 
   setTmdbKey(key: string): Promise<Result<AppStatus>>
@@ -227,6 +261,22 @@ export interface EclipseApi {
   setPreferences(patch: Partial<Preferences>): Promise<Library>
   /** Called when library.json changes on disk (e.g. Google Drive synced it from your other computer). */
   onLibraryChanged(callback: (library: Library) => void): () => void
+
+  /** Undo: puts back the change an offer named, if nothing else has changed since. */
+  undo(id: number): Promise<Result<Library>>
+  onUndoOffer(callback: (offer: UndoOffer) => void): () => void
+  /** Daily backups, newest first. */
+  listBackups(): Promise<BackupInfo[]>
+  /** Restores one (the current library is copied aside first). */
+  restoreBackup(day: string): Promise<Result<Library>>
+  loginStatus(): Promise<LoginStatus>
+  setStartAtLogin(on: boolean): Promise<LoginStatus>
+  /** "Not now" on the one-time question. */
+  markStartAsked(): Promise<LoginStatus>
+  health(): Promise<JobState[]>
+  /** Copies the job list and the recent log to the clipboard; returns the text. */
+  copyHealth(): Promise<string>
+  onHealthChanged(callback: () => void): () => void
 
   /** Asks for Sequel's export (.zip or Library.csv, or its folder with `folder`) and says what's in it. null if you cancelled. */
   pickSequel(folder?: boolean): Promise<Result<ImportSummary | null>>

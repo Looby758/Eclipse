@@ -1,3 +1,4 @@
+import { askToStartWithComputer } from '../lib/startAsk'
 import { Eye, RefreshCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { NoticingSettings } from '@shared/api'
@@ -29,7 +30,10 @@ export default function NoticingCard(): React.JSX.Element {
   const [, tick] = useState(0)
   const mac = window.api.platform === 'mac'
   const s = status?.settings
-  const set = async (patch: Partial<NoticingSettings>): Promise<void> => setStatus(await window.api.setNoticing(patch))
+  const set = async (patch: Partial<NoticingSettings>): Promise<void> => {
+    setStatus(await window.api.setNoticing(patch))
+    if (patch.history || patch.playing) void askToStartWithComputer('notice what you watch')
+  }
 
   // Refresh the "right now" list every few seconds while it's on screen.
   useEffect(() => {

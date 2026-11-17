@@ -4,11 +4,13 @@ import '@fontsource-variable/sora'
 import '@fontsource-variable/inter'
 import App from './App'
 import { applyThemeMode, savedThemeMode } from './lib/themeMode'
+import { applyStill, savedStill } from './lib/motion'
 import './styles/theme.css'
 import './styles/app.css'
 
 document.documentElement.dataset.platform = window.api.platform
 applyThemeMode(savedThemeMode())
+applyStill(savedStill())
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
