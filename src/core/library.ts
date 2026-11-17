@@ -2,6 +2,7 @@ import type { Dropped, Library, LibraryEntry, MediaType, Preferences, Rewatch, T
 import { DEFAULT_PREFERENCES, UNDATED, WATCH_STATUSES, episodeKey, parseEpisodeKey, parseTitleKey } from './types'
 import type { TitleRef } from './types'
 import { normalizeLists, normalizeWatchSoon, refOf } from './lists'
+import { normalizeLinks, normalizeMoments } from './watching'
 
 export type LibraryItem = { key: TitleKey; type: MediaType; id: number; title: TitleSnapshot }
 
@@ -327,6 +328,8 @@ export function normalizeLibrary(raw: unknown): Library {
       ...(isDay(e.watchedOn) ? { watchedOn: e.watchedOn } : {}),
       ...(isDay(e.finishBy) ? { finishBy: e.finishBy } : {}),
       ...(isDay(e.snoozedUntil) ? { snoozedUntil: e.snoozedUntil } : {}),
+      ...(normalizeMoments(e.moments) ? { moments: normalizeMoments(e.moments) } : {}),
+      ...(normalizeLinks(e.links) ? { links: normalizeLinks(e.links) } : {}),
       ...(typeof e.note === 'string' && e.note.trim() ? { note: e.note.trim().slice(0, 300) } : {}),
       ...(typeof e.from === 'string' && e.from.trim() ? { from: e.from.trim().slice(0, 80) } : {}),
       ...(typeof e.rating === 'number' && e.rating >= 0 && e.rating <= 10 ? { rating: e.rating } : {}),

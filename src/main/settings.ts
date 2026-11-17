@@ -25,6 +25,12 @@ export interface Settings {
   remoteToken?: string
   /** Phase 26: show Eclipse in the menu bar / tray, and keep running there when the window is closed. */
   trayOn?: boolean
+  /** Phases 27 to 29: notice what you watch (browser history, what's playing) and the bedtime guard. */
+  noticeHistory?: boolean
+  noticePlaying?: boolean
+  bedtimeGuard?: boolean
+  /** Browser history has been read up to here (milliseconds). */
+  historySince?: number
 }
 
 const defaults: Settings = { dataFolder: null }

@@ -20,6 +20,8 @@ import { getHistory, startServiceWatch } from './services'
 import { keysWatchedIn, yearInReview } from '@core/year'
 import { repairBatch, type Batch, type RepairChoice } from '@core/repair'
 import { refreshTray, setTray, setupTray, trayOn } from './tray'
+import { acceptSuggestion, dismissSuggestion, noticingStatus, scanHistory, setNoticing, setupNoticing, stopNoticing } from './noticing'
+import { editMoment } from '@core/watching'
 import { newRemoteCode, remoteStatus, setRemote, setupRemote, stopRemote } from './remote'
 import { guardStatus, readOnlyReason, startGuard, stopGuard, takeOver } from './guard'
 
@@ -238,6 +240,18 @@ function setupIpc(): void {
   )
   ipcMain.handle('tray:get', () => trayOn())
   ipcMain.handle('tray:set', (_e, on: boolean) => setTray(!!on))
+  ipcMain.handle('noticing:status', () => noticingStatus())
+  ipcMain.handle('noticing:set', (_e, patch) => setNoticing(patch ?? {}))
+  ipcMain.handle('noticing:scan', async () => {
+    await scanHistory().catch(() => undefined)
+    return noticingStatus()
+  })
+  ipcMain.handle('noticing:accept', (_e, id: string) => acceptSuggestion(String(id)))
+  ipcMain.handle('noticing:dismiss', (_e, id: string) => {
+    dismissSuggestion(String(id))
+    return noticingStatus()
+  })
+  ipcMain.handle('moments:edit', (_e, key: string, index: number, note: string | null) => saveLibrary(editMoment(getLibrary(), key, Number(index), typeof note === 'string' ? note : null)))
   ipcMain.handle('remote:status', () => remoteStatus())
   ipcMain.handle('remote:set', (_e, on: boolean) => setRemote(!!on, sendRemote))
   ipcMain.handle('remote:newCode', () => newRemoteCode())
@@ -348,6 +362,7 @@ app.whenReady().then(() => {
   setupTray(showWindow, broadcastLibrary)
   onSave(refreshTray)
   setupRemote(broadcastLibrary, sendRemote)
+  setupNoticing({ changed: () => mainWindow?.webContents.send('noticing:changed'), show: showWindow, libraryChanged: broadcastLibrary })
   startServiceWatch(getLibrary, () => mainWindow?.webContents.send('services:changed', getHistory()))
   void setupUpdater()
   app.on('activate', () => {
@@ -358,6 +373,7 @@ app.whenReady().then(() => {
 app.on('will-quit', () => {
   stopGuard()
   stopRemote()
+  stopNoticing()
 })
 
 app.on('window-all-closed', () => {

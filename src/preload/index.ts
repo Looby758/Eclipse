@@ -60,6 +60,17 @@ const api: EclipseApi = {
   yearReview: (year) => ipcRenderer.invoke('year:review', year),
   trayOn: () => ipcRenderer.invoke('tray:get'),
   setTray: (on) => ipcRenderer.invoke('tray:set', on),
+  noticingStatus: () => ipcRenderer.invoke('noticing:status'),
+  setNoticing: (patch) => ipcRenderer.invoke('noticing:set', patch),
+  scanHistory: () => ipcRenderer.invoke('noticing:scan'),
+  acceptSuggestion: (id) => ipcRenderer.invoke('noticing:accept', id),
+  dismissSuggestion: (id) => ipcRenderer.invoke('noticing:dismiss', id),
+  onNoticingChanged: (callback) => {
+    const handler = (): void => callback()
+    ipcRenderer.on('noticing:changed', handler)
+    return () => ipcRenderer.removeListener('noticing:changed', handler)
+  },
+  editMoment: (key, index, note) => ipcRenderer.invoke('moments:edit', key, index, note),
   remoteStatus: () => ipcRenderer.invoke('remote:status'),
   setRemote: (on) => ipcRenderer.invoke('remote:set', on),
   newRemoteCode: () => ipcRenderer.invoke('remote:newCode'),

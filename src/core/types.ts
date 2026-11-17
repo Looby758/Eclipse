@@ -121,6 +121,10 @@ export interface LibraryEntry {
   finishBy?: string
   /** Don't nudge about it ("keep going or stop?", "season 4 is out") before this day (YYYY-MM-DD). */
   snoozedUntil?: string
+  /** Moments you bookmarked while watching (Phase 30). */
+  moments?: import('./watching').Moment[]
+  /** Where you watch it, learnt from your browser (Phase 31): the show's page and the last episode played. */
+  links?: import('./watching').PlayLinks
   title: TitleSnapshot
 }
 
