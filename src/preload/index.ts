@@ -58,6 +58,13 @@ const api: EclipseApi = {
   applySequel: () => ipcRenderer.invoke('import:applySequel'),
   cancelSequel: () => ipcRenderer.invoke('import:cancel'),
 
+  guardStatus: () => ipcRenderer.invoke('guard:status'),
+  takeOver: () => ipcRenderer.invoke('guard:takeOver'),
+  onGuardChanged: (callback) => {
+    const handler = (_e: unknown, s: Parameters<typeof callback>[0]): void => callback(s)
+    ipcRenderer.on('guard:changed', handler)
+    return () => ipcRenderer.removeListener('guard:changed', handler)
+  },
   exportData: () => ipcRenderer.invoke('data:export'),
   updateStatus: () => ipcRenderer.invoke('update:status'),
   checkForUpdates: () => ipcRenderer.invoke('update:check'),

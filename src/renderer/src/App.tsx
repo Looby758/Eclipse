@@ -7,6 +7,7 @@ import Setup from './components/Setup'
 import HomeHero from './components/HomeHero'
 import OnThisDay from './components/OnThisDay'
 import { HomeCredit } from './components/Credits'
+import GuardBanner from './components/GuardBanner'
 import LibrarySheet from './components/LibrarySheet'
 import SearchSheet from './components/SearchSheet'
 import TitleSheet from './components/TitleSheet'
@@ -69,6 +70,7 @@ export default function App(): React.JSX.Element {
         <Setup />
       ) : (
         <>
+          <GuardBanner />
           {view.name === 'home' && (
             <>
               <HomeHero />
