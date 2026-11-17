@@ -18,6 +18,8 @@ import WhereToWatch from './WhereToWatch'
 import TimeCard from './TimeCard'
 import Heatmap from './Heatmap'
 import TitleLinks from './TitleLinks'
+import ContinueButton from './ContinueButton'
+import MomentsPanel from './MomentsPanel'
 import type { EpisodeFocus } from './EpisodeTimeline'
 
 /** A film or show's page: a sheet over the wall, lit in the poster's own colour. */
@@ -100,6 +102,9 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
           )}
           <StatusPicker details={d} />
           <WatchSoonToggle details={d} />
+          <div className="row" style={{ marginTop: 10 }}>
+            <ContinueButton titleKey={d.key} />
+          </div>
           <EntryDetails titleKey={d.key} />
           <RewatchPanel details={d} />
           <WatchWithPanel details={d} />
@@ -153,6 +158,8 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
               <EpisodeTimeline details={d} focus={focus} />
             </>
           )}
+
+          <MomentsPanel titleKey={d.key} />
 
           <WhereToWatch type={d.type} id={d.id} />
 

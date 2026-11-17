@@ -556,3 +556,14 @@ button.list-seen.undo:hover { background: var(--glass-hover); }
 .year-top-poster { border-radius: var(--radius-sm); overflow: hidden; aspect-ratio: 2 / 3; box-shadow: var(--shadow); }
 .year-top-name { font-weight: 700; color: var(--text-strong); }
 .year-rank { position: absolute; top: 8px; left: 8px; z-index: 1; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; background: var(--accent-gradient); color: var(--on-accent); }
+
+/* Group B: noticing what you watch, moments and Play next */
+.card-sub { margin: 18px 0 4px; font-size: var(--text-sm); font-weight: 650; color: var(--text-strong); }
+.card kbd { font-family: var(--font-ui); font-size: 11px; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; color: var(--text); }
+.sees { margin-top: 16px; padding: 12px 14px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--glass-soft); display: flex; flex-direction: column; gap: 6px; }
+.sees-list { margin: 0; padding-left: 18px; font-size: var(--text-xs); line-height: 1.5; color: var(--text); overflow-wrap: anywhere; }
+.moments { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
+.moment { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 8px 12px; border-radius: var(--radius-sm); background: var(--glass-soft); border: 1px solid var(--line); font-size: var(--text-sm); }
+.moment-at { font-variant-numeric: tabular-nums; color: var(--text-muted); white-space: nowrap; }
+.moment input { width: 100%; background: transparent; border: none; color: var(--text); font: inherit; outline: none; }
+.moment input::placeholder { color: var(--text-faint); }
