@@ -95,6 +95,8 @@ export interface EclipseApi {
   setEpisodes(item: Item, keys: string[], watched: boolean, undated?: boolean): Promise<Library>
   /** Watched before Eclipse, with no date. */
   markSeenBefore(item: Item): Promise<Library>
+  /** A list or watch-order row: seen with no date (a season row ticks its episodes), or undo that. */
+  markRowSeen(ref: TitleRef, on: boolean): Promise<Library>
   /** Starts watching it again (a film counts as watched again today). */
   startRewatch(item: Item): Promise<Library>
   /** Finishes the rewatch you're on, or gives it up. */

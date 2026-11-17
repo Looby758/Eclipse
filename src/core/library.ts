@@ -407,3 +407,57 @@ export function removeRewatch(library: Library, key: string, index: number, now:
     now
   )
 }
+
+// ---- One-click "seen it" on list and watch-order rows ----
+
+const isWatchSoonKey = (library: Library, key: string): boolean => (library.watchSoon ?? []).some((r) => r.key === key)
+
+type Row = Pick<TitleRef, 'key' | 'type' | 'id' | 'name' | 'year' | 'posterPath' | 'season' | 'episodes'>
+
+/** True when a row only counts as seen because of "seen before, no date" (so the tick can be undone safely). */
+export function isRowSeenUndated(library: Library, ref: Row): boolean {
+  const e = library.entries[ref.key]
+  if (!e) return false
+  if (e.status === 'watched' && e.seenBefore && !e.watchedOn && !e.rewatches?.length) return true
+  if (!ref.season || !ref.episodes || e.status === 'watched') return false
+  const ticks = Object.entries(e.episodes ?? {}).filter(([k]) => parseEpisodeKey(k)?.season === ref.season)
+  return ticks.length >= ref.episodes && ticks.every(([, day]) => day === UNDATED)
+}
+
+/**
+ * Ticks a list row as seen with no date: a film or whole show is marked "seen before", a season
+ * row gets all its episodes ticked with no date. Off undoes only those undated marks.
+ */
+export function markRowSeen(library: Library, ref: Row, on: boolean, now: Date = new Date()): Library {
+  if (ref.season && !ref.episodes) return library
+  const item: LibraryItem = { key: ref.key, type: ref.type, id: ref.id, title: library.entries[ref.key]?.title ?? { name: ref.name, year: ref.year, posterPath: ref.posterPath } }
+  const seasonKeys = ref.season && ref.episodes ? Array.from({ length: ref.episodes }, (_, i) => episodeKey(ref.season!, i + 1)) : null
+  if (on) {
+    if (seasonKeys) {
+      const e = library.entries[ref.key]
+      return setEpisodes(library, item, seasonKeys.filter((k) => !e?.episodes?.[k]), true, now, true)
+    }
+    return markSeenBefore(library, item, now)
+  }
+  if (!isRowSeenUndated(library, ref)) return library
+  const e = library.entries[ref.key]
+  const keep = (x: LibraryEntry): boolean => !!(x.note || x.rating !== undefined || Object.keys(x.episodes ?? {}).length || x.finishBy || x.rewatches?.length)
+  if (seasonKeys && e.status !== 'watched') {
+    // Take the season's ticks off; if that was all there was, take the show back off too.
+    const lib = setEpisodes(library, item, seasonKeys, false, now)
+    const after = lib.entries[ref.key]
+    return after && after.status === 'watching' && !keep(after) && !isWatchSoonKey(lib, ref.key) ? setStatus(lib, item, null, now) : lib
+  }
+  // A film or show marked seen before: take it back off, unless there's more to keep.
+  if (!keep(e)) return setStatus(library, item, null, now)
+  return changeEntry(
+    library,
+    ref.key,
+    (x) => {
+      const next: LibraryEntry = { ...x, status: 'want' }
+      delete next.seenBefore
+      return next
+    },
+    now
+  )
+}

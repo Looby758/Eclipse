@@ -6,6 +6,8 @@ import {
   emptyLibrary,
   endRewatch,
   entriesWith,
+  isRowSeenUndated,
+  markRowSeen,
   markSeenBefore,
   normalizeLibrary,
   removeRewatch,
@@ -128,5 +130,39 @@ describe('rewatches', () => {
     expect(e.seenBefore).toBe(true)
     expect(e.episodes).toEqual({ S1E1: 'seen' })
     expect(e.rewatches).toEqual([{ startedOn: '2026-02-01', finishedOn: '2026-03-01', episodes: { S1E1: '2026-02-01' } }, { startedOn: '2026-04-01' }])
+  })
+})
+
+describe('one-click seen on list rows', () => {
+  const ironMan = { key: 'movie:1726' as const, type: 'movie' as const, id: 1726, name: 'Iron Man', year: 2008, posterPath: null }
+  const dd2 = { key: 'tv:61889' as const, type: 'tv' as const, id: 61889, name: 'Daredevil', year: 2016, posterPath: null, season: 2, episodes: 3 }
+
+  it('ticks a film as seen before, and the tick comes off cleanly', () => {
+    const lib = markRowSeen(emptyLibrary(), ironMan, true)
+    expect(lib.entries[ironMan.key]).toMatchObject({ status: 'watched', seenBefore: true, title: { name: 'Iron Man' } })
+    expect(isRowSeenUndated(lib, ironMan)).toBe(true)
+    expect(markRowSeen(lib, ironMan, false).entries).toEqual({})
+  })
+
+  it('never undoes a watch with a real date', () => {
+    const lib = setStatus(emptyLibrary(), { key: ironMan.key, type: 'movie', id: ironMan.id, title: { name: 'Iron Man', year: 2008, posterPath: null } }, 'watched')
+    expect(isRowSeenUndated(lib, ironMan)).toBe(false)
+    expect(markRowSeen(lib, ironMan, false)).toBe(lib)
+  })
+
+  it('ticks a season row with no dates, keeping episodes you already dated', () => {
+    let lib = setEpisodes(emptyLibrary(), { key: dd2.key, type: 'tv', id: dd2.id, title: { name: 'Daredevil', year: 2015, posterPath: null } }, ['S2E1'], true, day('2026-01-01'))
+    lib = markRowSeen(lib, dd2, true)
+    expect(lib.entries[dd2.key].episodes).toEqual({ S2E1: '2026-01-01', S2E2: UNDATED, S2E3: UNDATED })
+    expect(isRowSeenUndated(lib, dd2)).toBe(false)
+
+    const fresh = markRowSeen(emptyLibrary(), dd2, true)
+    expect(isRowSeenUndated(fresh, dd2)).toBe(true)
+    expect(markRowSeen(fresh, dd2, false).entries).toEqual({})
+  })
+
+  it('leaves a season row alone when its episode count is unknown', () => {
+    const lib = emptyLibrary()
+    expect(markRowSeen(lib, { ...dd2, episodes: undefined }, true)).toBe(lib)
   })
 })

@@ -1,7 +1,7 @@
 import { ArrowDown, ArrowUp, Check, Copy, GripVertical, Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
 import { findList, isItemSeen, itemKey, progressOf, sourceOf } from '@core/lists'
-import { localDate, preferencesOf } from '@core/library'
+import { isRowSeenUndated, localDate, preferencesOf } from '@core/library'
 import { onMyServices, type AvailabilityFilter as Filter, passesFilter, FILTER_LABELS } from '@core/providers'
 import { formatShortDay } from '@core/format'
 import { imageUrl } from '@core/tmdb'
@@ -113,10 +113,25 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
         </button>
         <span className="list-end">
           {where(r)}
-          {seen && (
-            <span className="list-seen">
-              <Check size={15} strokeWidth={3} /> Seen
-            </span>
+          {seen &&
+            (isRowSeenUndated(library, r) ? (
+              <button className="list-seen undo" title="Seen before, no date. Click to take the tick off." onClick={async () => setLibrary(await window.api.markRowSeen(r, false))}>
+                <Check size={15} strokeWidth={3} /> Seen
+              </button>
+            ) : (
+              <span className="list-seen">
+                <Check size={15} strokeWidth={3} /> Seen
+              </span>
+            ))}
+          {!seen && (!r.season || !!r.episodes) && (
+            <button
+              className="list-tick"
+              aria-label={`Seen ${r.season ? `${r.name} season ${r.season}` : r.name}`}
+              title={r.season ? `Seen season ${r.season} (no date)` : 'Seen it (no date)'}
+              onClick={async () => setLibrary(await window.api.markRowSeen(r, true))}
+            >
+              <Check size={15} strokeWidth={3} />
+            </button>
           )}
           {own && (
             <span className="list-tools">

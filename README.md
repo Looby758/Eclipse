@@ -86,7 +86,8 @@ Avoid having Eclipse open on both computers at the same time, so the two copies 
 1. **Seen it before:** open something you watched years ago (say *El Camino*) and press **Seen it before? Mark it watched with no date** under the status buttons. It's now Watched, with *the first time before Eclipse, no date*.
 2. **A whole season, no dates:** on a show you've seen, press **Seen season 1 before (no date)** above the episodes. The ticks say *Seen before*.
 3. **Watch a film again:** on a watched film, press **Watched it again today**. It now says *Watched twice* and lists the rewatch. Press × on it to take it off.
-4. **Rewatch a show:** on a watched show, press **Start a rewatch**. Tick a few episodes: they count towards the rewatch, and the show moves to the *Watching* tab in the Library and to *Pick up* on Home. Press **Finish rewatch** to count it, or **Give up** to drop it.
+4. **Tick off a watch order:** open the MCU order (search *mcu*) and click the round tick on the right of anything you've seen. One click each, no dates. Click *Seen* on a row to undo it.
+5. **Rewatch a show:** on a watched show, press **Start a rewatch**. Tick a few episodes: they count towards the rewatch, and the show moves to the *Watching* tab in the Library and to *Pick up* on Home. Press **Finish rewatch** to count it, or **Give up** to drop it.
 
 ## For development
 
