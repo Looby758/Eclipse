@@ -177,6 +177,13 @@ Ideas agreed in the brainstorm on 17 Nov 2026. They aren't scheduled yet. When o
 17. **Back after a long gap.** When a show I've finished a season of comes back after a long break (say, 6 months or more), Home says "Season 4 is out. You finished season 3 in March 2024" and shows the last couple of episode summaries from TMDB so I remember where things stood.
 18. **Your year in Eclipse.** A year-in-review screen built from watch dates: hours watched, busiest month, most-watched director and actor, longest binge, lists and watch orders finished. Works for earlier years too, thanks to the Sequel dates. Shows up on Home in December, and any year can be opened from Lists.
 
+19. **Your phone as a remote.** Eclipse runs a tiny web page on the home Wi-Fi and shows a QR code. Scanning it on my phone opens a simple remote: tick the next episode, see how many fit before bed, check Watch soon. No app to install, nothing goes online, and it only works while Eclipse is open on the same network.
+20. **Eclipse notices what I watched.** Chrome and Edge keep their history in a file on my computer. Eclipse reads it (read-only) and when it spots that I watched a NOW TV or Disney+ episode, asks "Tick Andor S2 E4?". Needs checking first: how much the streaming sites' web addresses reveal about which episode it was. Never ticks anything without asking.
+
+**Maybe (unsure)**
+
+- **Plans around my real week.** Read my Google Calendar's private address (its secret iCal link) so busy evenings are left out of "Finish it by…" and Watch soon automatically.
+
 ## Open questions
 
 - [ ] **Combining with Orbit:** what would joining them look like? A tab inside Orbit, Orbit's daily notes showing what I watched that day, or just a shared look? This doesn't need answering now, but it affects how strictly `src/core` stays separate.
@@ -250,4 +257,4 @@ You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls
 - Done (after your first look): **sections** within an order. The MCU has The Infinity Saga, The Multiverse Saga and The Defenders (Netflix's Daredevil, Jessica Jones, Luke Cage, Iron Fist, The Defenders and The Punisher, plus Daredevil: Born Again); Harry Potter has Harry Potter and Fantastic Beasts. Pick one to see just that part, with its own progress.
 - Added to the plan: Phase 10, seen-before and rewatches (your idea; Polish moves to 11).
 - Next: you try Phases 4 to 7. Then Phase 8 (release calendar).
-- Added to the plan (17 Nov 2026): seven future ideas from a brainstorm, listed under Future ideas as candidate phases 12 to 18 (arriving and leaving, "Do I still need NOW TV", free UK TV, where do I know them from, stalled shows, back after a long gap, your year in Eclipse).
+- Added to the plan (17 Nov 2026): seven future ideas from a brainstorm, listed under Future ideas as candidate phases 12 to 18 (arriving and leaving, "Do I still need NOW TV", free UK TV, where do I know them from, stalled shows, back after a long gap, your year in Eclipse). Then 19 (phone as a remote) and 20 (noticing what I watched), with calendar-aware planning as a maybe.
