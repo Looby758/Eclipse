@@ -1,8 +1,8 @@
 import { Bookmark, CircleCheck, CirclePause, CirclePlay, X } from 'lucide-react'
 import type { TitleDetails, WatchStatus } from '@core/types'
 import { STATUS_LABELS, WATCH_STATUSES } from '@core/types'
-import { formatDate } from '@core/format'
 import { useApp } from '../store/app'
+import { itemOf } from '../lib/item'
 
 const ICONS: Record<WatchStatus, typeof Bookmark> = { want: Bookmark, watching: CirclePlay, watched: CircleCheck, stopped: CirclePause }
 
@@ -12,8 +12,7 @@ export default function StatusPicker({ details }: { details: TitleDetails }): Re
   const setLibrary = useApp((s) => s.setLibrary)
 
   const choose = async (status: WatchStatus | null): Promise<void> => {
-    const item = { key: details.key, type: details.type, id: details.id, title: { name: details.name, year: details.year, posterPath: details.posterPath } }
-    setLibrary(await window.api.setStatus(item, status))
+    setLibrary(await window.api.setStatus(itemOf(details), status))
   }
 
   return (
@@ -34,7 +33,6 @@ export default function StatusPicker({ details }: { details: TitleDetails }): Re
           </button>
         )}
       </div>
-      {entry?.watchedOn && <div className="watched-on">Watched {formatDate(entry.watchedOn)}</div>}
     </div>
   )
 }

@@ -5,6 +5,7 @@ import type { LibraryEntry } from '@core/types'
 import { useApp } from '../store/app'
 import Poster from './Poster'
 import { focusSearch } from './Dock'
+import NextUp from './NextUp'
 
 function greeting(now: Date): string {
   const h = now.getHours()
@@ -64,6 +65,7 @@ export default function HomeHero(): React.JSX.Element {
           ? `You’re part-way through this ${what}${watchingCount > 1 ? `, one of ${watchingCount} you’re watching` : ''}.`
           : `It’s on your watchlist${pick.title.year ? ` (${pick.title.year})` : ''}.`}
       </p>
+      <NextUp entry={pick} />
       <div className="hero-actions">
         <button className="btn primary big" onClick={() => go({ name: 'title', type: pick.type, id: pick.id })}>
           Open {pick.title.name}

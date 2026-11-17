@@ -5,6 +5,8 @@ import { useApp } from '../store/app'
 import KeyForm from './KeyForm'
 import Sheet from './Sheet'
 import Credits from './Credits'
+import ServicesCard from './ServicesCard'
+import SequelImportCard from './SequelImportCard'
 
 export default function SettingsView(): React.JSX.Element {
   const status = useApp((s) => s.status)!
@@ -35,6 +37,10 @@ export default function SettingsView(): React.JSX.Element {
           ))}
         </div>
       </section>
+
+      <ServicesCard />
+
+      <SequelImportCard />
 
       <section className="card">
         <h2>Data folder</h2>
@@ -81,13 +87,8 @@ export default function SettingsView(): React.JSX.Element {
         </button>
       </section>
 
-      <section className="card">
-        <h2>Region</h2>
-        <p className="muted">{status.region === 'GB' ? 'United Kingdom' : status.region} (used for where-to-watch in a later update).</p>
-      </section>
-
       <p className="muted small">Eclipse {status.version}</p>
-      <Credits />
+      <Credits justWatch />
     </Sheet>
   )
 }

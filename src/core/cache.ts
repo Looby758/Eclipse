@@ -14,8 +14,12 @@ export const CACHE_TTL = {
   trending: DAY,
   /** Film and show details (incl. next episode dates): weekly, as the plan says for episode data. */
   details: 7 * DAY,
-  /** Where to watch (Phase 2): daily. */
-  providers: DAY
+  /** A season's episodes: weekly, like details. */
+  season: 7 * DAY,
+  /** Where to watch: daily. */
+  providers: DAY,
+  /** The list of streaming services in your country: weekly. */
+  services: 7 * DAY
 } as const
 
 export interface CacheEntry<T> {

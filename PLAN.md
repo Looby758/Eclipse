@@ -172,7 +172,7 @@ Export this doc as Markdown and save it in the project as `PLAN.md`. Then start 
 
 ## Progress log
 
-**Phase 1: Foundation (built, waiting for you to try it)**
+**Phase 1: Foundation (done, merged)**
 
 - Done: Electron + React + TypeScript project set up like Orbit (electron-vite, Vitest, `area:action` IPC names, settings.json written safely, single-instance lock, Orbit-style title bar).
 - Done: TMDB key in Settings, checked with TMDB then stored encrypted with Electron safeStorage, like Orbit's keys. Accepts the API Key or the Read Access Token.
@@ -183,4 +183,14 @@ Export this doc as Markdown and save it in the project as `PLAN.md`. Then start 
 - Decisions: Eclipse is standalone for now; `src/core` has no Electron or UI code so it could move into Orbit. Curated watch orders: Marvel and Star Wars first. No plans to sell. Posters aren't saved for offline use yet (details are).
 - Design: you asked for sleek and futuristic, alive rather than flat, poster-heavy, dark and light, no browns, dark greens or oranges, and its own look (not Orbit's). From six drafts you picked **C · Drift** for both screens: a slowly moving, tilted wall of your posters behind everything, a "Pick up …?" home, a floating dock (Tonight, Library, Settings, search), and pages as sheets that slide up, lit in each poster's colour. Fonts: Sora for headings, Inter for everything else (bundled, so they work offline). All of it lives in `src/renderer/src/styles/theme.css`.
 - Done (after your try-out): the poster wall is never empty. Until your library has 24 posters it's topped up with this week's trending titles from TMDB (saved for a day, so it works offline too); your own posters come first and gradually replace them.
-- Next: Phase 2 (tracking and where to watch, Sequel import).
+
+**Phase 2: Tracking, your services and the Sequel import (built, waiting for you to try it)**
+
+- Done: episode ticking on show pages. Each season is a row of dots; the next episode glows. Click a dot for the episode (title, date, runtime, rating), then **Mark watched**, **Watched up to here** (ticks everything before it too) or **Mark all of Season N watched**. Double-click a dot to tick it quickly. Each tick saves the day you watched it; ticking a show you haven't added makes it Watching. Episodes you haven't reached keep their title and summary hidden until you ask.
+- Done: a note on anything in your library, and the "Watched on" date (editable). Ratings brought over from Sequel show as "Your rating".
+- Done: where to watch on every title page (stream, rent, buy), with your services lit up, and a link to every option. Data from JustWatch via TMDB, credited.
+- Done: your services in Settings, with your country (stored in `library.json`, so both computers share it). The first time, Disney+ and NOW TV are picked for you.
+- Done: filters in Library and Search: Anywhere, On my services, Rent or buy only, Not streaming anywhere. Home shows a watching show's next episode, whether it's on your services, and a button to tick it.
+- Done: **Settings → Import from Sequel**. Pick Sequel's export (.zip, the unzipped folder or Library.csv), see what's in it, then Import. Wishlist → Want to watch (Watching if you'd started it), Completed → Watched, Abandoned → Stopped. Ratings are doubled to be out of 10, dates become your local day, episodes keep the day you watched them, Sequel collections are kept as lists on each title (for watch orders later). Anything already in Eclipse wins, episodes from both are combined, and `library.json` is copied aside before importing. Books and games are skipped.
+- Your export (17 Nov 2026): 47 films and 36 shows, 681 watched episodes, 14 film and show ratings, no notes, one "Marvel" collection (21 of its films and shows). 6 books and 11 games are skipped. It stays out of git (`import/sequel/` is ignored).
+- Next: Phase 3.

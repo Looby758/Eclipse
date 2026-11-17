@@ -7,6 +7,9 @@ import Sheet from './Sheet'
 import TitleCard from './TitleCard'
 import Credits from './Credits'
 import { focusSearch } from './Dock'
+import AvailabilityFilter from './AvailabilityFilter'
+import { useAvailability } from '../lib/availability'
+import { FILTER_LABELS, passesFilter, type AvailabilityFilter as Filter } from '@core/providers'
 
 export default function LibrarySheet(): React.JSX.Element {
   const library = useApp((s) => s.library)
@@ -14,7 +17,10 @@ export default function LibrarySheet(): React.JSX.Element {
   // Open on the first status that has something in it.
   const [tab, setTab] = useState<WatchStatus>(() => WATCH_STATUSES.find((s) => counts[s] > 0) ?? 'want')
   const [type, setType] = useState<MediaType | undefined>()
-  const entries = entriesWith(library, tab, type)
+  const [filter, setFilter] = useState<Filter>('any')
+  const inTab = entriesWith(library, tab, type)
+  const { map, checking } = useAvailability(inTab.map((e) => e.key), filter)
+  const entries = inTab.filter((e) => passesFilter(filter, map[e.key]))
   const empty = Object.keys(library.entries).length === 0
 
   return (
@@ -36,6 +42,7 @@ export default function LibrarySheet(): React.JSX.Element {
           </button>
         ))}
       </nav>
+      {!empty && <AvailabilityFilter value={filter} onChange={setFilter} checking={checking} />}
       {empty ? (
         <div className="empty">
           <p>Nothing here yet.</p>
@@ -46,7 +53,9 @@ export default function LibrarySheet(): React.JSX.Element {
       ) : entries.length === 0 ? (
         <div className="empty">
           <p>
-            Nothing marked “{STATUS_LABELS[tab]}”{type ? ` in ${type === 'movie' ? 'films' : 'shows'}` : ''}.
+            {checking && filter !== 'any'
+              ? 'Checking where to watch…'
+              : `Nothing marked “${STATUS_LABELS[tab]}”${type ? ` in ${type === 'movie' ? 'films' : 'shows'}` : ''}${filter !== 'any' ? ` that’s ${FILTER_LABELS[filter].toLowerCase()}` : ''}.`}
           </p>
         </div>
       ) : (
@@ -56,7 +65,7 @@ export default function LibrarySheet(): React.JSX.Element {
           ))}
         </div>
       )}
-      <Credits />
+      <Credits justWatch={filter !== 'any'} />
     </Sheet>
   )
 }
