@@ -6,6 +6,8 @@ import { expandGuide, guideById, guideRefs, type Guide, type GuideTitleInfo } fr
 import { releaseOrder, sourceOf, findList } from '@core/lists'
 import type { Library } from '@core/types'
 import { parseTitleKey } from '@core/types'
+import { followed, seasonsToCheck, upcomingReleases, type ReleaseEvent } from '@core/calendar'
+import { localDate, preferencesOf } from '@core/library'
 import type { Fetched, ListView } from '@shared/api'
 import { loadSettings, saveSettings } from './settings'
 import { fileCache } from './cacheStore'
@@ -193,4 +195,23 @@ export async function openList(id: string, library: Library, refresh = false): P
       return { id, name: l.name, description: '', imagePath: null, items: l.items ?? [] }
     }
   }
+}
+
+/** What's coming up from your library, for the release calendar. */
+export async function calendarEvents(library: Library, today = localDate(new Date())): Promise<ReleaseEvent[]> {
+  const details = await detailsMany(followed(library))
+  const seasons: Record<string, SeasonDetails> = {}
+  const wanted = Object.values(details).flatMap((d) => seasonsToCheck(d, today).map((n) => ({ id: d.id, n })))
+  for (let i = 0; i < wanted.length; i += 6) {
+    await Promise.all(
+      wanted.slice(i, i + 6).map(async ({ id, n }) => {
+        try {
+          seasons[`${id}:${n}`] = (await season(id, n)).data
+        } catch {
+          // The season's start date from the show's details is used instead.
+        }
+      })
+    )
+  }
+  return upcomingReleases({ library, details, seasons, today, everyEpisode: preferencesOf(library).calendarEpisodes })
 }

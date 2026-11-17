@@ -220,7 +220,7 @@ Export this doc as Markdown and save it in the project as `PLAN.md`. Then start 
 - Done: films show **Tonight** on their page and on Home: "Start by 20:14 to be in bed by 23:00", or that it's too long for what's left of tonight.
 - Decisions: you didn't pick evening times, so they're settings with the defaults above. "Before it renews" uses a monthly renewal day.
 
-**Phases 4 to 7 (built overnight in one go, waiting for you to try them)**
+**Phases 4 to 7 (done, merged)**
 
 You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls below myself. Change any you don't like.
 
@@ -237,4 +237,11 @@ You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls
 - Done (after your first look): more hand-made orders: **X-Men (Fox)** from First Class and the original trilogy up to Dark Phoenix, with the Wolverine and Deadpool films; **Harry Potter** with Fantastic Beasts; and **The Boys** with Gen V, Diabolical and Vought Rising. The Walking Dead story order follows your notes (The Ones Who Live and Daryl Dixon straight after season 11, Dead City later, World Beyond and Tales at the end).
 - Done (after your first look): **sections** within an order. The MCU has The Infinity Saga, The Multiverse Saga and The Defenders (Netflix's Daredevil, Jessica Jones, Luke Cage, Iron Fist, The Defenders and The Punisher, plus Daredevil: Born Again); Harry Potter has Harry Potter and Fantastic Beasts. Pick one to see just that part, with its own progress.
 - Added to the plan: Phase 10, seen-before and rewatches (your idea; Polish moves to 11).
-- Next: you try Phases 4 to 7. Then Phase 8 (release calendar).
+
+**Phase 8: Release calendar (built, waiting for you to try it)**
+
+- Done: **Settings → Release calendar.** It shows what's coming up from your library and saves it as an .ics file to import into Google Calendar or Outlook. Films on your Want to watch list appear on their release day. Shows you're watching, want to watch or have finished (for new seasons) appear when a new season starts and on its finale; shows you've stopped are left out. Switch to *Every new episode* to get each episode instead. Dates are all-day events that don't mark you as busy, each with a link to the title on TMDB. It looks up to two years ahead.
+- Decisions: films use TMDB's main release date, which is usually the first release worldwide (often the US cinema date), not the UK or streaming date. A finale is only added once every episode of the season has a date. Each date has a fixed ID, so importing a newer file describes the same events. The tip in the app is to import into a separate "Eclipse" calendar, so it's easy to clear and re-import.
+- Done (asked during this phase): the Walking Dead order has two sections, **Main story** (The Walking Dead, Daryl Dixon, The Ones Who Live, Dead City) and **Spin-offs** (Fear, World Beyond, Tales).
+- To decide after you've tried it: whether re-exporting now and then is fine, or worth a self-updating calendar link (that needs the feed hosted online somewhere free with a private link).
+- Next: Phase 9 (Watch soon).
