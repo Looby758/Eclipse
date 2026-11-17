@@ -1,8 +1,9 @@
 {
   "name": "eclipse",
   "productName": "Eclipse",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "A personal film and TV tracker",
+  "author": "Looby758",
   "main": "./out/main/index.js",
   "private": true,
   "scripts": {
@@ -10,7 +11,9 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build:win": "npm run typecheck && npm test && electron-vite build && electron-builder --win --publish never",
+    "build:mac": "npm run typecheck && npm test && electron-vite build && electron-builder --mac --publish never"
   },
   "//": "Only the main process's runtime packages go in dependencies; everything the renderer uses is bundled by Vite, so it lives in devDependencies (same as Orbit).",
   "devDependencies": {
@@ -30,5 +33,8 @@
     "vite": "^6.3.5",
     "vitest": "^3.2.7",
     "zustand": "^5.0.16"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11"
   }
 }

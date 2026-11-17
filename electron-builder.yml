@@ -1,0 +1,51 @@
+# Windows and Mac installers, set up like Orbit's.
+appId: com.looby758.eclipse
+productName: Eclipse
+directories:
+  buildResources: build
+  output: dist
+files:
+  - out/**
+  - package.json
+  # The window icon is loaded at run time on Windows.
+  - build/icon.png
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: build/icon.png
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Eclipse
+  artifactName: Eclipse-Setup-${version}.${ext}
+  # Keep your settings (and the encrypted TMDB key) if you uninstall and reinstall. Your library is never touched either way.
+  deleteAppDataOnUninstall: false
+mac:
+  # dmg to install from; zip is what update checks read.
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+    - target: zip
+      arch: [arm64, x64]
+  icon: build/icon.png
+  category: public.app-category.entertainment
+  # No paid Apple certificate: build/adhoc-sign.cjs signs the app "ad hoc" instead, which Apple
+  # Silicon Macs require before they'll run it at all.
+  identity: null
+  hardenedRuntime: false
+  notarize: false
+  # Used by the zip; the dmg (the one to download) gets the simpler name below.
+  artifactName: Eclipse-${version}-${arch}-mac.${ext}
+dmg:
+  artifactName: Eclipse-${version}-${arch}.${ext}
+afterPack: build/adhoc-sign.cjs
+# Installers and update files go to this repository's GitHub Releases.
+publish:
+  provider: github
+  owner: Looby758
+  repo: Eclipse
+  releaseType: draft

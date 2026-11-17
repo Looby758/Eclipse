@@ -6,6 +6,22 @@ const open = (url: string) => (e: React.MouseEvent): void => {
   window.api.openExternal(url)
 }
 
+/** Home's short version, in the corner: the posters are TMDB's and "On Netflix" is JustWatch's. */
+export function HomeCredit(): React.JSX.Element {
+  return (
+    <footer className="home-credit">
+      Data from{' '}
+      <a href={TMDB_SITE} onClick={open(TMDB_SITE)} title="This product uses the TMDB API but is not endorsed or certified by TMDB.">
+        TMDB
+      </a>{' '}
+      and{' '}
+      <a href={JUSTWATCH_URL} onClick={open(JUSTWATCH_URL)}>
+        JustWatch
+      </a>
+    </footer>
+  )
+}
+
 /** TMDB's terms ask for this credit wherever its data is shown, and JustWatch's wherever where-to-watch is. */
 export default function Credits({ justWatch = false }: { justWatch?: boolean }): React.JSX.Element {
   return (

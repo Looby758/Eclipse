@@ -6,6 +6,7 @@ import Dock from './components/Dock'
 import Setup from './components/Setup'
 import HomeHero from './components/HomeHero'
 import OnThisDay from './components/OnThisDay'
+import { HomeCredit } from './components/Credits'
 import LibrarySheet from './components/LibrarySheet'
 import SearchSheet from './components/SearchSheet'
 import TitleSheet from './components/TitleSheet'
@@ -72,6 +73,7 @@ export default function App(): React.JSX.Element {
             <>
               <HomeHero />
               <OnThisDay />
+              <HomeCredit />
             </>
           )}
           {view.name === 'library' && <LibrarySheet />}

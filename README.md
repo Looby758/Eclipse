@@ -4,7 +4,23 @@ A personal film and TV tracker for Windows and Mac. Search anything on TMDB, see
 
 See [PLAN.md](PLAN.md) for the full plan and the progress log.
 
-## Running it (while it's being built)
+## Installing it
+
+Download the newest installer from [Releases](https://github.com/Looby758/Eclipse/releases):
+
+- **Windows:** `Eclipse-Setup-….exe`. Windows may say it "protected your PC" because the installer isn't signed with a paid certificate: press **More info → Run anyway**.
+- **Mac:** `Eclipse-…-arm64.dmg` for Apple Silicon (M1 and later) or `Eclipse-…-x64.dmg` for Intel. Drag Eclipse into Applications. The first time, right-click it and choose **Open** (it isn't signed with a paid Apple certificate), or allow it in *System Settings → Privacy & Security*.
+
+Your data folder and key carry on as before. The installed app checks for updates itself (Settings → *Version and updates*).
+
+## Making a release
+
+1. Put the new version number in `package.json` (e.g. `1.0.1`) and push it to main.
+2. On GitHub, open **Actions → Release → Run workflow** (on main). It builds the Windows and Mac installers on GitHub's computers (about 15 minutes) and publishes them as a release tagged `v1.0.1`. Pushing a tag like `v1.0.1` does the same.
+
+To build an installer on your own computer instead: `npm run build:win` (on Windows) or `npm run build:mac` (on a Mac). It lands in `dist/`.
+
+## Running it from the code
 
 You need [Node.js](https://nodejs.org) (the LTS version) and [Git](https://git-scm.com), the same as for Orbit.
 
@@ -88,6 +104,13 @@ Avoid having Eclipse open on both computers at the same time, so the two copies 
 3. **Watch a film again:** on a watched film, press **Watched it again today**. It now says *Watched twice* and lists the rewatch. Press × on it to take it off.
 4. **Tick off a watch order:** open the MCU order (search *mcu*) and click the round tick on the right of anything you've seen. One click each, no dates. Click *Seen* on a row to undo it.
 5. **Rewatch a show:** on a watched show, press **Start a rewatch**. Tick a few episodes: they count towards the rewatch, and the show moves to the *Watching* tab in the Library and to *Pick up* on Home. Press **Finish rewatch** to count it, or **Give up** to drop it.
+
+## Phase 11: what to try
+
+1. **Export:** Settings → *Export your data* → **Export everything**, and pick a folder (e.g. Documents). Open `titles.csv` in Excel or Google Sheets.
+2. **Credits:** Home now has *Data from TMDB and JustWatch* in the bottom corner.
+3. **Make the first release:** after merging, on GitHub open **Actions → Release → Run workflow**. When it finishes, download the installer from **Releases** and install it (see *Installing it* above).
+4. **Updates:** in the installed app, Settings → *Version and updates* → **Check now** says you have the latest version.
 
 ## For development
 
