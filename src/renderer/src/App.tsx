@@ -63,7 +63,7 @@ export default function App(): React.JSX.Element {
   const spot = onHome && homeStyle === 'spotlight'
 
   return (
-    <div className={`app ${onHome ? 'on-home' : 'on-page'} ${spot ? 'spot' : ''}`}>
+    <div className={`app ${onHome ? 'on-home' : 'on-page'} ${spot ? 'spot' : ''} ${homeStyle === 'spotlight' ? 'frost' : ''}`}>
       {/* Spotlight's flat drifting rows stay behind every page, so leaving Home doesn't swap the wall. */}
       <PosterWall rows={homeStyle === 'spotlight'} />
       <div className="veil" aria-hidden />

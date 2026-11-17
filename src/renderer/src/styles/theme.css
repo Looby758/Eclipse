@@ -8,6 +8,8 @@
  * Dark is the default; light applies when the system is light, or when picked in Settings.
  *
  * Home can be "Spotlight" (Phase 34, the default) or the classic Drift home, picked in Settings.
+ * With Spotlight, every page is "Frosted glass" (Phase 34b): see-through sheets and cards over the
+ * drifting posters, with white (dark mode) or ink (light mode) for whatever is switched on.
  */
 
 :root {
@@ -37,6 +39,17 @@
   --spot-on-pri: #121428;
   --spot-hi: #8fe3ff;
   --spot-hi-2: #b4a2ff;
+
+  /* Frosted glass (Spotlight's pages) */
+  --frost-veil: rgba(8, 9, 20, 0.28);
+  --frost-sheet: rgba(14, 15, 34, 0.45);
+  --frost-blur: blur(36px) saturate(1.5);
+  --frost-pane: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+  --frost-pane-hover: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08));
+  --frost-float: rgba(255, 255, 255, 0.12);
+  --frost-line: rgba(255, 255, 255, 0.18);
+  --frost-rim: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  --frost-on-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
   --dial-size: 440px;
   --dial-poster-w: 168px;
   --text-spotlight: 38px;
@@ -142,6 +155,14 @@
     --spot-on-pri: #ffffff;
     --spot-hi: #2f6bff;
     --spot-hi-2: #7a4dff;
+  --frost-veil: rgba(238, 240, 251, 0.3);
+  --frost-sheet: rgba(255, 255, 255, 0.5);
+  --frost-pane: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.4));
+  --frost-pane-hover: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.55));
+  --frost-float: rgba(255, 255, 255, 0.6);
+  --frost-line: rgba(40, 30, 120, 0.14);
+  --frost-rim: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --frost-on-shadow: 0 4px 14px rgba(40, 30, 120, 0.2);
     color-scheme: light;
   }
 }
@@ -182,5 +203,13 @@
   --spot-on-pri: #ffffff;
   --spot-hi: #2f6bff;
   --spot-hi-2: #7a4dff;
+  --frost-veil: rgba(238, 240, 251, 0.3);
+  --frost-sheet: rgba(255, 255, 255, 0.5);
+  --frost-pane: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.4));
+  --frost-pane-hover: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.55));
+  --frost-float: rgba(255, 255, 255, 0.6);
+  --frost-line: rgba(40, 30, 120, 0.14);
+  --frost-rim: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --frost-on-shadow: 0 4px 14px rgba(40, 30, 120, 0.2);
   color-scheme: light;
 }

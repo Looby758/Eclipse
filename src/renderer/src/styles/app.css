@@ -620,3 +620,25 @@ button.list-seen.undo:hover { background: var(--glass-hover); }
 .spot-pills, .spot-foryou { -webkit-app-region: no-drag; z-index: 6; }
 [data-platform='win'] .spot-pills { top: 52px; }
 [data-platform='win'] .spot-panel { top: 114px; }
+
+/* ---- Frosted glass (Phase 34b): with Spotlight on, every page is see-through panes over the posters ---- */
+.app.frost {
+  --sheet: var(--frost-sheet);
+  --glass: var(--frost-float);
+  --glass-soft: var(--frost-pane);
+  --glass-hover: var(--frost-pane-hover);
+  --line: var(--frost-line);
+  --veil-page: var(--frost-veil);
+}
+.app.frost .sheet, .app.frost .setup { backdrop-filter: var(--frost-blur); box-shadow: var(--frost-rim), 0 30px 80px rgba(0, 0, 0, 0.45); }
+.app.frost .card, .app.frost .hours, .app.frost .time-card, .app.frost .episode-panel, .app.frost .setup-step,
+.app.frost .soon-tonight, .app.frost .rewatch-now, .app.frost .with-row, .app.frost .order-card, .app.frost .list-card,
+.app.frost .next-up, .app.frost .note, .app.frost .otd, .app.frost .dock, .app.frost .back-btn, .app.frost .mini-card { box-shadow: var(--frost-rim); }
+.app.frost .dock { box-shadow: var(--frost-rim), var(--shadow); }
+.app.frost .back-btn, .app.frost .dock, .app.frost .mini-card, .app.frost .btn.glass { backdrop-filter: blur(18px) saturate(1.4); }
+.app.frost .back-btn, .app.frost .chip, .app.frost .service-chip, .app.frost .segmented, .app.frost .segmented button { border-radius: 99px; }
+/* Switched on: a solid white (ink in light mode) pill instead of the purple gradient. */
+.app.frost .segmented button.on, .app.frost .chip.on, .app.frost .service-chip.on, .app.frost .status-btn.on, .app.frost .dock-btn.on, .app.frost .btn.primary,
+.app.frost .btn.primary:hover:not(:disabled) { background: var(--spot-pri); color: var(--spot-on-pri); box-shadow: var(--frost-on-shadow); border-color: transparent; }
+.app.frost .tabs button.on { border-bottom-color: var(--spot-pri); }
+.app.frost .service-chip.on svg { color: inherit; }

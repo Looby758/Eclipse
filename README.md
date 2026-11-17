@@ -59,6 +59,7 @@ Each computer needs the key pasted once.
 2. **For you tonight** (bottom left) opens the Home cards in a side panel.
 3. **Classic Home:** Settings → *Appearance* → *Home* → **Classic (legacy)** for the Home from before. Switch back with **Spotlight**.
 4. **New logo:** in the corner of the app, and (once you build an installer) as the app icon and the tray icon.
+5. **Frosted glass:** open Settings, Library or any title. The page is now see-through glass over the drifting posters, and anything switched on is a white pill. Try Dark and Light. Pick **Classic (legacy)** Home to get the old flat look back.
 
 ## Phase 33: what to try
 

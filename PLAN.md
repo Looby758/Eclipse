@@ -359,7 +359,7 @@ You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls
 - Phase 26, **menu bar and tray**: Settings → *Eclipse in the system tray* (*menu bar* on the Mac) → On. The icon's menu has the next episode of each show you're watching (click to tick it, with a small notification), how long is left before bed and the time to start by, *Open Eclipse* and *Quit Eclipse*. While it's on, closing the window keeps Eclipse running there (so the phone remote keeps working); opening Eclipse again brings the window back.
 - Decisions: the remote and tray settings are kept per computer (not in the synced library). The remote uses port 47823. Ticks from the phone or the tray go on your rewatch if you're on one, and are refused while this copy is read-only (the phone says why).
 
-- Look refresh (17 Nov 2026): from two rounds of design drafts you picked **Spotlight** for Home only (the rest of the app keeps Drift) and the **Play eclipse** logo in **Halo blue**. Added as candidate phase 34 (33 is Catch up). Turned down: Marquee (font, red, too busy), Observatory's layout and flat blue-black (its dial is kept in Spotlight), Sticker deck, Mosaic and Horizon.
+- Look refresh (17 Nov 2026): from two rounds of design drafts you picked **Spotlight** for Home only (the rest of the app keeps Drift) and the **Play eclipse** logo in **Halo blue**. Added as candidate phase 34 (33 is Catch up). Later the same day you asked for the menus without flat colour and picked **Frosted glass** from four drafts. Turned down: Marquee (font, red, too busy), Observatory's layout and flat blue-black (its dial is kept in Spotlight), Sticker deck, Mosaic and Horizon.
 
 - Evenings (17 Nov 2026): you picked a schedule per day, more than one slot a day, just-for-tonight changes, gaps and wind-down, and a weekly budget. Added as candidate phase 35. Not wanted: date ranges for holidays, and Google Calendar.
 
@@ -373,6 +373,7 @@ You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls
 - With Spotlight on, the flat drifting rows stay behind every page (blurred), so leaving Home doesn't swap the wall back to the tilted one. Classic keeps the tilted wall everywhere.
 - **Logo**: "Play eclipse" in Halo blue, on the app icon (Windows and Mac installers and the Windows title bar), the tray / menu bar icon, and the corner of the app and welcome screen.
 - Decisions: the Spotlight colours, sizes and logo colours are all tokens in theme.css. No new packages; the display font stays Sora rather than the draft's Outfit, so nothing new is downloaded.
+- **Frosted glass pages** (picked from four drafts on 17 Nov: Poster wash, Frosted glass, Halo edges, Lit from above): with Spotlight on, every page's sheet is see-through frosted glass over the drifting posters, cards are a lighter pane of the same glass with a lit top edge, and whatever is switched on (tabs, chips, your services, the dock) is a solid white pill (ink in light mode) instead of the flat purple. Chips and toggles are rounder. Classic keeps the old look. All tokens (`--frost-*`) are in theme.css.
 
 **Phase 33: Catch up before the sequel (built, waiting for you to try it)**
 
