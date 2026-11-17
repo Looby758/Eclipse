@@ -1,10 +1,11 @@
-import { Library, ListChecks, Moon, Search, Settings } from 'lucide-react'
+import { Hourglass, Library, ListChecks, Moon, Search, Settings } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { currentView, useApp, type View } from '../store/app'
 
 const ITEMS: { view: View['name']; label: string; icon: typeof Moon }[] = [
   { view: 'home', label: 'Tonight', icon: Moon },
   { view: 'library', label: 'Library', icon: Library },
+  { view: 'soon', label: 'Soon', icon: Hourglass },
   { view: 'lists', label: 'Lists', icon: ListChecks },
   { view: 'settings', label: 'Settings', icon: Settings }
 ]

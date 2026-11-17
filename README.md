@@ -73,6 +73,14 @@ Avoid having Eclipse open on both computers at the same time, so the two copies 
 4. **Add it to Google Calendar:** on calendar.google.com, make a new calendar called "Eclipse" (Settings → Add calendar → Create new calendar). Then Settings → *Import & export* → pick the file and choose the Eclipse calendar. To update later, delete the Eclipse calendar, make it again and import a fresh file.
 5. **Walking Dead sections:** search *walking dead*, open the order and try *Main story* and *Spin-offs*.
 
+## Phase 9: what to try
+
+1. **Add a few:** open a film or show and press **Watch soon** (under the status buttons). Add three or four.
+2. **See the plan:** press **Soon** in the dock. The top says how long it all takes and when you'd finish. *Tonight* says what fits before bed, and *Your evenings* lays it out night by night.
+3. **Reorder:** drag the rows (or use the arrows) and watch the plan change. Press × to take something off.
+4. **Change your evenings:** in Settings → *Your evenings*, change your bedtime or nights and look at Soon again.
+5. **Home:** the first thing on Watch soon that's in your library is what *Pick up …?* suggests.
+
 ## For development
 
 - `npm test` runs the tests, `npm run typecheck` checks the types.

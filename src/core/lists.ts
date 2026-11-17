@@ -145,6 +145,16 @@ function cleanRef(raw: unknown): TitleRef | null {
   }
 }
 
+/** Reads the Watch soon list from the file (whole titles only, each once). */
+export function normalizeWatchSoon(raw: unknown): TitleRef[] | undefined {
+  const seen = new Set<string>()
+  const out = (Array.isArray(raw) ? raw : [])
+    .map(cleanRef)
+    .filter((r): r is TitleRef => !!r && !seen.has(r.key) && !!seen.add(r.key))
+    .map(({ season: _s, episodes: _e, ...r }) => r)
+  return out.length ? out : undefined
+}
+
 /**
  * Reads the lists from the file. `legacy` carries list names that older versions kept on each
  * title (from the Sequel import): they become your own lists.

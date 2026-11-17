@@ -33,6 +33,8 @@ const api: EclipseApi = {
   renameList: (id, name) => ipcRenderer.invoke('lists:rename', id, name),
   setInList: (id, ref, inList) => ipcRenderer.invoke('lists:setIn', id, ref, inList),
   moveInList: (id, from, to) => ipcRenderer.invoke('lists:move', id, from, to),
+  setWatchSoon: (ref, on) => ipcRenderer.invoke('soon:set', ref, on),
+  moveWatchSoon: (from, to) => ipcRenderer.invoke('soon:move', from, to),
 
   getLibrary: () => ipcRenderer.invoke('library:get'),
   setStatus: (item, status) => ipcRenderer.invoke('library:setStatus', item, status),

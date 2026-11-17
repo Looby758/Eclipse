@@ -12,11 +12,12 @@ function greeting(now: Date): string {
   return h < 5 ? 'Up late.' : h < 12 ? 'Good morning.' : h < 18 ? 'Good afternoon.' : 'Good evening.'
 }
 
-/** What to suggest: things you're watching first (latest first), then your watchlist. */
-function candidates(entries: LibraryEntry[]): LibraryEntry[] {
-  const watching = entries.filter((e) => e.status === 'watching')
-  const want = entries.filter((e) => e.status === 'want')
-  return [...watching, ...want]
+/** What to suggest: your Watch soon list first (in your order), then things you're watching (latest first), then your watchlist. */
+function candidates(entries: LibraryEntry[], soon: string[]): LibraryEntry[] {
+  const first = soon.map((k) => entries.find((e) => e.key === k && e.status !== 'watched' && e.status !== 'stopped')).filter((e): e is LibraryEntry => !!e)
+  const watching = entries.filter((e) => e.status === 'watching' && !first.includes(e))
+  const want = entries.filter((e) => e.status === 'want' && !first.includes(e))
+  return [...first, ...watching, ...want]
 }
 
 /** The home screen: one suggestion, big, over the moving poster wall. */
@@ -25,7 +26,7 @@ export default function HomeHero(): React.JSX.Element {
   const go = useApp((s) => s.go)
   const [skip, setSkip] = useState(0)
   const all = entriesWith(library)
-  const picks = candidates(all)
+  const picks = candidates(all, (library.watchSoon ?? []).map((r) => r.key))
   const pick = picks.length ? picks[skip % picks.length] : null
   const others = picks.filter((e) => e !== pick).slice(0, 3)
   const watchingCount = all.filter((e) => e.status === 'watching').length
