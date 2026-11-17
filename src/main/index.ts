@@ -285,7 +285,7 @@ app.whenReady().then(() => {
   mainWindow = createWindow()
   mainWindow.on('closed', () => (mainWindow = null))
   void settleOnStart()
-  setupUpdater()
+  void setupUpdater()
   app.on('activate', () => {
     if (!BrowserWindow.getAllWindows().length) {
       mainWindow = createWindow()

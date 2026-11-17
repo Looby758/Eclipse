@@ -1,5 +1,5 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron'
-import { autoUpdater } from 'electron-updater'
+import type { AppUpdater } from 'electron-updater'
 import { GITHUB_REPO, type UpdateStatus } from '@shared/api'
 
 /**
@@ -15,6 +15,8 @@ const FIRST_CHECK_AFTER = 15_000
 
 let status: UpdateStatus = { state: 'off', current: app.getVersion() }
 let supported = false
+// Loaded only in the installed app, so running from the code never needs it.
+let autoUpdater: AppUpdater
 
 function set(patch: Partial<UpdateStatus>): void {
   status = { ...status, ...patch }
@@ -29,6 +31,15 @@ function friendly(err: unknown): string {
   return text.split('\n')[0].slice(0, 200)
 }
 
+async function install(): Promise<void> {
+  if (status.manual || MAC) {
+    const tag = status.version ? `tag/v${status.version}` : 'latest'
+    await shell.openExternal(`https://github.com/${GITHUB_REPO}/releases/${tag}`)
+    return
+  }
+  if (status.state === 'ready') autoUpdater.quitAndInstall(true, true)
+}
+
 async function check(): Promise<UpdateStatus> {
   if (!supported) return status
   if (status.state === 'ready' || status.state === 'downloading') return status
@@ -41,9 +52,23 @@ async function check(): Promise<UpdateStatus> {
   return status
 }
 
-export function setupUpdater(): void {
+export async function setupUpdater(): Promise<void> {
+  ipcMain.handle('update:status', () => status)
+  ipcMain.handle('update:check', () => check())
+  ipcMain.handle('update:install', () => install())
   supported = app.isPackaged
-  status = supported ? { ...status, state: 'none' } : { ...status, reason: 'Updates are checked in the installed app only.' }
+  if (!supported) {
+    status = { ...status, reason: 'Updates are checked in the installed app only.' }
+    return
+  }
+  try {
+    autoUpdater = (await import('electron-updater')).autoUpdater
+  } catch {
+    supported = false
+    status = { ...status, reason: 'The update checker is missing from this copy.' }
+    return
+  }
+  status = { ...status, state: 'none' }
 
   autoUpdater.logger = null
   autoUpdater.autoDownload = !MAC
@@ -56,18 +81,6 @@ export function setupUpdater(): void {
   autoUpdater.on('update-downloaded', (info) => set({ state: 'ready', version: info.version, percent: 100 }))
   autoUpdater.on('error', (err) => set({ state: 'error', error: friendly(err) }))
 
-  ipcMain.handle('update:status', () => status)
-  ipcMain.handle('update:check', () => check())
-  ipcMain.handle('update:install', async () => {
-    if (status.manual || MAC) {
-      const tag = status.version ? `tag/v${status.version}` : 'latest'
-      await shell.openExternal(`https://github.com/${GITHUB_REPO}/releases/${tag}`)
-      return
-    }
-    if (status.state === 'ready') autoUpdater.quitAndInstall(true, true)
-  })
-
-  if (!supported) return
   setTimeout(() => void check(), FIRST_CHECK_AFTER)
   setInterval(() => void check(), CHECK_EVERY)
 }
