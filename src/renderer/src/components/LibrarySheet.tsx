@@ -1,149 +1,222 @@
-import { Search, Sparkles, X } from 'lucide-react'
-import { useState } from 'react'
-import { countByStatus, entriesWith, localDate, preferencesOf } from '@core/library'
-import type { MediaType, WatchStatus } from '@core/types'
-import { STATUS_LABELS, WATCH_STATUSES } from '@core/types'
-import { FILTER_LABELS, passesFilter, type AvailabilityFilter as Filter } from '@core/providers'
-import { timeLeft, watchlistHours, type TimeLeft } from '@core/time'
-import { formatRuntime, plural } from '@core/format'
-import { isSort, matchesQuery, SORT_LABELS, sortEntries, type LibrarySort } from '@core/find'
-import { useApp } from '../store/app'
-import { useAvailability, useDetailsMany } from '../lib/availability'
-import Sheet from './Sheet'
-import TitleCard from './TitleCard'
-import Credits from './Credits'
-import { RecentlyDropped } from './ClearOutSheet'
-import { focusSearch } from './Dock'
-import AvailabilityFilter from './AvailabilityFilter'
-import WatchlistHours from './WatchlistHours'
+import { Search, Sparkles, X } from "lucide-react";
+import { useState } from "react";
+import {
+  countByStatus,
+  entriesWith,
+  localDate,
+  preferencesOf,
+} from "@core/library";
+import type { MediaType, WatchStatus } from "@core/types";
+import { STATUS_LABELS, WATCH_STATUSES } from "@core/types";
+import {
+  FILTER_LABELS,
+  passesFilter,
+  type AvailabilityFilter as Filter,
+} from "@core/providers";
+import { timeLeft, watchlistHours, type TimeLeft } from "@core/time";
+import { formatRuntime, plural } from "@core/format";
+import {
+  isSort,
+  matchesQuery,
+  SORT_LABELS,
+  sortEntries,
+  type LibrarySort,
+} from "@core/find";
+import { useApp } from "../store/app";
+import { useAvailability, useDetailsMany } from "../lib/availability";
+import Sheet from "./Sheet";
+import TitleCard from "./TitleCard";
+import Credits from "./Credits";
+import { RecentlyDropped } from "./ClearOutSheet";
+import { focusSearch } from "./Dock";
+import AvailabilityFilter from "./AvailabilityFilter";
+import WatchlistHours from "./WatchlistHours";
 
-const SORT_KEY = 'eclipse.librarySort'
+const SORT_KEY = "eclipse.librarySort";
 
 function savedSort(): LibrarySort {
   try {
-    const s = localStorage.getItem(SORT_KEY)
-    return isSort(s) ? s : 'recent'
+    const s = localStorage.getItem(SORT_KEY);
+    return isSort(s) ? s : "recent";
   } catch {
-    return 'recent'
+    return "recent";
   }
 }
 
 /** "2h 46m" for a film, "9h left · 12 eps" for a show. */
-function leftLabel(type: MediaType, left: TimeLeft | undefined, status: WatchStatus): string | undefined {
-  if (!left || status === 'watched' || status === 'stopped') return undefined
-  if (type === 'movie') return left.minutes ? formatRuntime(left.minutes) : undefined
-  if (!left.episodes) return 'Up to date'
-  return `${left.minutes < 60 ? `${left.minutes}m` : `${Math.round(left.minutes / 60)}h`} left · ${plural(left.episodes, 'ep')}`
+function leftLabel(
+  type: MediaType,
+  left: TimeLeft | undefined,
+  status: WatchStatus,
+): string | undefined {
+  if (!left || status === "watched" || status === "stopped") return undefined;
+  if (type === "movie")
+    return left.minutes ? formatRuntime(left.minutes) : undefined;
+  if (!left.episodes) return "Up to date";
+  return `${left.minutes < 60 ? `${left.minutes}m` : `${Math.round(left.minutes / 60)}h`} left · ${plural(left.episodes, "ep")}`;
 }
 
 export default function LibrarySheet(): React.JSX.Element {
-  const library = useApp((s) => s.library)
-  const services = preferencesOf(library).services
-  const counts = countByStatus(library)
+  const library = useApp((s) => s.library);
+  const services = preferencesOf(library).services;
+  const counts = countByStatus(library);
   // Open on the first status that has something in it.
-  const [tab, setTab] = useState<WatchStatus>(() => WATCH_STATUSES.find((s) => counts[s] > 0) ?? 'want')
-  const [type, setType] = useState<MediaType | undefined>()
-  const [filter, setFilter] = useState<Filter>('any')
-  const [sort, setSortState] = useState<LibrarySort>(savedSort)
-  const [query, setQuery] = useState('')
+  const [tab, setTab] = useState<WatchStatus>(
+    () => WATCH_STATUSES.find((s) => counts[s] > 0) ?? "want",
+  );
+  const [type, setType] = useState<MediaType | undefined>();
+  const [filter, setFilter] = useState<Filter>("any");
+  const [sort, setSortState] = useState<LibrarySort>(savedSort);
+  const [query, setQuery] = useState("");
   const setSort = (s: LibrarySort): void => {
-    setSortState(s)
+    setSortState(s);
     try {
-      localStorage.setItem(SORT_KEY, s)
+      localStorage.setItem(SORT_KEY, s);
     } catch {
       // Remembering it is only a nicety.
     }
-  }
-  const timed = tab === 'want' || tab === 'watching'
-  const inTab = entriesWith(library, tab, type)
-  const keys = inTab.map((e) => e.key)
-  const { map, providers, checking } = useAvailability(keys, filter !== 'any' || timed)
-  const { map: details, checking: loadingTimes } = useDetailsMany(keys, timed)
-  const today = localDate(new Date())
-  const left: Record<string, TimeLeft> = {}
-  for (const e of inTab) if (details[e.key]) left[e.key] = timeLeft(details[e.key], e, today)
+  };
+  const timed = tab === "want" || tab === "watching";
+  const inTab = entriesWith(library, tab, type);
+  const keys = inTab.map((e) => e.key);
+  const { map, providers, checking } = useAvailability(
+    keys,
+    filter !== "any" || timed,
+  );
+  const { map: details, checking: loadingTimes } = useDetailsMany(keys, timed);
+  const today = localDate(new Date());
+  const left: Record<string, TimeLeft> = {};
+  for (const e of inTab)
+    if (details[e.key]) left[e.key] = timeLeft(details[e.key], e, today);
 
   // Quickest to finish only means something where there's time left.
-  const sortNow: LibrarySort = sort === 'quickest' && !timed ? 'recent' : sort
-  const minutes: Record<string, number> = {}
-  for (const k in left) minutes[k] = left[k].minutes
+  const sortNow: LibrarySort = sort === "quickest" && !timed ? "recent" : sort;
+  const minutes: Record<string, number> = {};
+  for (const k in left) minutes[k] = left[k].minutes;
   const entries = sortEntries(
-    inTab.filter((e) => matchesQuery(e, query) && passesFilter(filter, map[e.key])),
+    inTab.filter(
+      (e) => matchesQuery(e, query) && passesFilter(filter, map[e.key]),
+    ),
     sortNow,
-    minutes
-  )
+    minutes,
+  );
   // Typing a name that's in another tab: say where it is.
   const elsewhere = query.trim()
     ? WATCH_STATUSES.filter((s) => s !== tab)
-        .map((s) => ({ s, n: entriesWith(library, s, type).filter((e) => matchesQuery(e, query)).length }))
+        .map((s) => ({
+          s,
+          n: entriesWith(library, s, type).filter((e) => matchesQuery(e, query))
+            .length,
+        }))
         .filter((x) => x.n > 0)
-    : []
-  const hours = timed ? watchlistHours(entries.filter((e) => left[e.key]).map((e) => ({ key: e.key, left: left[e.key] })), providers, services) : null
-  const empty = Object.keys(library.entries).length === 0
+    : [];
+  const hours = timed
+    ? watchlistHours(
+        entries
+          .filter((e) => left[e.key])
+          .map((e) => ({ key: e.key, left: left[e.key] })),
+        providers,
+        services,
+      )
+    : null;
+  const empty = Object.keys(library.entries).length === 0;
 
   return (
     <Sheet>
       <div className="sheet-head">
         <h1>Your library</h1>
         <div className="segmented">
-          {([undefined, 'movie', 'tv'] as const).map((t) => (
-            <button key={t ?? 'all'} className={type === t ? 'on' : ''} onClick={() => setType(t)}>
-              {t === 'movie' ? 'Films' : t === 'tv' ? 'Shows' : 'All'}
+          {([undefined, "movie", "tv"] as const).map((t) => (
+            <button
+              key={t ?? "all"}
+              className={type === t ? "on" : ""}
+              onClick={() => setType(t)}
+            >
+              {t === "movie" ? "Films" : t === "tv" ? "Shows" : "All"}
             </button>
           ))}
         </div>
       </div>
       <nav className="tabs">
         {WATCH_STATUSES.map((s) => (
-          <button key={s} className={tab === s ? 'on' : ''} onClick={() => setTab(s)}>
+          <button
+            key={s}
+            className={tab === s ? "on" : ""}
+            onClick={() => setTab(s)}
+          >
             {STATUS_LABELS[s]} <span className="count">{counts[s]}</span>
           </button>
         ))}
       </nav>
-      {tab === 'want' && counts.want > 0 && (
+      {tab === "want" && counts.want > 0 && (
         <div className="row clearout-link">
-          <button className="btn glass" onClick={() => useApp.getState().go({ name: 'clearout' })}>
+          <button
+            className="btn glass"
+            onClick={() => useApp.getState().go({ name: "clearout" })}
+          >
             <Sparkles size={16} /> Clear out the watchlist
           </button>
         </div>
       )}
-      {hours && entries.length > 0 && <WatchlistHours tab={tab} hours={hours} loading={loadingTimes} unknown={entries.length - entries.filter((e) => left[e.key]).length} />}
+      {hours && entries.length > 0 && (
+        <WatchlistHours
+          tab={tab}
+          hours={hours}
+          loading={loadingTimes}
+          unknown={entries.length - entries.filter((e) => left[e.key]).length}
+        />
+      )}
       {!empty && (
         <div className="library-controls">
-          <label className="library-find">
-            <Search size={16} aria-hidden />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape' && query) {
-                  e.stopPropagation()
-                  setQuery('')
+          <div className="library-tools">
+            <label className="library-find">
+              <Search size={16} aria-hidden />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape" && query) {
+                    e.stopPropagation();
+                    setQuery("");
+                  }
+                }}
+                placeholder="Find in your library"
+                aria-label="Find in your library"
+                spellCheck={false}
+              />
+              {query && (
+                <button
+                  className="library-find-clear"
+                  onClick={() => setQuery("")}
+                  aria-label="Clear"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </label>
+            <label className="sort-select">
+              <span>Sort</span>
+              <select
+                value={sortNow}
+                onChange={(e) =>
+                  isSort(e.target.value) && setSort(e.target.value)
                 }
-              }}
-              placeholder="Find in your library"
-              aria-label="Find in your library"
-              spellCheck={false}
-            />
-            {query && (
-              <button className="library-find-clear" onClick={() => setQuery('')} aria-label="Clear">
-                <X size={14} />
-              </button>
-            )}
-          </label>
-          <AvailabilityFilter value={filter} onChange={setFilter} checking={checking && filter !== 'any'} />
-          <label className="sort-select">
-            <span>Sort</span>
-            <select value={sortNow} onChange={(e) => isSort(e.target.value) && setSort(e.target.value)}>
-              {(Object.keys(SORT_LABELS) as LibrarySort[])
-                .filter((s) => s !== 'quickest' || timed)
-                .map((s) => (
-                  <option key={s} value={s}>
-                    {SORT_LABELS[s]}
-                  </option>
-                ))}
-            </select>
-          </label>
+              >
+                {(Object.keys(SORT_LABELS) as LibrarySort[])
+                  .filter((s) => s !== "quickest" || timed)
+                  .map((s) => (
+                    <option key={s} value={s}>
+                      {SORT_LABELS[s]}
+                    </option>
+                  ))}
+              </select>
+            </label>
+          </div>
+          <AvailabilityFilter
+            value={filter}
+            onChange={setFilter}
+            checking={checking && filter !== "any"}
+          />
         </div>
       )}
       {empty ? (
@@ -157,13 +230,13 @@ export default function LibrarySheet(): React.JSX.Element {
         <div className="empty">
           <p>
             {query.trim()
-              ? `Nothing called “${query.trim()}” in ${STATUS_LABELS[tab]}${filter !== 'any' ? ` that’s ${FILTER_LABELS[filter].toLowerCase()}` : ''}.`
-              : checking && filter !== 'any'
-              ? 'Checking where to watch…'
-              : `Nothing marked “${STATUS_LABELS[tab]}”${type ? ` in ${type === 'movie' ? 'films' : 'shows'}` : ''}${filter !== 'any' ? ` that’s ${FILTER_LABELS[filter].toLowerCase()}` : ''}.`}
+              ? `Nothing called “${query.trim()}” in ${STATUS_LABELS[tab]}${filter !== "any" ? ` that’s ${FILTER_LABELS[filter].toLowerCase()}` : ""}.`
+              : checking && filter !== "any"
+                ? "Checking where to watch…"
+                : `Nothing marked “${STATUS_LABELS[tab]}”${type ? ` in ${type === "movie" ? "films" : "shows"}` : ""}${filter !== "any" ? ` that’s ${FILTER_LABELS[filter].toLowerCase()}` : ""}.`}
           </p>
           {elsewhere.length > 0 && (
-            <div className="row" style={{ justifyContent: 'center' }}>
+            <div className="row" style={{ justifyContent: "center" }}>
               {elsewhere.map(({ s, n }) => (
                 <button key={s} className="btn glass" onClick={() => setTab(s)}>
                   {n} in {STATUS_LABELS[s]}
@@ -175,12 +248,20 @@ export default function LibrarySheet(): React.JSX.Element {
       ) : (
         <div className="grid">
           {entries.map((e) => (
-            <TitleCard key={e.key} type={e.type} id={e.id} name={e.title.name} year={e.title.year} posterPath={e.title.posterPath} extra={leftLabel(e.type, left[e.key], e.status)} />
+            <TitleCard
+              key={e.key}
+              type={e.type}
+              id={e.id}
+              name={e.title.name}
+              year={e.title.year}
+              posterPath={e.title.posterPath}
+              extra={leftLabel(e.type, left[e.key], e.status)}
+            />
           ))}
         </div>
       )}
-      {tab === 'want' && <RecentlyDropped limit={5} />}
-      <Credits justWatch={filter !== 'any' || timed} />
+      {tab === "want" && <RecentlyDropped limit={5} />}
+      <Credits justWatch={filter !== "any" || timed} />
     </Sheet>
-  )
+  );
 }

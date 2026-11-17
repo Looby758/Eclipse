@@ -261,8 +261,9 @@ code { font-size: 0.92em; }
 .hours-buckets li.yours .hours-label { color: var(--cyan); font-weight: 600; }
 .hours-value { color: var(--text-muted); white-space: nowrap; }
 .hours p { margin: 10px 0 0; }
-.library-controls { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
-.library-controls .filter-row { margin-top: 0; }
+.library-controls { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
+.library-controls .filter-row { margin: 0; }
+.library-tools { display: flex; align-items: center; gap: 12px; flex: 1 1 440px; max-width: 560px; }
 .title-card-meta { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Finish it by… and Tonight on title pages */
@@ -735,7 +736,8 @@ select option:checked { background-color: var(--accent); color: #ffffff; }
 .health-row:not(.bad) .health-icon.lucide-circle-dashed { color: var(--text-faint); }
 
 /* Phase 40: find and sort in your library */
-.library-find { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 10px 0 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--glass-soft); color: var(--text-muted); flex: 1 1 220px; max-width: 340px; }
+.library-find { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 10px 0 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--glass-soft); color: var(--text-muted); flex: 1 1 220px; min-width: 200px; }
+.sort-select { flex-shrink: 0; }
 .library-find:focus-within { border-color: var(--accent); }
 .library-find input { flex: 1; min-width: 0; border: 0; background: none; outline: 0; color: var(--text); font: inherit; }
 .library-find-clear { display: grid; place-items: center; width: 22px; height: 22px; border: 0; border-radius: 50%; background: var(--glass-hover); color: var(--text-muted); cursor: pointer; }
