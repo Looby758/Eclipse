@@ -4,6 +4,9 @@ import { MARVEL } from './marvel'
 import { STAR_WARS } from './starWars'
 import { WALKING_DEAD } from './walkingDead'
 import { BREAKING_BAD } from './breakingBad'
+import { X_MEN } from './xMen'
+import { HARRY_POTTER } from './harryPotter'
+import { THE_BOYS } from './theBoys'
 
 
 /**
@@ -21,6 +24,8 @@ export interface GuideEntry {
   note?: string
   /** Shows only: which seasons this row covers, in this order. Left out, every season, one after another. */
   seasons?: number[]
+  /** The parts of the order it belongs to, from the guide's `sections`. */
+  sections?: string[]
 }
 
 export interface Guide {
@@ -29,11 +34,13 @@ export interface Guide {
   /** What you might search for to find it (already lower case, without "The"). */
   aliases: string[]
   description: string
+  /** Parts of the order you can pick to see on their own (e.g. "The Defenders"), in the order shown. */
+  sections?: string[]
   /** In story order. */
   entries: GuideEntry[]
 }
 
-export const GUIDES: Guide[] = [MARVEL, STAR_WARS, WALKING_DEAD, BREAKING_BAD]
+export const GUIDES: Guide[] = [MARVEL, X_MEN, STAR_WARS, HARRY_POTTER, WALKING_DEAD, BREAKING_BAD, THE_BOYS]
 
 export const guideById = (id: string): Guide | undefined => GUIDES.find((g) => g.id === id)
 
@@ -56,10 +63,10 @@ export function normalizeName(name: string): string {
     .replace(/^(the|a|an) /, '')
 }
 
-/** The guide a search is after ("star wars", "MCU"), if any. */
+/** The guide a search is after ("star wars", "MCU"), if any. Longer names also match the start of a search ("star wars andor"). */
 export function guideForQuery(query: string): Guide | undefined {
   const q = normalizeName(query)
-  return q ? GUIDES.find((g) => g.aliases.some((a) => q === a || q.startsWith(`${a} `))) : undefined
+  return q ? GUIDES.find((g) => g.aliases.some((a) => q === a || (a.includes(' ') && q.startsWith(`${a} `)))) : undefined
 }
 
 /** What a guide needs to know about a title to lay it out season by season. */
@@ -80,7 +87,7 @@ export function expandGuide(g: Guide, info: Record<string, GuideTitleInfo>): Tit
   for (const e of g.entries) {
     const key = titleKey(e.type, e.id)
     const d = info[key]
-    const base: TitleRef = { key, type: e.type, id: e.id, name: e.name, year: d?.year ?? e.year, posterPath: d?.posterPath ?? null, date: d?.date ?? null }
+    const base: TitleRef = { key, type: e.type, id: e.id, name: e.name, year: d?.year ?? e.year, posterPath: d?.posterPath ?? null, date: d?.date ?? null, ...(e.sections ? { sections: e.sections } : {}) }
     if (e.type === 'movie') {
       out.push(base)
       continue

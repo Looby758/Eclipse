@@ -405,3 +405,4 @@ code { font-size: 0.92em; }
 .order-card svg { flex: none; color: var(--accent); }
 .order-card-text { display: flex; flex-direction: column; gap: 2px; }
 .order-card-name { font-family: var(--font-display); font-weight: 700; font-size: var(--text-md); }
+.section-chips { order: 3; flex-basis: 100%; }

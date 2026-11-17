@@ -112,6 +112,13 @@ describe('guides', () => {
     expect(guideForQuery('The Avengers')?.id).toBe('marvel')
     expect(guideForQuery('Star Wars: Andor')?.id).toBe('star-wars')
     expect(guideForQuery('Interstellar')).toBeUndefined()
+    expect(guideForQuery('X-Men')?.id).toBe('x-men')
+    expect(guideForQuery('Fantastic Beasts')?.id).toBe('harry-potter')
+    expect(guideForQuery('Harry Potter and the Goblet of Fire')?.id).toBe('harry-potter')
+    expect(guideForQuery('The Boys')?.id).toBe('the-boys')
+    expect(guideForQuery('Gen V')?.id).toBe('the-boys')
+    expect(guideForQuery('Boys Don’t Cry')).toBeUndefined()
+    expect(guideForQuery('Daredevil')?.id).toBe('marvel')
   })
 })
 
@@ -130,6 +137,13 @@ describe('season by season', () => {
     expect(rows[0]).toMatchObject({ key: 'tv:62286', season: 1, date: '2015-06-01' })
     const release = releaseOrder(rows.filter((r) => r.key === 'tv:1402' || r.key === 'tv:62286')).map((r) => `${r.key === 'tv:1402' ? 'T' : 'F'}${r.season}`)
     expect(release.slice(0, 8)).toEqual(['T1', 'T2', 'T3', 'T4', 'T5', 'F1', 'T6', 'F2'])
+  })
+
+  it('keeps each row’s sections', () => {
+    const rows = expandGuide(GUIDES.find((g) => g.id === 'marvel')!, {})
+    const defenders = rows.filter((r) => r.sections?.includes('The Defenders'))
+    expect(defenders.map((r) => r.name)).toContain('The Defenders')
+    expect(defenders.map((r) => r.name)).toContain('Daredevil: Born Again')
   })
 
   it('leaves out seasons without a date and specials', () => {

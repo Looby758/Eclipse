@@ -35,10 +35,12 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
   const [renaming, setRenaming] = useState<string | null>(null)
   const [dragFrom, setDragFrom] = useState<number | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [section, setSection] = useState<string | null>(null)
   const today = localDate(new Date())
   const services = preferencesOf(library).services
 
-  const items = view ? (order === 'release' && view.releaseItems ? view.releaseItems : view.items) : []
+  const ordered = view ? (order === 'release' && view.releaseItems ? view.releaseItems : view.items) : []
+  const items = section ? ordered.filter((i) => i.sections?.includes(section)) : ordered
   const progress = progressOf(items, library, today)
   const unseenKeys = [...new Set(progress.released.filter((i) => !isItemSeen(library, i)).map((i) => i.key))]
   const { map, providers, checking } = useAvailability(unseenKeys, unseenKeys.length > 0)
@@ -160,7 +162,7 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
           <div className="list-progress">
             <ProgressBar seen={progress.seen} total={progress.total} big />
             <div className="list-progress-text">
-              {progress.total ? progressSentence(id, view.name, progress.seen, progress.total) : 'Nothing out yet.'}
+              {progress.total ? progressSentence(id, section ?? view.name, progress.seen, progress.total) : 'Nothing out yet.'}
               {progress.total > 0 && progress.seen === progress.total ? ' All done.' : ''}
             </div>
           </div>
@@ -242,6 +244,15 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
             ))}
           </div>
         </div>
+        {view.sections && view.sections.length > 0 && (
+          <div className="row section-chips" role="radiogroup" aria-label="Part of the order">
+            {[null, ...view.sections].map((s) => (
+              <button key={s ?? 'all'} role="radio" aria-checked={section === s} className={`chip ${section === s ? 'on' : ''}`} onClick={() => setSection(s)}>
+                {s ?? 'Whole order'}
+              </button>
+            ))}
+          </div>
+        )}
         <AvailabilityFilter value={filter} onChange={setFilter} checking={checking && filter !== 'any'} />
       </div>
 

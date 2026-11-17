@@ -170,6 +170,8 @@ export interface TitleRef {
   season?: number
   /** How many episodes the season has, so it counts as seen once they're all ticked. */
   episodes?: number
+  /** Watch orders: the parts of the order it belongs to (e.g. "The Defenders"). */
+  sections?: string[]
 }
 
 export type ListSource =

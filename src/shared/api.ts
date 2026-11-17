@@ -37,6 +37,8 @@ export interface ListView {
   items: TitleRef[]
   /** Guides only: the same titles in release order. */
   releaseItems?: TitleRef[]
+  /** Parts of a watch order you can pick to see on their own. */
+  sections?: string[]
 }
 
 /** The bridge between the window and the main process (window.api), like Orbit's NotesApi. */

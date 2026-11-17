@@ -185,7 +185,7 @@ export async function openList(id: string, library: Library, refresh = false): P
       const g = guideById(source.guideId)
       if (!g) throw new Error('That guide doesn’t exist.')
       const items = await guideItems(g)
-      return { id, name: g.name, description: g.description, imagePath: null, items, releaseItems: releaseOrder(items) }
+      return { id, name: g.name, description: g.description, imagePath: null, items, releaseItems: releaseOrder(items), sections: g.sections }
     }
     case 'custom': {
       const l = findList(library, id)
