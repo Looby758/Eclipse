@@ -2,6 +2,8 @@ import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { join } from 'path'
 import { preferencesOf, setEpisodes, setFinishBy, setNote, setPreferences, setStatus, setWatchedOn } from '@core/library'
 import { TmdbError } from '@core/tmdb'
+import { createList, followList, moveInList, removeList, renameList, setInList } from '@core/lists'
+import type { TitleRef } from '@core/types'
 import { mergeSequel, summarizeImport, type SequelImport } from '@core/sequel'
 import type { AppStatus, Result } from '@shared/api'
 import { loadSettings, saveSettings } from './settings'
@@ -88,6 +90,11 @@ function setupIpc(): void {
   ipcMain.handle('tmdb:season', (_e, tvId: number, n: number, refresh?: boolean) => attempt(() => tmdb.season(tvId, n, refresh)))
   ipcMain.handle('tmdb:providers', (_e, type: 'movie' | 'tv', id: number, refresh?: boolean) => attempt(() => tmdb.providers(type, id, region(), refresh)))
   ipcMain.handle('tmdb:providersMany', (_e, keys: string[]) => tmdb.providersMany(keys, region()))
+  ipcMain.handle('tmdb:credits', (_e, type: 'movie' | 'tv', id: number) => attempt(() => tmdb.credits(type, id)))
+  ipcMain.handle('tmdb:person', (_e, id: number) => attempt(() => tmdb.person(id)))
+  ipcMain.handle('tmdb:collection', (_e, id: number) => attempt(() => tmdb.collection(id)))
+  ipcMain.handle('tmdb:list', (_e, id: number) => attempt(() => tmdb.tmdbList(id)))
+  ipcMain.handle('lists:open', (_e, id: string, refresh?: boolean) => attempt(() => tmdb.openList(id, getLibrary(), refresh)))
   ipcMain.handle('tmdb:detailsMany', (_e, keys: string[]) => tmdb.detailsMany(keys))
   ipcMain.handle('tmdb:services', () => attempt(() => tmdb.services(region())))
   ipcMain.handle('tmdb:trending', () => attempt(() => tmdb.trending()))
@@ -103,6 +110,15 @@ function setupIpc(): void {
   ipcMain.handle('library:setEpisodes', (_e, item, keys: string[], watched: boolean) => saveLibrary(setEpisodes(getLibrary(), item, keys, watched)))
   ipcMain.handle('library:setNote', (_e, key: string, note: string) => saveLibrary(setNote(getLibrary(), key, note)))
   ipcMain.handle('library:setWatchedOn', (_e, key: string, day: string | null) => saveLibrary(setWatchedOn(getLibrary(), key, day)))
+  ipcMain.handle('lists:create', (_e, name: string, items?: TitleRef[]) => {
+    const made = createList(getLibrary(), name, new Date(), items)
+    return { library: saveLibrary(made.library), id: made.id }
+  })
+  ipcMain.handle('lists:follow', (_e, list) => saveLibrary(followList(getLibrary(), list)))
+  ipcMain.handle('lists:remove', (_e, id: string) => saveLibrary(removeList(getLibrary(), id)))
+  ipcMain.handle('lists:rename', (_e, id: string, name: string) => saveLibrary(renameList(getLibrary(), id, name)))
+  ipcMain.handle('lists:setIn', (_e, id: string, ref: TitleRef, inList: boolean) => saveLibrary(setInList(getLibrary(), id, ref, inList)))
+  ipcMain.handle('lists:move', (_e, id: string, from: number, to: number) => saveLibrary(moveInList(getLibrary(), id, from, to)))
   ipcMain.handle('library:setFinishBy', (_e, key: string, day: string | null) => saveLibrary(setFinishBy(getLibrary(), key, day)))
   ipcMain.handle('library:setPreferences', (_e, patch) => saveLibrary(setPreferences(getLibrary(), patch)))
 

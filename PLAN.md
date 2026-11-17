@@ -93,6 +93,21 @@ Show my watchlist as time, not just titles: "Your watchlist is 214 hours long."
 - Break the total down by service (e.g. 80 hours on NOW TV, 40 on Disney+).
 - Sort by "quickest to finish" so I can see what fits in a weekend.
 
+### Watch soon (added later, your idea)
+
+Select a few films and shows I want to watch soon, as a short list separate from the full watchlist. Eclipse then shows:
+
+- The total time for the list (films in full, shows only the episodes I haven't watched).
+- How much of it fits tonight and on each of my watching evenings, and roughly when I'd get through it all.
+- What to put on tonight to fill the evening (e.g. "a film, or three episodes of X").
+
+It reuses the Phase 3 runtime maths and my evening settings (start time, bedtime, watching nights).
+
+### Seen before and rewatches (added later, your idea)
+
+- **Seen it, no date:** mark a film, show or season as watched without saying when (things watched years ago, before Sequel, like Breaking Bad, Better Call Saul and El Camino). It counts everywhere as watched (completion, watch orders, watchlist hours) but On this day skips it, since there's no day to remember.
+- **Rewatching:** say you're rewatching something. It tracks this rewatch's episode progress separately from the first watch, keeps each finished rewatch's dates, and shows how many times you've watched it ("Watched 3 times").
+
 ### Watch-order guides
 
 Show a franchise as an ordered list of films and shows, with my progress and where each one streams.
@@ -146,13 +161,15 @@ Build in this order, and finish each phase so the app is usable before moving on
 6. **Completion tracking.** Directors, actors, collections and custom lists.
 7. **Watch-order guides.** TMDB collections first, then curated franchise files and custom orders.
 8. **Release calendar.** .ics export, then decide whether an auto-updating feed is worth it.
-9. **Polish.** Export all data (JSON and CSV), the TMDB and JustWatch credits, and Windows and Mac installers with electron-builder and GitHub Actions releases, as in Orbit.
+9. **Watch soon.** Pick a few films and shows to watch soon; see the total time and how much fits each evening (see Watch soon above).
+10. **Seen before and rewatches.** Mark things watched without a date, and track rewatches with a count and their own episode progress (see Seen before and rewatches above).
+11. **Polish.** Export all data (JSON and CSV), the TMDB and JustWatch credits, and Windows and Mac installers with electron-builder and GitHub Actions releases, as in Orbit.
 
 ## Open questions
 
 - [ ] **Combining with Orbit:** what would joining them look like? A tab inside Orbit, Orbit's daily notes showing what I watched that day, or just a shared look? This doesn't need answering now, but it affects how strictly `src/core` stays separate.
 - [ ] **Sequel history:** done. The export is in \`import/sequel/\`, which is git-ignored because it's personal data.
-- [ ] **Watch orders:** which franchises should get curated guides first (Marvel, Star Wars, others)?
+- [x] **Watch orders:** Marvel and Star Wars first (drafted in Phase 7, please check them).
 - [ ] **Look and feel:** decided through layout drafts and questions (see Look and feel), not up front.
 - [ ] **Selling it later:** a paid version would need TMDB's commercial terms and a JustWatch agreement. Not planned. Only worth revisiting if the app turns out really good, so nothing needs designing around it now.
 
@@ -194,7 +211,7 @@ Export this doc as Markdown and save it in the project as `PLAN.md`. Then start 
 - Done: **Settings → Import from Sequel**. Pick Sequel's export (.zip, the unzipped folder or Library.csv), see what's in it, then Import. Wishlist → Want to watch (Watching if you'd started it), Completed → Watched, Abandoned → Stopped. Ratings are doubled to be out of 10, dates become your local day, episodes keep the day you watched them, Sequel collections are kept as lists on each title (for watch orders later). Anything already in Eclipse wins, episodes from both are combined, and `library.json` is copied aside before importing. Books and games are skipped.
 - Your export (17 Nov 2026): 47 films and 36 shows, 681 watched episodes, 14 film and show ratings, no notes, one "Marvel" collection (21 of its films and shows). 6 books and 11 games are skipped. It stays out of git (`import/sequel/` is ignored).
 
-**Phase 3: Time features (built, waiting for you to try it)**
+**Phase 3: Time features (done, merged)**
 
 - Done: one set of runtime maths in `src/core/time.ts`, shared by everything below. Films count their length; shows count only the regular episodes you haven't ticked that are already out (specials and unaired episodes don't count). Anything marked Watched counts as nothing left. When TMDB has no episode length, 45 minutes is assumed and shown as "about".
 - Done: **Your evenings** in Settings: when you start watching (default 20:00), bedtime (default 23:00, after midnight is fine) and which nights you usually watch (default Monday to Friday). You can change all three; they're saved in `library.json`, so both computers share them.
@@ -202,4 +219,22 @@ Export this doc as Markdown and save it in the project as `PLAN.md`. Then start 
 - Done: **Finish it by…** on show pages: pick this Friday, the day before the next season starts (when announced), the day before one of your services renews (set the renewal day under Your services), or any date. It shows episodes a night over your watching nights, whether that fits in your evenings, and if not, the earliest you could finish. The deadline is saved with the show, and Home shows it ("3 episodes a night to finish by Fri 20 Nov") along with how many episodes fit before bed tonight.
 - Done: films show **Tonight** on their page and on Home: "Start by 20:14 to be in bed by 23:00", or that it's too long for what's left of tonight.
 - Decisions: you didn't pick evening times, so they're settings with the defaults above. "Before it renews" uses a monthly renewal day.
-- Next: Phase 4 (episode heatmap).
+
+**Phases 4 to 7 (built overnight in one go, waiting for you to try them)**
+
+You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls below myself. Change any you don't like.
+
+- Done, Phase 4: **episode heatmap** on every show's page, under the time card. One row per season, one square per episode, coloured by TMDB's rating from pink (weakest) to cyan (best). The colours are scaled to each show, so a show rated 7.5 to 8.5 still shows its highs and lows; the scale is never squeezed below 1.5 points so a very even show doesn't look wildly up and down. Episodes with fewer than 20 votes are greyed (too few to trust), unaired ones are empty, ones you've watched get a tick and your next one glows. Each season has its average. Ratings on episodes you haven't reached are hidden until you hover (spoiler-free, like the timeline). Click a square to jump to that episode in the timeline. Specials are left out.
+- Done, Phase 5: **On this day** on Home, a panel beside "Pick up". It shows what you watched on today's date in earlier years (films you finished and episodes you ticked), with your note and rating if you left one. If nothing matches the exact day it falls back to the same week ("One year ago this week"). Episodes of one show watched on one day are grouped ("S2 E3 to E6"). 29 February shows on 28 February in other years. It hides on narrow windows.
+- Done, Phase 6: **Lists and completion.** A new **Lists** button in the dock. Every title page now shows its directors and main cast; click one to see all their films with how many you've seen ("You've seen 4 of 12 Christopher Nolan films"), then **Add to your lists** to keep following them. Film series ("Part of …" on a film page) and public TMDB lists (paste the number or link) work the same way. **Your lists**: make your own from the Lists page, add titles from any title page, and drag to reorder. Each list shows progress, highlights what's next, shows where it's streaming, and has *What's left* and availability filters.
+- Done, Phase 7: **Watch orders.** A Marvel Cinematic Universe order (54 films and series) and a Star Wars order (26), both in release order with a switch to story order. Film series from TMDB count as watch orders too, and your own lists are your own custom orders.
+- Decisions: only titles already out count towards "seen X of Y"; upcoming ones are listed under *Coming up*. "Seen" means marked Watched (a show you're partway through doesn't count yet). An actor's list counts their films plus TV where they were in 3 or more episodes, and leaves out cameos as themselves, talk shows and reality TV. A director's list is films only. The two curated orders are always on the Lists page; people, series and TMDB lists appear once you add them. Your Sequel "Marvel" collection is now one of your own lists (it moved over automatically; nothing is lost).
+- **Please check:** the Marvel and Star Wars orders are my drafts in `src/core/guides/marvel.ts` and `starWars.ts`. Every title is checked against TMDB, but the order is a judgement call, especially after Endgame, where the series overlap. Tell me anything you'd move, add or drop. It includes announced titles (Avengers: Doomsday and Secret Wars, Spider-Man: Brand New Day, The Mandalorian and Grogu, Maul: Shadow Lord), which sit under *Coming up* until they're out.
+- Done (after your first look): **release order is the default** for watch orders, with story order a click away.
+- Done (after your first look): **watch orders go season by season.** Each season of a show is its own row with its own air date, so in release order The Walking Dead and Fear the Walking Dead interleave as they aired, and story order puts each season where its story fits. A season counts as seen once all its episodes are ticked (or the show is marked Watched). This applies to every watch order, Marvel and Star Wars included.
+- Tried and dropped: automatic watch orders worked out from TMDB by name. They missed spin-offs with other names (Better Call Saul) and pulled in unrelated old films, so you chose hand-made orders instead.
+- Done (after your first look): two more hand-made orders, **The Walking Dead** (all seven series) and **Breaking Bad** (with Better Call Saul and El Camino). Searching a franchise ("walking dead", "better call saul", "MCU", "star wars") shows its watch order above the results, and any guide can be copied to your lists to make your own version. Ask for any other franchise and it gets added by hand.
+- Done (after your first look): more hand-made orders: **X-Men (Fox)** from First Class and the original trilogy up to Dark Phoenix, with the Wolverine and Deadpool films; **Harry Potter** with Fantastic Beasts; and **The Boys** with Gen V, Diabolical and Vought Rising. The Walking Dead story order follows your notes (The Ones Who Live and Daryl Dixon straight after season 11, Dead City later, World Beyond and Tales at the end).
+- Done (after your first look): **sections** within an order. The MCU has The Infinity Saga, The Multiverse Saga and The Defenders (Netflix's Daredevil, Jessica Jones, Luke Cage, Iron Fist, The Defenders and The Punisher, plus Daredevil: Born Again); Harry Potter has Harry Potter and Fantastic Beasts. Pick one to see just that part, with its own progress.
+- Added to the plan: Phase 10, seen-before and rewatches (your idea; Polish moves to 11).
+- Next: you try Phases 4 to 7. Then Phase 8 (release calendar).

@@ -1,4 +1,8 @@
+import { Clapperboard } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { guideForQuery, guideTitleCount } from '@core/guides'
+import { listIdFor } from '@core/lists'
+import { plural } from '@core/format'
 import type { SearchResult } from '@core/types'
 import { useApp } from '../store/app'
 import Sheet from './Sheet'
@@ -18,6 +22,9 @@ export default function SearchSheet(): React.JSX.Element {
   const [filter, setFilter] = useState<Filter>('any')
   const { map, checking } = useAvailability(results.map((r) => r.key), filter !== 'any')
   const shown = results.filter((r) => passesFilter(filter, map[r.key]))
+  const go = useApp((s) => s.go)
+  // A hand-made watch order for what you searched ("walking dead", "MCU").
+  const order = guideForQuery(query)
 
   useEffect(() => {
     const q = query.trim()
@@ -58,6 +65,17 @@ export default function SearchSheet(): React.JSX.Element {
       {stale && <p className="notice">Offline: showing results saved earlier.</p>}
       {error && <p className="error">{error}</p>}
       {!query.trim() && <p className="muted">Type a film or show in the search box below.</p>}
+      {order && (
+        <button className="order-card" onClick={() => go({ name: 'list', id: listIdFor({ kind: 'guide', guideId: order.id }) })}>
+          <Clapperboard size={22} />
+          <span className="order-card-text">
+            <span className="order-card-name">{order.name} watch order</span>
+            <span className="muted small">
+              {plural(guideTitleCount(order), order.entries.every((e) => e.type === 'tv') ? 'show' : 'film and show', order.entries.every((e) => e.type === 'tv') ? 'shows' : 'films and shows')}, season by season
+            </span>
+          </span>
+        </button>
+      )}
       {results.length > 0 && <AvailabilityFilter value={filter} onChange={setFilter} checking={checking} />}
       {query.trim() && !loading && !error && results.length === 0 && <p className="muted">No films or shows found.</p>}
       {results.length > 0 && shown.length === 0 && !checking && <p className="muted">None of these are {FILTER_LABELS[filter].toLowerCase()}.</p>}

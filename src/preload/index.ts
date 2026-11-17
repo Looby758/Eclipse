@@ -20,6 +20,18 @@ const api: EclipseApi = {
   detailsMany: (keys) => ipcRenderer.invoke('tmdb:detailsMany', keys),
   services: () => ipcRenderer.invoke('tmdb:services'),
 
+  credits: (type, id) => ipcRenderer.invoke('tmdb:credits', type, id),
+  person: (id) => ipcRenderer.invoke('tmdb:person', id),
+  collection: (id) => ipcRenderer.invoke('tmdb:collection', id),
+  tmdbList: (id) => ipcRenderer.invoke('tmdb:list', id),
+  openList: (id, refresh) => ipcRenderer.invoke('lists:open', id, refresh),
+  createList: (name, items) => ipcRenderer.invoke('lists:create', name, items),
+  followList: (list) => ipcRenderer.invoke('lists:follow', list),
+  removeList: (id) => ipcRenderer.invoke('lists:remove', id),
+  renameList: (id, name) => ipcRenderer.invoke('lists:rename', id, name),
+  setInList: (id, ref, inList) => ipcRenderer.invoke('lists:setIn', id, ref, inList),
+  moveInList: (id, from, to) => ipcRenderer.invoke('lists:move', id, from, to),
+
   getLibrary: () => ipcRenderer.invoke('library:get'),
   setStatus: (item, status) => ipcRenderer.invoke('library:setStatus', item, status),
   setEpisodes: (item, keys, watched) => ipcRenderer.invoke('library:setEpisodes', item, keys, watched),

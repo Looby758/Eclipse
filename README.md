@@ -55,6 +55,16 @@ Avoid having Eclipse open on both computers at the same time, so the two copies 
 4. **Finish it by Friday:** open a show you haven't finished. In *Finish it by…*, pick **Friday**, a renewal, the next season, or any date. It tells you how many episodes a night that takes, or the earliest you could finish if it won't fit. Press the × to clear it.
 5. **Home:** for a show with a deadline, the *Up next* box says how many a night you need and how many fit before bed tonight. A film says when to start it to be in bed on time.
 
+## Phases 4 to 7: what to try
+
+1. **Heatmap (Phase 4):** open a show you've started, for example one from your Sequel import. Under the time card is a grid of coloured squares, one per episode. Cyan is the best-rated, pink the weakest, grey means too few votes. Hover a square for its rating, click it to jump to that episode below.
+2. **On this day (Phase 5):** go Home with the window fairly wide. On the right, *On this day* shows what you watched on this date (or this week) in earlier years. If it says nothing, you haven't got a watch on a matching date yet.
+3. **People (Phase 6):** open any film. Under *Where to watch*, click a director or actor. You'll see all their films with how many you've seen. Press **Add to your lists**.
+4. **Lists (Phase 6):** press **Lists** in the dock. Try *What's left* and *On my services* on a list. Make your own list with *New list*, then add films to it from their pages (under *Your lists*) and drag them into your own order. Your Sequel "Marvel" collection is already there.
+5. **TMDB lists (Phase 6):** on the Lists page, paste a public list's link from themoviedb.org (for example a "Best Picture winners" list) into *TMDB lists*.
+6. **Watch orders (Phase 7):** on the Lists page, open *Marvel Cinematic Universe* or *Star Wars*. It shows how far through you are and what's next, in release order; press *Story order* to switch. Open a film like *Interstellar* and click *Part of …* to see its film series. Please tell me anything in the Marvel or Star Wars order you'd change.
+7. **Search a franchise:** search *walking dead* or *better call saul*. A *watch order* card appears above the results. **Copy to your lists** makes your own version you can rearrange.
+
 ## For development
 
 - `npm test` runs the tests, `npm run typecheck` checks the types.

@@ -5,6 +5,7 @@ import { tmdbPageUrl } from '@core/tmdb'
 import type { MediaType, TitleDetails } from '@core/types'
 import { DEFAULT_GLOW, hsl, posterGlow, type Hsl } from '../lib/posterColour'
 import Poster from './Poster'
+import { useApp } from '../store/app'
 import Sheet from './Sheet'
 import StatusPicker from './StatusPicker'
 import Credits from './Credits'
@@ -12,6 +13,9 @@ import EntryDetails from './EntryDetails'
 import EpisodeTimeline from './EpisodeTimeline'
 import WhereToWatch from './WhereToWatch'
 import TimeCard from './TimeCard'
+import Heatmap from './Heatmap'
+import TitleLinks from './TitleLinks'
+import type { EpisodeFocus } from './EpisodeTimeline'
 
 /** A film or show's page: a sheet over the wall, lit in the poster's own colour. */
 export default function TitleSheet({ type, id }: { type: MediaType; id: number }): React.JSX.Element {
@@ -20,6 +24,7 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
   const [stale, setStale] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [glow, setGlow] = useState<Hsl>(DEFAULT_GLOW)
+  const [focus, setFocus] = useState<EpisodeFocus | null>(null)
 
   const load = async (refresh = false): Promise<void> => {
     setRefreshing(refresh)
@@ -120,16 +125,27 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
             {d.collection && (
               <>
                 <dt>Part of</dt>
-                <dd>{d.collection.name}</dd>
+                <dd>
+                  <button className="link-btn inline" onClick={() => useApp.getState().go({ name: 'list', id: `collection:${d.collection!.id}` })}>
+                    {d.collection.name}
+                  </button>
+                </dd>
               </>
             )}
           </dl>
 
           <TimeCard details={d} />
 
-          {d.type === 'tv' && d.seasons.length > 0 && <EpisodeTimeline details={d} />}
+          {d.type === 'tv' && d.seasons.length > 0 && (
+            <>
+              <Heatmap details={d} onPick={(season, episode) => setFocus((f) => ({ season, episode, n: (f?.n ?? 0) + 1 }))} />
+              <EpisodeTimeline details={d} focus={focus} />
+            </>
+          )}
 
           <WhereToWatch type={d.type} id={d.id} />
+
+          <TitleLinks details={d} />
 
           <div className="title-actions">
             <button className="btn glass" onClick={() => load(true)} disabled={refreshing}>
