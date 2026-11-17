@@ -165,6 +165,50 @@ Build in this order, and finish each phase so the app is usable before moving on
 10. **Seen before and rewatches.** Mark things watched without a date, and track rewatches with a count and their own episode progress (see Seen before and rewatches above).
 11. **Polish.** Export all data (JSON and CSV), the TMDB and JustWatch credits, and Windows and Mac installers with electron-builder and GitHub Actions releases, as in Orbit.
 
+## Future ideas (candidate phases, after Polish)
+
+Ideas agreed in the brainstorm on 17 Nov 2026. They aren't scheduled yet. Everything here follows the same rules: free, local data, TMDB only, UK first.
+
+They're ordered by what they need. Group A ideas stand on their own (they only use what Phases 1 to 11 build), so they can be done in any order and earlier ones are the quickest wins. Group B ideas are a chain about noticing what I watch: they build on each other, so they come after Group A and in this order. Group C waits until I have a TV. Each one says what it needs.
+
+### Group A: stand on their own
+
+12. **Two-computer guard.** While Eclipse is open, it leaves a small marker file in the data folder (with the computer's name and the time, refreshed every minute). If I open Eclipse on the Mac while the PC copy is still running, it says so and opens read-only, with a "take over" button if the other one was left open by mistake. Enforces the plan's "don't have it open on both computers" rule instead of relying on me remembering. *Needs:* nothing new.
+13. **Watching with someone.** Tag a show with a person ("with Sam") and Eclipse keeps that watch's episode progress separately from my own, with its own dates. Home shows "Next with Sam: S3 E2", and ticking ahead on my own never moves it. Rewatching The Walking Dead with a friend who hasn't seen it is a rewatch tagged with them. A show can have more than one of these at once. *Needs:* Phase 10 (rewatches), which already gives a show more than one set of episode progress.
+14. **Stay for the credits?** TMDB tags films that have a scene during or after the credits. Show it on every film page ("A scene mid-credits and one at the very end") and in watch orders, so the Marvel order says when to stay put. *Needs:* nothing new.
+15. **Who recommended it.** When adding something, an optional "from" ("Sam", "a podcast", "the trailer before Dune"). Lists can then show "Sam's picks: you've watched 3 of 7", and a filter shows everything from one person or place. *Needs:* nothing new.
+16. **Clear out the watchlist.** A full-screen mode that goes through the watchlist one title at a time, playing its trailer (TMDB lists YouTube trailers) with Keep and Drop buttons (keyboard shortcuts too). Options to start with the oldest additions or ones not on my services. Dropped titles go to a short "recently dropped" list so nothing is lost by accident. *Needs:* nothing new.
+17. **"Where do I know them from?"** On a title page, list the cast I've already seen in other titles in my library: "You know Rhea Seehorn from Better Call Saul." Uses the credits Eclipse already downloads for Lists; only titles I've watched (or partly watched) count. *Needs:* nothing new.
+18. **Free UK TV as its own group.** JustWatch's GB data includes free services (BBC iPlayer, ITVX, Channel 4, My5 and others). Show them as their own group after my services and before rent or buy, and add an "On my services or free" filter wherever the availability filters are. *Needs:* nothing new.
+19. **Your services: arriving and leaving.** Eclipse already refreshes where-to-watch daily. Save a small snapshot each day for titles in the library and compare it with the previous one: "3 things on your watchlist just arrived on Disney+", "Succession is no longer on NOW TV". TMDB doesn't give leaving dates in advance, so departures show up once they've happened, not before. Shown on Home and as a short history on each title page. *Needs:* nothing new.
+20. **Your services: "Do I still need NOW TV this month?"** A card for each of my services: hours of my watchlist and Watch soon on it, what I watched on it in the last 30 days, and its renewal day. If nothing I want is queued on it, suggest pausing before it renews. *Needs:* Phase 9 (Watch soon); best built straight after 19 as one "Your services" phase.
+21. **Stalled shows.** Anything in Watching that I haven't ticked an episode of for a while (default 60 days, adjustable) gets a gentle "Keep going or stop?" on Home, with one-click Stopped or "remind me later". Keeps Watching and watchlist hours honest. *Needs:* nothing new.
+22. **Back after a long gap.** When a show I've finished a season of comes back after a long break (say, 6 months or more), Home says "Season 4 is out. You finished season 3 in March 2024" and shows the last couple of episode summaries from TMDB so I remember where things stood. *Needs:* nothing new.
+23. **Your phone as a remote.** Eclipse runs a tiny web page on the home Wi-Fi and shows a QR code. Scanning it on my iPhone opens a simple remote: tick the next episode, see how many fit before bed, check Watch soon. No app to install, nothing goes online, and it only works while Eclipse is open on the same network. Becomes the main way to tick things once I watch on a TV. *Needs:* nothing new.
+24. **Repair old dates.** Spot the signs of late ticking in my history, like 40 episodes all "watched" on the same day (common in the Sequel import). For each batch, offer to spread the episodes back over my usual watching evenings, mark them "seen, no date", or leave them. If 27 is built later, it can check them against browser history for the real days. Nothing changes without my say-so, and `library.json` is copied aside first. *Needs:* Phase 10 (seen with no date).
+25. **Your year in Eclipse.** A year-in-review screen built from watch dates: hours watched, busiest month, most-watched director and actor, longest binge, lists and watch orders finished. Works for earlier years too, thanks to the Sequel dates. Shows up on Home in December, and any year can be opened from Lists. *Needs:* nothing new, but comes after 24 so the stats use repaired dates.
+26. **Eclipse in the menu bar or tray.** A small always-there menu in the Mac menu bar and the Windows system tray: my next episode for each show I'm watching with a one-click tick, and tonight's "start by" time. Eclipse keeps running there when the main window is closed, so I don't need the full app open while watching on the same computer. *Needs:* nothing new.
+
+### Group B: noticing what I watch (in this order)
+
+I mostly watch on the computer, so this chain is where Eclipse ticks things for me and the dates stay right (the Sequel problem: forgetting to tick, so dates were wrong).
+
+27. **Eclipse notices what I watched.** Chrome and Edge keep their history in a file on my computer. Eclipse reads it (read-only) and when it spots that I watched a NOW TV or Disney+ episode, asks "Tick Andor S2 E4?". Needs checking first: how much the streaming sites' web addresses reveal about which episode it was. Never ticks anything without asking. *Needs:* nothing new; it's the first link in the chain and the fallback for 28.
+28. **Eclipse knows what's playing.** Windows and macOS keep track of what's currently playing (it's how the keyboard media keys and the volume pop-up know). Browsers and some streaming apps pass the title through. Eclipse reads that and shows "Andor S2 E4, 31 minutes in", and when it finishes asks once to tick it, with the day it actually played. Needs a test first: what Disney+ and NOW TV report (in the browser and in their apps), and whether it's enough to tell which episode it is. *Needs:* 27 as the fallback for anything missed.
+29. **Bedtime guard.** When an episode ends and the next one starts (autoplay), a quiet notification if finishing it would take me past bedtime: "This one ends at 00:12, 72 minutes past bedtime." Off by default, uses the bedtime in Your evenings. *Needs:* 28.
+30. **Bookmark a moment.** While something is playing, a keyboard shortcut saves the exact timestamp with an optional note ("S5 E14, 38:12, Sam's reaction"). Each show's page gets a timeline of saved moments, which stay hidden past my current position to avoid spoilers. *Needs:* 28.
+31. **Play next episode.** A button that opens the exact next episode on Disney+ or NOW TV, not just the show's page. TMDB doesn't have these links, so Eclipse learns them from what 27 and 28 see as I watch (each service's episode addresses). Falls back to the show's page when it hasn't learnt one yet. *Needs:* 27 or 28.
+
+### Group C: later, once I have the TV
+
+Not important yet, and I can't test it until I have the Apple TV.
+
+32. **Read what the Apple TV is playing.** An Apple TV tells other devices on the home Wi-Fi what's playing (it's how the iPhone's remote shows the title). Eclipse pairs with it once and reads that too, so automatic ticking carries on when I move from the computer to the TV. Open-source tools already do this, so it's realistic. *Needs:* 28 (it feeds the same "finished, tick it?" step).
+
+### Maybe (unsure)
+
+- **Plans around my real week.** Read my Google Calendar's private address (its secret iCal link) so busy evenings are left out of "Finish it by…" and Watch soon automatically.
+
 ## Open questions
 
 - [ ] **Combining with Orbit:** what would joining them look like? A tab inside Orbit, Orbit's daily notes showing what I watched that day, or just a shared look? This doesn't need answering now, but it affects how strictly `src/core` stays separate.
@@ -252,11 +296,15 @@ You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls
 - Done: Home's "Pick up …?" suggests what you're already watching first, then Watch soon (in your order), then the rest of your watchlist (changed after your try-out: carrying on comes before starting something new).
 - Decisions: evenings are filled strictly in your order. A film only goes on a night it fits whole (or gets a whole evening to itself if it's longer than one); a show carries on across nights. Tonight counts only if it's one of your watching nights, using the time left before bed. Shows count the episodes after the furthest one you've ticked that are already out. Films with no runtime on TMDB count as 2 hours, and episodes as 45 minutes, shown as "about". Finished things stay on the list marked Done until you take them off.
 
-**Phase 10: Seen before and rewatches (built, waiting for you to try it)**
+**Phase 10: Seen before and rewatches (done, merged)**
 
 - Done: **Seen it before.** Any film or show not yet marked watched has *Seen it before? Mark it watched with no date* under the status buttons. It's marked Watched with no date, so it counts everywhere (watch orders, lists, completion) but On this day leaves it out. Give it a date later in *Watched on* if you remember, and the "no date" goes away. Shows also get *Seen season N before (no date)* above the episodes, to tick a whole season without dates; a later normal tick or a Sequel import replaces the "no date" with a real day.
 - Done: **Rewatches.** A watched film has *Watched it again today*, which counts straight away. A watched show has *Start a rewatch*: from then on, ticking episodes goes to the rewatch, not your first watch, which is kept as it was. While it's going, the page shows *Rewatching since …* with its own progress, and the show counts as Watching (Library tab, Home's *Pick up*, time left, Watch soon and the heatmap all follow the rewatch). *Finish rewatch* counts it; *Give up* drops it.
 - Done: every title you've seen shows **Watched once / twice / 3 times**, and each finished rewatch is listed with its dates (× takes one off if added by mistake). Rewatch episode ticks show up in On this day.
 - Done (after your first look): **one-click ticks in lists and watch orders.** Every row you haven't seen has a round tick on the right. Click it and that film or show is marked seen before (no date); on a season row it ticks that season's episodes with no date. Click *Seen* on a row ticked this way to take it off again (rows with a real watch date can't be undone from the list, so a misclick never loses one). A show whose seasons you tick all the way through becomes Watched (seen before); one with only some seasons ticked stays Watching. Shows already ticked through before this fix move to Watched the next time the app opens.
-- Decisions: one rewatch at a time per title. A rewatch is never finished automatically, even when every episode is ticked (the button changes to *Finished it: count this rewatch*). Each rewatch is stored on its own with its dates and ticks, so a "watched with someone" tag can be added later (that's Phase 23 in the future ideas).
+- Decisions: one rewatch at a time per title. A rewatch is never finished automatically, even when every episode is ticked (the button changes to *Finished it: count this rewatch*). Each rewatch is stored on its own with its dates and ticks, so a "watched with someone" tag can be added later (that's Phase 13, Watching with someone, in the future ideas).
 - Next: Phase 11 (Polish).
+
+**Future ideas**
+
+- Added to the plan (17 Nov 2026): future ideas from a brainstorm, listed under Future ideas as candidate phases 12 to 32. Group A (12 to 26) stand on their own; Group B (27 to 31) is the chain about noticing what I watch, in order; Group C (32, Apple TV) waits until I have a TV. Calendar-aware planning is a maybe. I mostly watch on the computer for now (an Apple TV and iPhone later).
