@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import { exportFiles } from '@core/export'
 import { toIcs } from '@core/calendar'
 import { moveWatchSoon, setWatchSoon } from '@core/watchsoon'
-import { dropTitle, restoreDropped, setFrom, endWatchWith, startWatchWith, tickWith, endRewatch, localDate, markRowSeen, settleSeenShows, markSeenBefore, preferencesOf, removeRewatch, setEpisodes, startRewatch, setFinishBy, setNote, setPreferences, setStatus, setWatchedOn } from '@core/library'
+import { dropTitle, restoreDropped, setFrom, endWatchWith, startWatchWith, tickWith, endRewatch, localDate, markRowSeen, settleSeenShows, markSeenBefore, preferencesOf, removeRewatch, setEpisodes, startRewatch, setFinishBy, snoozeTitle, setNote, setPreferences, setStatus, setWatchedOn } from '@core/library'
 import { TmdbError } from '@core/tmdb'
 import { createList, followList, moveInList, removeList, renameList, setInList } from '@core/lists'
 import { UNDATED, type TitleRef } from '@core/types'
@@ -16,6 +16,7 @@ import * as tmdb from './tmdb'
 import { backupLibrary, getLibrary, isDirectory, openLibrary, saveLibrary } from './library'
 import { readSequelExport } from './sequelImport'
 import { setupUpdater } from './updater'
+import { getHistory, startServiceWatch } from './services'
 import { guardStatus, readOnlyReason, startGuard, stopGuard, takeOver } from './guard'
 
 // Window background, matching --bg in src/renderer/src/styles/theme.css so there's no flash on start.
@@ -210,6 +211,8 @@ function setupIpc(): void {
   ipcMain.handle('soon:set', (_e, ref: TitleRef, on: boolean) => saveLibrary(setWatchSoon(getLibrary(), ref, on)))
   ipcMain.handle('soon:move', (_e, from: number, to: number) => saveLibrary(moveWatchSoon(getLibrary(), from, to)))
   ipcMain.handle('library:setFinishBy', (_e, key: string, day: string | null) => saveLibrary(setFinishBy(getLibrary(), key, day)))
+  ipcMain.handle('library:snooze', (_e, key: string, until: string | null) => saveLibrary(snoozeTitle(getLibrary(), key, until)))
+  ipcMain.handle('services:history', () => getHistory())
   ipcMain.handle('library:setPreferences', (_e, patch) => saveLibrary(setPreferences(getLibrary(), patch)))
 
   // Sequel import: pick the export and see what it holds, then apply it (or don't).
@@ -303,6 +306,7 @@ app.whenReady().then(() => {
   mainWindow = createWindow()
   mainWindow.on('closed', () => (mainWindow = null))
   void settleOnStart()
+  startServiceWatch(getLibrary, () => mainWindow?.webContents.send('services:changed', getHistory()))
   void setupUpdater()
   app.on('activate', () => {
     if (!BrowserWindow.getAllWindows().length) {

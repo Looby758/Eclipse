@@ -1,9 +1,11 @@
 import { ExternalLink } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { imageUrl } from '@core/tmdb'
-import { preferencesOf } from '@core/library'
+import { localDate, preferencesOf } from '@core/library'
+import { formatShortDay } from '@core/format'
 import type { MediaType, Provider, WatchProviders } from '@core/types'
 import { useApp } from '../store/app'
+import { useServiceHistory } from '../lib/services'
 
 function Logos({ list, mine }: { list: Provider[]; mine: number[] }): React.JSX.Element {
   return (
@@ -26,6 +28,8 @@ function Logos({ list, mine }: { list: Provider[]; mine: number[] }): React.JSX.
 /** Where you can watch a title in your region, with your own services lit up and listed first. */
 export default function WhereToWatch({ type, id }: { type: MediaType; id: number }): React.JSX.Element {
   const prefs = useApp((s) => preferencesOf(s.library))
+  const history = useServiceHistory()
+  const moves = history.events.filter((e) => e.key === `${type}:${id}`).slice(0, 4)
   const [data, setData] = useState<WatchProviders | null>(null)
   const [error, setError] = useState('')
 
@@ -106,6 +110,16 @@ export default function WhereToWatch({ type, id }: { type: MediaType; id: number
             </div>
           )}
         </>
+      )}
+      {moves.length > 0 && (
+        <ul className="where-history">
+          {moves.map((m) => (
+            <li key={`${m.day}:${m.kind}:${m.providerId}`} className="muted small">
+              {m.kind === 'arrived' ? 'Arrived on' : 'Left'} {m.provider} {formatShortDay(m.day)}
+              {m.day.slice(0, 4) !== localDate(new Date()).slice(0, 4) ? ` ${m.day.slice(0, 4)}` : ''}
+            </li>
+          ))}
+        </ul>
       )}
     </section>
   )

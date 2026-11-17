@@ -196,6 +196,22 @@ export function preferencesOf(library: Library): Preferences {
   return full
 }
 
+/** Don't nudge about a title until a day (or nudge again: null). */
+export function snoozeTitle(library: Library, key: string, until: string | null, now: Date = new Date()): Library {
+  if (until !== null && !isDay(until)) return library
+  return changeEntry(
+    library,
+    key,
+    (e) => {
+      const next = { ...e }
+      if (until) next.snoozedUntil = until
+      else delete next.snoozedUntil
+      return next
+    },
+    now
+  )
+}
+
 /** Sets or clears the day you want to have finished a show by. */
 export function setFinishBy(library: Library, key: string, day: string | null, now: Date = new Date()): Library {
   if (day !== null && !isDay(day)) return library
@@ -234,7 +250,8 @@ function normalizePreferences(raw: unknown): Preferences {
       ? [...new Set(p.watchDays.filter((d): d is number => Number.isInteger(d) && d >= 0 && d <= 6))].sort()
       : [...DEFAULT_PREFERENCES.watchDays],
     renewals,
-    calendarEpisodes: p.calendarEpisodes === true
+    calendarEpisodes: p.calendarEpisodes === true,
+    stalledDays: Number.isInteger(p.stalledDays) && p.stalledDays! >= 7 && p.stalledDays! <= 730 ? p.stalledDays! : DEFAULT_PREFERENCES.stalledDays
   }
 }
 
@@ -304,6 +321,7 @@ export function normalizeLibrary(raw: unknown): Library {
       updatedAt: typeof e.updatedAt === 'string' ? e.updatedAt : typeof e.addedAt === 'string' ? e.addedAt : now,
       ...(isDay(e.watchedOn) ? { watchedOn: e.watchedOn } : {}),
       ...(isDay(e.finishBy) ? { finishBy: e.finishBy } : {}),
+      ...(isDay(e.snoozedUntil) ? { snoozedUntil: e.snoozedUntil } : {}),
       ...(typeof e.note === 'string' && e.note.trim() ? { note: e.note.trim().slice(0, 300) } : {}),
       ...(typeof e.from === 'string' && e.from.trim() ? { from: e.from.trim().slice(0, 80) } : {}),
       ...(typeof e.rating === 'number' && e.rating >= 0 && e.rating <= 10 ? { rating: e.rating } : {}),

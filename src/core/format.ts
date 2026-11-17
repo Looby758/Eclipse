@@ -17,6 +17,20 @@ export function formatDate(date: string | null | undefined): string {
   return `${Number(m[3])} ${months[Number(m[2]) - 1]} ${m[1]}`
 }
 
+/** "2024-03-01" → "March 2024". */
+export function formatMonth(date: string | null | undefined): string {
+  return formatDate(date).replace(/^\d+ /, '')
+}
+
+/** 0 → "today", 1 → "yesterday", 40 → "40 days ago", 400 → "over a year ago". */
+export function daysAgo(n: number): string {
+  if (n <= 0) return 'today'
+  if (n === 1) return 'yesterday'
+  if (n < 60) return `${n} days ago`
+  if (n < 365) return `${Math.round(n / 30)} months ago`
+  return n < 730 ? 'over a year ago' : `${Math.floor(n / 365)} years ago`
+}
+
 export function plural(n: number, one: string, many = `${one}s`): string {
   return `${n} ${n === 1 ? one : many}`
 }

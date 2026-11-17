@@ -119,6 +119,8 @@ export interface LibraryEntry {
   rewatches?: Rewatch[]
   /** Shows: the day you want to have finished it by (YYYY-MM-DD), for "Finish it by Friday". */
   finishBy?: string
+  /** Don't nudge about it ("keep going or stop?", "season 4 is out") before this day (YYYY-MM-DD). */
+  snoozedUntil?: string
   title: TitleSnapshot
 }
 
@@ -160,6 +162,8 @@ export interface Preferences {
   renewals: Record<string, number>
   /** Release calendar: every new episode, not just new seasons, finales and films. */
   calendarEpisodes: boolean
+  /** Ask "keep going or stop?" about a show you haven't watched in this many days. */
+  stalledDays: number
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -169,7 +173,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   bedtime: '23:00',
   watchDays: [1, 2, 3, 4, 5],
   renewals: {},
-  calendarEpisodes: false
+  calendarEpisodes: false,
+  stalledDays: 60
 }
 
 /** Your library file (library.json in your data folder). */

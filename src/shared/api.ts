@@ -1,6 +1,7 @@
 import type { ImportSummary } from '@core/sequel'
 import type { ReleaseEvent } from '@core/calendar'
 import type { KnownFrom } from '@core/knownfrom'
+import type { ServiceHistory } from '@core/services'
 import type { CollectionDetails, Credits, ListSource, PersonDetails, TitleRef, TmdbListDetails } from '@core/types'
 import type { Library, MediaType, Preferences, Provider, SearchResult, SeasonDetails, TitleDetails, TitleKey, TitleSnapshot, WatchProviders, WatchStatus } from '@core/types'
 
@@ -142,6 +143,11 @@ export interface EclipseApi {
   setWatchedOn(key: TitleKey, day: string | null): Promise<Library>
   /** Sets or clears the day you want to have finished a show by. */
   setFinishBy(key: TitleKey, day: string | null): Promise<Library>
+  /** Don't nudge about it until a day ("remind me later"), or null to clear. */
+  snooze(key: TitleKey, until: string | null): Promise<Library>
+  /** What arrived on and left your services lately (checked once a day). */
+  servicesHistory(): Promise<ServiceHistory>
+  onServicesChanged(callback: (history: ServiceHistory) => void): () => void
   setPreferences(patch: Partial<Preferences>): Promise<Library>
   /** Called when library.json changes on disk (e.g. Google Drive synced it from your other computer). */
   onLibraryChanged(callback: (library: Library) => void): () => void
