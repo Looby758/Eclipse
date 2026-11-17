@@ -186,7 +186,7 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
             </div>
           </div>
           <div className="row list-actions">
-            {!own && source?.kind !== 'guide' && (
+            {!own && source?.kind !== 'guide' && source?.kind !== 'from' && (
               <button className={`btn ${saved ? 'glass' : 'primary'}`} onClick={follow}>
                 {saved ? <Check size={15} /> : <Plus size={15} />} {saved ? 'In your lists' : 'Add to your lists'}
               </button>

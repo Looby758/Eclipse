@@ -131,6 +131,8 @@ export interface EclipseApi {
   endRewatch(key: string, keep: boolean): Promise<Library>
   removeRewatch(key: string, index: number): Promise<Library>
   setNote(key: TitleKey, note: string): Promise<Library>
+  /** Who recommended it (empty clears it). */
+  setFrom(key: TitleKey, from: string): Promise<Library>
   setWatchedOn(key: TitleKey, day: string | null): Promise<Library>
   /** Sets or clears the day you want to have finished a show by. */
   setFinishBy(key: TitleKey, day: string | null): Promise<Library>

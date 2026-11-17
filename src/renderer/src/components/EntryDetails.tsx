@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { localDate } from '@core/library'
+import { localDate, recommenders } from '@core/library'
 import type { TitleKey } from '@core/types'
 import { useApp } from '../store/app'
 
@@ -8,13 +8,21 @@ export default function EntryDetails({ titleKey }: { titleKey: TitleKey }): Reac
   const entry = useApp((s) => s.library.entries[titleKey])
   const setLibrary = useApp((s) => s.setLibrary)
   const [note, setNote] = useState(entry?.note ?? '')
+  const [from, setFrom] = useState(entry?.from ?? '')
+  const library = useApp((s) => s.library)
 
   // Follow changes from elsewhere (e.g. the other computer), unless you're typing.
   useEffect(() => {
     if (document.activeElement?.id !== 'entry-note') setNote(entry?.note ?? '')
   }, [entry?.note])
+  useEffect(() => {
+    if (document.activeElement?.id !== 'entry-from') setFrom(entry?.from ?? '')
+  }, [entry?.from])
 
   if (!entry) return null
+  const saveFrom = async (): Promise<void> => {
+    if (from.trim() !== (entry.from ?? '')) setLibrary(await window.api.setFrom(titleKey, from))
+  }
   const saveNote = async (): Promise<void> => {
     if (note.trim() !== (entry.note ?? '')) setLibrary(await window.api.setNote(titleKey, note))
   }
@@ -50,6 +58,31 @@ export default function EntryDetails({ titleKey }: { titleKey: TitleKey }): Reac
             }
           }}
         />
+      </label>
+      <label className="entry-field">
+        <span>From</span>
+        <input
+          id="entry-from"
+          type="text"
+          list="entry-from-list"
+          maxLength={80}
+          placeholder="Who recommended it?"
+          value={from}
+          onChange={(e) => setFrom(e.target.value)}
+          onBlur={saveFrom}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+            if (e.key === 'Escape') {
+              setFrom(entry.from ?? '')
+              ;(e.target as HTMLInputElement).blur()
+            }
+          }}
+        />
+        <datalist id="entry-from-list">
+          {recommenders(library).map((r) => (
+            <option key={r.name} value={r.name} />
+          ))}
+        </datalist>
       </label>
       {entry.rating !== undefined && (
         <div className="entry-field">

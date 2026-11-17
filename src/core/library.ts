@@ -138,6 +138,35 @@ export function setNote(library: Library, key: string, note: string, now: Date =
   )
 }
 
+/** Sets or clears who recommended it. */
+export function setFrom(library: Library, key: string, from: string, now: Date = new Date()): Library {
+  const text = from.replace(/\s+/g, ' ').trim().slice(0, 80)
+  if ((library.entries[key]?.from ?? '') === text) return library
+  return changeEntry(
+    library,
+    key,
+    (e) => {
+      const next: LibraryEntry = { ...e, from: text }
+      if (!text) delete next.from
+      return next
+    },
+    now
+  )
+}
+
+/** Everyone (and everywhere) that's recommended you something, with how many, most first. Names match ignoring case. */
+export function recommenders(library: Library): { name: string; count: number }[] {
+  const n = new Map<string, { name: string; count: number }>()
+  for (const e of Object.values(library.entries)) {
+    if (!e.from) continue
+    const k = e.from.toLowerCase()
+    const x = n.get(k) ?? { name: e.from, count: 0 }
+    x.count++
+    n.set(k, x)
+  }
+  return [...n.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+}
+
 /** Sets or clears the day you watched something (YYYY-MM-DD). */
 export function setWatchedOn(library: Library, key: string, day: string | null, now: Date = new Date()): Library {
   if (day !== null && !isDay(day)) return library
@@ -273,6 +302,7 @@ export function normalizeLibrary(raw: unknown): Library {
       ...(isDay(e.watchedOn) ? { watchedOn: e.watchedOn } : {}),
       ...(isDay(e.finishBy) ? { finishBy: e.finishBy } : {}),
       ...(typeof e.note === 'string' && e.note.trim() ? { note: e.note.trim().slice(0, 300) } : {}),
+      ...(typeof e.from === 'string' && e.from.trim() ? { from: e.from.trim().slice(0, 80) } : {}),
       ...(typeof e.rating === 'number' && e.rating >= 0 && e.rating <= 10 ? { rating: e.rating } : {}),
       ...(cleanEpisodes(e.episodes) ?? {}),
       ...(e.seenBefore === true ? { seenBefore: true } : {}),
@@ -446,7 +476,7 @@ export function markRowSeen(library: Library, ref: Row, on: boolean, now: Date =
   }
   if (!isRowSeenUndated(library, ref)) return library
   const e = library.entries[ref.key]
-  const keep = (x: LibraryEntry): boolean => !!(x.note || x.rating !== undefined || Object.keys(x.episodes ?? {}).length || x.finishBy || x.rewatches?.length)
+  const keep = (x: LibraryEntry): boolean => !!(x.note || x.from || x.rating !== undefined || Object.keys(x.episodes ?? {}).length || x.finishBy || x.rewatches?.length)
   if (seasonKeys) {
     // Take the season's ticks off. A show that was finished (seen before) is back to Watching;
     // if nothing's left, it comes off your library.

@@ -32,7 +32,7 @@ const byName = (a: LibraryEntry, b: LibraryEntry): number => a.title.name.locale
 
 export function titlesCsv(library: Library): string {
   const rows: (string | number | boolean | null | undefined)[][] = [
-    ['Title', 'Year', 'Type', 'Status', 'Watched on', 'Seen before (no date)', 'Times watched', 'Episodes ticked', 'Your rating', 'Note', 'Finish by', 'Added', 'TMDB id', 'TMDB page']
+    ['Title', 'Year', 'Type', 'Status', 'Watched on', 'Seen before (no date)', 'Times watched', 'Episodes ticked', 'Your rating', 'Note', 'From', 'Finish by', 'Added', 'TMDB id', 'TMDB page']
   ]
   for (const e of Object.values(library.entries).sort(byName)) {
     rows.push([
@@ -46,6 +46,7 @@ export function titlesCsv(library: Library): string {
       e.type === 'tv' ? Object.keys(e.episodes ?? {}).length : '',
       e.rating,
       e.note,
+      e.from,
       e.finishBy,
       e.addedAt.slice(0, 10),
       e.id,

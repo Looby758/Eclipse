@@ -107,6 +107,8 @@ export interface LibraryEntry {
   watchedOn?: string
   /** A one-line note, e.g. "watched with Dad at Christmas". */
   note?: string
+  /** Who (or what) recommended it: "Sam", "a podcast", "the trailer before Dune". */
+  from?: string
   /** Your own rating out of 10, if you gave one (e.g. brought over from Sequel). */
   rating?: number
   /** Shows: the episodes you've seen, by episodeKey ("S1E3"), each with the day you ticked it ("seen" when there's no date). */
@@ -207,6 +209,8 @@ export type ListSource =
   | { kind: 'tmdbList'; listId: number }
   | { kind: 'guide'; guideId: string }
   | { kind: 'custom' }
+  /** Everything in your library recommended by one person or place ("from Sam"). Not saved; made from your library. */
+  | { kind: 'from'; name: string }
 
 /** A list in your library. Only your own lists keep their titles here; the rest come from TMDB or the guides. */
 export interface SavedList {

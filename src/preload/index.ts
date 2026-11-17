@@ -48,6 +48,7 @@ const api: EclipseApi = {
   endRewatch: (key, keep) => ipcRenderer.invoke('library:endRewatch', key, keep),
   removeRewatch: (key, index) => ipcRenderer.invoke('library:removeRewatch', key, index),
   setNote: (key, note) => ipcRenderer.invoke('library:setNote', key, note),
+  setFrom: (key, from) => ipcRenderer.invoke('library:setFrom', key, from),
   setWatchedOn: (key, day) => ipcRenderer.invoke('library:setWatchedOn', key, day),
   setFinishBy: (key, day) => ipcRenderer.invoke('library:setFinishBy', key, day),
   setPreferences: (patch) => ipcRenderer.invoke('library:setPreferences', patch),

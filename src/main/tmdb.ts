@@ -3,7 +3,7 @@ import { cached, CACHE_TTL } from '@core/cache'
 import { createTmdb, TmdbError, type Tmdb } from '@core/tmdb'
 import type { CollectionDetails, Credits, MediaType, PersonDetails, Provider, SearchResult, SeasonDetails, TitleDetails, TitleRef, TmdbListDetails, WatchProviders } from '@core/types'
 import { expandGuide, guideById, guideRefs, type Guide, type GuideTitleInfo } from '@core/guides'
-import { releaseOrder, sourceOf, findList } from '@core/lists'
+import { releaseOrder, sourceOf, findList, refOf } from '@core/lists'
 import type { Library } from '@core/types'
 import { parseTitleKey } from '@core/types'
 import { followed, seasonsToCheck, upcomingReleases, type ReleaseEvent } from '@core/calendar'
@@ -188,6 +188,14 @@ export async function openList(id: string, library: Library, refresh = false): P
       if (!g) throw new Error('That guide doesn’t exist.')
       const items = await guideItems(g)
       return { id, name: g.name, description: g.description, imagePath: null, items, releaseItems: releaseOrder(items), sections: g.sections }
+    }
+    case 'from': {
+      const k = source.name.toLowerCase()
+      const picks = Object.values(library.entries)
+        .filter((e) => e.from?.toLowerCase() === k)
+        .sort((a, b) => a.addedAt.localeCompare(b.addedAt))
+      const name = picks[0]?.from ?? source.name
+      return { id, name: `${name}’s picks`, description: `Everything you noted as recommended by ${name}, in the order you added them.`, imagePath: null, items: picks.map(refOf) }
     }
     case 'custom': {
       const l = findList(library, id)
