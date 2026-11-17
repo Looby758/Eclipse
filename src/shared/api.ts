@@ -5,9 +5,11 @@ import type { ServiceHistory } from '@core/services'
 import type { Batch, RepairChoice } from '@core/repair'
 import type { YearReview } from '@core/year'
 import type { CatchUp } from '@core/catchup'
+import type { WeekSoFar } from '@core/week'
+import type { Recommendation } from '@core/recommend'
 import type { NowPlaying, Recognised, Suggestion } from '@core/watching'
 import type { CollectionDetails, Credits, ListSource, PersonDetails, TitleRef, TmdbListDetails } from '@core/types'
-import type { Library, MediaType, Preferences, Provider, SearchResult, SeasonDetails, TitleDetails, TitleKey, TitleSnapshot, WatchProviders, WatchStatus } from '@core/types'
+import type { Library, MediaType, PlannedTime, Preferences, Provider, SearchResult, SeasonDetails, TitleDetails, TitleKey, TitleSnapshot, WatchProviders, WatchStatus } from '@core/types'
 
 type Item = { key: TitleKey; type: MediaType; id: number; title: TitleSnapshot }
 
@@ -159,6 +161,8 @@ export interface EclipseApi {
   /** Watching a show with someone: its own progress, apart from yours. */
   startWatchWith(item: Item, name: string): Promise<Library>
   tickWith(key: TitleKey, index: number, keys: string[], watched: boolean): Promise<Library>
+  /** Sets (or clears, with null) the next time you've arranged to watch with someone. */
+  planWatchWith(key: TitleKey, index: number, planned: PlannedTime | null): Promise<Library>
   endWatchWith(key: TitleKey, index: number, keep: boolean): Promise<Library>
   /** A list or watch-order row: seen with no date (a season row ticks its episodes), or undo that. */
   markRowSeen(ref: TitleRef, on: boolean): Promise<Library>
@@ -187,6 +191,14 @@ export interface EclipseApi {
 
   /** Your year in Eclipse: hours, busiest month, most-watched director and actor, longest binge. */
   yearReview(year: number): Promise<Result<YearReview>>
+
+  /** Recommendations for Search, from what you've watched and are watching. */
+  recommendations(): Promise<Result<Recommendation[]>>
+  /** "Not for me": never recommend it again. */
+  hideRecommendation(key: string): Promise<Library>
+
+  /** The weekly budget: how much of this week you've watched and have left (null with no budget). */
+  weekBudget(): Promise<Result<WeekSoFar | null>>
 
   /** Catch up before the sequel: what to rewatch before a film or season coming out in the next six weeks. */
   catchUps(): Promise<Result<CatchUp[]>>

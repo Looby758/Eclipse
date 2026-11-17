@@ -45,23 +45,34 @@ export function timeLeft(d: RuntimeInfo, entry: LibraryEntry | undefined, today:
 
 // ---- Your evenings ----
 
-export type Evenings = Pick<Preferences, 'startTime' | 'bedtime' | 'watchDays'>
+/**
+ * Your week. Older libraries and tests may only have the usual evening (start, bedtime and the
+ * nights you watch); the rest is optional and falls back to that.
+ */
+export type Evenings = Pick<Preferences, 'startTime' | 'bedtime' | 'watchDays'> &
+  Partial<Pick<Preferences, 'schedule' | 'justTonight' | 'gapMinutes' | 'windDownMinutes' | 'weeklyBudgetMinutes'>>
+
+/** A stretch of watching in minutes after that day's midnight (an end past midnight is over 1440). */
+export interface Span {
+  start: number
+  end: number
+}
 
 const toMinutes = (hhmm: string): number => {
   const [h, m] = hhmm.split(':').map(Number)
   return h * 60 + m
 }
-
-/** Start and bedtime in minutes after the evening's midnight (bedtime after midnight is past 1440). */
-function evening(ev: Evenings): { start: number; end: number } {
-  const start = toMinutes(ev.startTime)
-  let end = toMinutes(ev.bedtime)
-  if (end <= start) end += 1440
-  return { start, end }
+const toSpan = (start: string, end: string): Span => {
+  const s = toMinutes(start)
+  let e = toMinutes(end)
+  if (e <= s) e += 1440
+  return { start: s, end: e }
 }
-
-/** Minutes in a usual watching evening. */
-export const eveningMinutes = (ev: Evenings): number => evening(ev).end - evening(ev).start
+/** Minutes after midnight as "HH:MM" (wrapping past midnight). */
+export const clock = (mins: number): string => {
+  const t = ((Math.round(mins) % 1440) + 1440) % 1440
+  return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`
+}
 
 const addDays = (day: string, n: number): string => {
   const [y, m, d] = day.split('-').map(Number)
@@ -72,30 +83,143 @@ const weekday = (day: string): number => {
   return new Date(y, m - 1, d).getDay()
 }
 
+/** The usual slots for a day of the week, before any "just tonight" change or wind-down. */
+function usualSlots(dow: number, ev: Evenings): Span[] {
+  const raw = ev.schedule?.length === 7 ? ev.schedule[dow] : ev.watchDays.includes(dow) ? [{ start: ev.startTime, end: ev.bedtime }] : []
+  return raw.map((x) => toSpan(x.start, x.end)).sort((a, b) => a.start - b.start)
+}
+
+const windDown = (slots: Span[], ev: Evenings): Span[] => {
+  const w = ev.windDownMinutes ?? 0
+  if (!w || !slots.length) return slots
+  const out = slots.map((s) => ({ ...s }))
+  const last = out[out.length - 1]
+  last.end = Math.max(last.start, last.end - w)
+  return out.filter((s) => s.end > s.start)
+}
+
 /**
- * Which evening it is now, and the minutes of it still to come. Just after midnight still
- * counts as last night if your bedtime is after midnight.
+ * When you can watch on a day: its slots from your week, with any "just tonight" change for that
+ * day and the wind-down before bed taken off the last one.
  */
-export function tonight(now: Date, ev: Evenings): { day: string; minutesLeft: number } {
-  const { start, end } = evening(ev)
+export function slotsOn(day: string, ev: Evenings, usual = false): Span[] {
+  let slots = usualSlots(weekday(day), ev)
+  const jt = ev.justTonight
+  if (!usual && jt && jt.day === day) {
+    if (jt.off) return []
+    if (!slots.length) slots = [toSpan(jt.start ?? ev.startTime, jt.bedtime ?? ev.bedtime)]
+    else {
+      if (jt.start) {
+        const st = toMinutes(jt.start) < 6 * 60 ? toMinutes(jt.start) + 1440 : toMinutes(jt.start)
+        slots = slots.filter((s) => s.end > st).map((s) => ({ start: Math.max(s.start, st), end: s.end }))
+      }
+      if (jt.bedtime && slots.length) {
+        const last = slots[slots.length - 1]
+        let b = toMinutes(jt.bedtime)
+        if (b <= last.start) b += 1440
+        slots[slots.length - 1] = { start: last.start, end: b }
+      }
+    }
+  }
+  return windDown(slots, ev)
+}
+
+/** How many of something this long fit in a stretch, with the gap between them. */
+export const fitIn = (minutes: number, each: number, gap = 0): number => (each > 0 && minutes >= each ? Math.floor((minutes + gap) / (each + gap)) : 0)
+
+const sum = (xs: number[]): number => xs.reduce((a, b) => a + b, 0)
+
+/** Minutes you can watch on a day. */
+export const dayMinutes = (day: string, ev: Evenings): number => sum(slotsOn(day, ev).map((s) => s.end - s.start))
+
+/** Episodes (or films) of this length that fit on a day. */
+export const fitsOn = (day: string, ev: Evenings, each: number): number => sum(slotsOn(day, ev).map((s) => fitIn(s.end - s.start, each, ev.gapMinutes)))
+
+/** Minutes in your longest usual evening (for "longer than an evening" and how many fit a night at most). */
+export function eveningMinutes(ev: Evenings): number {
+  let most = 0
+  for (let d = 0; d < 7; d++) most = Math.max(most, sum(windDown(usualSlots(d, ev), ev).map((s) => s.end - s.start)))
+  return most
+}
+
+/** The most of something this long that fit in one of your usual evenings. */
+export function mostAnEvening(ev: Evenings, each: number): number {
+  let most = 0
+  for (let d = 0; d < 7; d++) most = Math.max(most, sum(windDown(usualSlots(d, ev), ev).map((s) => fitIn(s.end - s.start, each, ev.gapMinutes))))
+  return most
+}
+
+/** The days of the week you watch on (from your week, not counting "just tonight"). */
+export const watchDaysOf = (ev: Evenings): number[] => [0, 1, 2, 3, 4, 5, 6].filter((d) => usualSlots(d, ev).length > 0)
+
+export interface Tonight {
+  /** The evening it is ("YYYY-MM-DD"): just after midnight still counts as last night if you're up late. */
+  day: string
+  /** Minutes of watching time still to come tonight. */
+  minutesLeft: number
+  /** What's left of each of tonight's slots. */
+  left: Span[]
+  /** Tonight's slots. */
+  slots: Span[]
+  /** Minutes since that evening's midnight. */
+  now: number
+  /** When tonight's watching ends ("HH:MM", after wind-down), or null if tonight's not a watching night. */
+  bedtime: string | null
+}
+
+/** Which evening it is now, and what's left of it. */
+export function tonight(now: Date, ev: Evenings): Tonight {
   let mins = now.getHours() * 60 + now.getMinutes()
   let day = localDate(now)
-  if (end > 1440 && mins < end - 1440) {
+  const yesterday = addDays(day, -1)
+  const late = slotsOn(yesterday, ev).some((s) => s.end > 1440 && mins < s.end - 1440)
+  if (late) {
     mins += 1440
-    day = addDays(day, -1)
+    day = yesterday
   }
-  return { day, minutesLeft: Math.max(0, end - Math.max(mins, start)) }
+  const slots = slotsOn(day, ev)
+  const left = slots.filter((s) => s.end > mins).map((s) => ({ start: Math.max(s.start, mins), end: s.end }))
+  const last = slots[slots.length - 1]
+  return { day, minutesLeft: sum(left.map((s) => s.end - s.start)), left, slots, now: mins, bedtime: last ? clock(last.end) : null }
 }
 
 /** How many episodes (or whether a film) fit before bed tonight, from now. */
 export const fitTonight = (now: Date, ev: Evenings, minutesEach: number): number =>
-  minutesEach > 0 ? Math.floor(tonight(now, ev).minutesLeft / minutesEach) : 0
+  minutesEach > 0 ? sum(tonight(now, ev).left.map((s) => fitIn(s.end - s.start, minutesEach, ev.gapMinutes))) : 0
 
-/** The latest you can start something this long and still be in bed on time, "HH:MM". */
-export function startBy(minutes: number, ev: Evenings): string {
-  const t = (((evening(ev).end - minutes) % 1440) + 1440) % 1440
-  return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`
+/** Tonight's bedtime, or your usual one when tonight isn't a watching night. */
+export const bedtimeTonight = (now: Date, ev: Evenings): string => tonight(now, ev).bedtime ?? usualBedtime(ev)
+
+/** When tonight's watching starts, or your usual start when tonight isn't a watching night. */
+export const tonightStart = (now: Date, ev: Evenings): string => {
+  const s = tonight(now, ev).slots[0]
+  return s ? clock(s.start) : ev.startTime
 }
+
+const usualBedtime = (ev: Evenings): string => clock(toSpan(ev.startTime, ev.bedtime).end - (ev.windDownMinutes ?? 0))
+
+/** The latest you can start something this long tonight and still be done on time, "HH:MM". */
+export function startBy(minutes: number, ev: Evenings, now: Date = new Date()): string {
+  const t = tonight(now, ev)
+  const last = t.slots[t.slots.length - 1]
+  return last ? clock(last.end - minutes) : clock(toSpan(ev.startTime, ev.bedtime).end - (ev.windDownMinutes ?? 0) - minutes)
+}
+
+/** The weekly budget split over your watching nights, in minutes a night (null with no budget). */
+export function budgetPerNight(ev: Evenings): number | null {
+  const b = ev.weeklyBudgetMinutes ?? 0
+  const nights = watchDaysOf(ev).length
+  return b > 0 && nights ? Math.floor(b / nights) : null
+}
+
+/** Episodes of this length you'd plan for a day: what fits, kept under the weekly budget's share. */
+export function planFor(day: string, ev: Evenings, each: number, fits = fitsOn(day, ev, each)): number {
+  const share = budgetPerNight(ev)
+  return share === null ? fits : Math.min(fits, Math.max(fits ? 1 : 0, fitIn(share, each, ev.gapMinutes)))
+}
+
+/** Monday of the week a day is in. */
+export const weekStart = (day: string): string => addDays(day, -((weekday(day) + 6) % 7))
 
 export interface FinishPlan {
   /** Watching nights from tonight up to and including the deadline. */
@@ -113,19 +237,18 @@ export interface FinishPlan {
 
 /** "Finish it by Friday": how many episodes a night it takes to finish `left` by `deadline`. */
 export function finishPlan(left: TimeLeft, minutesEach: number, deadline: string, now: Date, ev: Evenings): FinishPlan {
-  const maxPerNight = minutesEach > 0 ? Math.floor(eveningMinutes(ev) / minutesEach) : 0
+  const maxPerNight = mostAnEvening(ev, minutesEach)
   const t = tonight(now, ev)
-  const tonightFits = minutesEach > 0 ? Math.floor(t.minutesLeft / minutesEach) : 0
-  const watchDay = (day: string): boolean => ev.watchDays.includes(weekday(day))
-  // Tonight counts if it's one of your nights and there's still time for an episode.
-  const capacity = (day: string): number => (!watchDay(day) ? 0 : day === t.day ? tonightFits : maxPerNight)
+  const tonightFits = fitTonight(now, ev, minutesEach)
+  // Tonight counts if there's still time for an episode; the weekly budget keeps the rest even.
+  const capacity = (day: string): number => (day === t.day ? planFor(day, ev, minutesEach, tonightFits) : planFor(day, ev, minutesEach))
 
   let nights = 0
   for (let day = t.day; day <= deadline && nights < 3660; day = addDays(day, 1)) if (capacity(day) > 0) nights++
 
   let earliestFinish: string | null = null
   if (left.episodes === 0) earliestFinish = t.day
-  else if (maxPerNight > 0 && ev.watchDays.length) {
+  else if (maxPerNight > 0) {
     let todo = left.episodes
     for (let day = t.day, i = 0; i < 3660; day = addDays(day, 1), i++) {
       todo -= capacity(day)
@@ -178,7 +301,7 @@ export const dayBefore = (day: string): string => addDays(day, -1)
 /** Watching nights between two days, inclusive (for "4 nights" in the plan). */
 export function nightsBetween(from: string, to: string, ev: Evenings): string[] {
   const out: string[] = []
-  for (let day = from; day <= to && out.length < 3660; day = addDays(day, 1)) if (ev.watchDays.includes(weekday(day))) out.push(day)
+  for (let day = from; day <= to && out.length < 3660; day = addDays(day, 1)) if (slotsOn(day, ev).length) out.push(day)
   return out
 }
 

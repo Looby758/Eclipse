@@ -12,6 +12,7 @@ import { useAvailability, useDetailsMany } from '../lib/availability'
 import { useServiceHistory } from '../lib/services'
 import Sheet from './Sheet'
 import Credits from './Credits'
+import BestServices from './BestServices'
 
 /** Titles that matter here: what you want to watch, are watching, and anything watched in the last 30 days. */
 function relevantKeys(library: Library, today: string): string[] {
@@ -65,9 +66,9 @@ export default function ServicesSheet(): React.JSX.Element {
       <div className="sheet-head">
         <h1>Your services</h1>
       </div>
-      <p className="muted">What’s waiting for you on each service you pay for, how much you’ve used it lately, and when it renews.</p>
+      <p className="muted">Which services are best for what you want to watch, and for each one you pay for: what’s waiting, how much you’ve used it lately, and when it renews.</p>
       {!mine.length && (
-        <p>
+        <p className="muted">
           You haven’t picked your services yet.{' '}
           <button className="link-btn inline" onClick={() => go({ name: 'settings' })}>
             Pick them in Settings
@@ -75,6 +76,7 @@ export default function ServicesSheet(): React.JSX.Element {
         </p>
       )}
       {(checking || loading) && <p className="muted small">Checking where everything is streaming…</p>}
+      {!checking && !loading && <BestServices providers={providers} details={details} />}
       <div className="service-reports">
         {reports.map((r) => {
           const logo = imageUrl(r.provider.logoPath, 'w92')

@@ -62,11 +62,9 @@ export default function ServicesCard(): React.JSX.Element {
     <section className="card">
       <h2>Your services</h2>
       <p className="muted">Pick the streaming services you pay for. Eclipse lights them up on title pages and uses them for the “On my services” filter.</p>
-      {prefs.services.length > 0 && (
-        <button className="link-btn" style={{ marginBottom: 12 }} onClick={() => useApp.getState().go({ name: 'services' })}>
-          Do I still need them? See what’s waiting on each
-        </button>
-      )}
+      <button className="link-btn" style={{ marginBottom: 12 }} onClick={() => useApp.getState().go({ name: 'services' })}>
+        {prefs.services.length > 0 ? 'Do I still need them? Which services are best for my watchlist?' : 'Which services are best for my watchlist?'}
+      </button>
       <label className="region-select">
         <span>Country</span>
         <select value={prefs.region} onChange={(e) => save({ region: e.target.value })}>

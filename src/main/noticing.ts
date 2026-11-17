@@ -2,6 +2,7 @@ import { app, globalShortcut, Notification } from 'electron'
 import { existsSync, readFileSync, renameSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { localDate, preferencesOf, setEpisodes } from '@core/library'
+import { bedtimeTonight, tonightStart } from '@core/time'
 import { episodeKey, type Library, type TitleDetails } from '@core/types'
 import {
   addMoment,
@@ -158,7 +159,7 @@ async function onPlaying(): Promise<void> {
   if (next && settings().bedtime) {
     const id = `${next.key}@${next.season}:${next.episode}`
     const prefs = preferencesOf(lib)
-    const warning = id !== warned ? bedtimeWarning(next, new Date(), prefs.bedtime, prefs.startTime) : null
+    const warning = id !== warned ? bedtimeWarning(next, new Date(), bedtimeTonight(new Date(), prefs), tonightStart(new Date(), prefs)) : null
     if (warning) {
       warned = id
       notify('Past bedtime?', warning)

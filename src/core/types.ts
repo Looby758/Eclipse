@@ -139,6 +139,14 @@ export interface Rewatch {
   episodes?: Record<string, string>
   /** Watching with someone ("Sam"): kept apart from your own progress, and several can run at once. */
   with?: string
+  /** Watching with someone: the next time you've arranged, and whether it's the same time every week. */
+  planned?: PlannedTime
+}
+
+/** A time arranged with someone: local "YYYY-MM-DDTHH:MM". */
+export interface PlannedTime {
+  at: string
+  weekly?: boolean
 }
 
 /** An episode ticked as seen with no date (watched before Eclipse). */
@@ -150,6 +158,23 @@ export const episodeKey = (season: number, episode: number): string => `S${seaso
 export function parseEpisodeKey(key: string): { season: number; episode: number } | null {
   const m = /^S(\d+)E(\d+)$/.exec(key)
   return m ? { season: Number(m[1]), episode: Number(m[2]) } : null
+}
+
+/** A stretch of watching on one day, "HH:MM" to "HH:MM" (an end before the start is after midnight). */
+export interface WatchSlot {
+  start: string
+  end: string
+}
+
+/** One evening that's different from the usual. */
+export interface JustTonight {
+  /** The evening it applies to, "YYYY-MM-DD". */
+  day: string
+  off?: boolean
+  /** Starting later than usual, "HH:MM". */
+  start?: string
+  /** A different bedtime, "HH:MM". */
+  bedtime?: string
 }
 
 /** Your choices that follow you between computers (kept in library.json). */
@@ -164,6 +189,19 @@ export interface Preferences {
   bedtime: string
   /** The nights you usually watch: 0 Sunday … 6 Saturday. */
   watchDays: number[]
+  /**
+   * Your week (phase 35): for each day, 0 Sunday … 6 Saturday, the times you watch (none = not
+   * watching). startTime, bedtime and watchDays above are kept in step with it as "your usual evening".
+   */
+  schedule: WatchSlot[][]
+  /** A change to one evening only ("Not watching tonight", "Starting late", "Later bedtime tonight"). */
+  justTonight?: JustTonight | null
+  /** Minutes between episodes. */
+  gapMinutes: number
+  /** Minutes before bed with nothing on. */
+  windDownMinutes: number
+  /** About how much to watch a week, in minutes (0: no budget). */
+  weeklyBudgetMinutes: number
   /** The day of the month each of your services renews, by provider id (optional). */
   renewals: Record<string, number>
   /** Release calendar: every new episode, not just new seasons, finales and films. */
@@ -180,6 +218,10 @@ export const DEFAULT_PREFERENCES: Preferences = {
   startTime: '20:00',
   bedtime: '23:00',
   watchDays: [1, 2, 3, 4, 5],
+  schedule: [0, 1, 2, 3, 4, 5, 6].map((d) => (d >= 1 && d <= 5 ? [{ start: '20:00', end: '23:00' }] : [])),
+  gapMinutes: 0,
+  windDownMinutes: 0,
+  weeklyBudgetMinutes: 0,
   renewals: {},
   calendarEpisodes: false,
   stalledDays: 60,
@@ -201,6 +243,8 @@ export interface Library {
   repairLeft?: string[]
   /** Catch up before the sequel: ones you said "Not now" to ("movie:438631>movie:1170608"). */
   catchUpDismissed?: string[]
+  /** Recommendations you said "Not for me" to, by title key. */
+  recsHidden?: string[]
 }
 
 /** A title taken off your library while clearing out the watchlist, kept whole so it can be put back. */

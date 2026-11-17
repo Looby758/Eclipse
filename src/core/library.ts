@@ -1,4 +1,5 @@
-import type { Dropped, Library, LibraryEntry, MediaType, Preferences, Rewatch, TitleDetails, TitleKey, TitleSnapshot, WatchStatus } from './types'
+import type { Dropped, JustTonight, Library, LibraryEntry, MediaType, Preferences, Rewatch, TitleDetails, TitleKey, TitleSnapshot, WatchSlot, WatchStatus } from './types'
+import type { PlannedTime } from './types'
 import { DEFAULT_PREFERENCES, UNDATED, WATCH_STATUSES, episodeKey, parseEpisodeKey, parseTitleKey } from './types'
 import type { TitleRef } from './types'
 import { normalizeLists, normalizeWatchSoon, refOf } from './lists'
@@ -230,7 +231,52 @@ export function setFinishBy(library: Library, key: string, day: string | null, n
 }
 
 export function setPreferences(library: Library, patch: Partial<Preferences>): Library {
-  return { ...library, preferences: normalizePreferences({ ...preferencesOf(library), ...patch }) }
+  const merged: Partial<Preferences> = { ...preferencesOf(library), ...patch }
+  // An older copy of Eclipse (or a test) setting the usual evening directly: rebuild the week from it.
+  if (!patch.schedule && (patch.startTime || patch.bedtime || patch.watchDays)) delete merged.schedule
+  return { ...library, preferences: normalizePreferences(merged) }
+}
+
+const MAX_SLOTS = 3
+
+function normalizeSchedule(p: Partial<Preferences>, start: string, bed: string, days: number[]): WatchSlot[][] {
+  const valid = Array.isArray(p.schedule) && p.schedule.length === 7 && p.schedule.every((d) => Array.isArray(d))
+  if (!valid) return [0, 1, 2, 3, 4, 5, 6].map((d) => (days.includes(d) ? [{ start, end: bed }] : []))
+  return p.schedule!.map((slots) =>
+    slots
+      .filter((x): x is WatchSlot => !!x && isTime(x.start) && isTime(x.end) && x.start !== x.end)
+      .map((x) => ({ start: x.start, end: x.end }))
+      .sort((a, b) => a.start.localeCompare(b.start))
+      .slice(0, MAX_SLOTS)
+  )
+}
+
+/** "Your usual evening" from a week: the evening slot most days have (for older copies and short labels). */
+function usualEvening(schedule: WatchSlot[][], fallback: WatchSlot): WatchSlot {
+  const counts = new Map<string, number>()
+  for (const slots of schedule) {
+    const last = slots[slots.length - 1]
+    if (last) counts.set(`${last.start}-${last.end}`, (counts.get(`${last.start}-${last.end}`) ?? 0) + 1)
+  }
+  const top = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]
+  if (!top) return fallback
+  const [start, end] = top[0].split('-')
+  return { start, end }
+}
+
+const minutesIn = (v: unknown, max: number): number | null => (Number.isInteger(v) && (v as number) >= 0 && (v as number) <= max ? (v as number) : null)
+
+function normalizeJustTonight(v: unknown): JustTonight | undefined {
+  if (!v || typeof v !== 'object') return undefined
+  const j = v as Partial<JustTonight>
+  if (typeof j.day !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(j.day)) return undefined
+  const out: JustTonight = { day: j.day }
+  if (j.off === true) out.off = true
+  else {
+    if (isTime(j.start)) out.start = j.start
+    if (isTime(j.bedtime)) out.bedtime = j.bedtime
+  }
+  return out.off || out.start || out.bedtime ? out : undefined
 }
 
 const isTime = (v: unknown): v is string => typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v)
@@ -242,14 +288,25 @@ function normalizePreferences(raw: unknown): Preferences {
   if (p.renewals && typeof p.renewals === 'object') {
     for (const [id, day] of Object.entries(p.renewals)) if (/^\d+$/.test(id) && Number.isInteger(day) && day >= 1 && day <= 31) renewals[id] = day
   }
+  const start = isTime(p.startTime) ? p.startTime : DEFAULT_PREFERENCES.startTime
+  const bed = isTime(p.bedtime) ? p.bedtime : DEFAULT_PREFERENCES.bedtime
+  const days = Array.isArray(p.watchDays)
+    ? [...new Set(p.watchDays.filter((d): d is number => Number.isInteger(d) && d >= 0 && d <= 6))].sort()
+    : [...DEFAULT_PREFERENCES.watchDays]
+  const schedule = normalizeSchedule(p, start, bed, days)
+  const usual = usualEvening(schedule, { start, end: bed })
+  const justTonight = normalizeJustTonight(p.justTonight)
   return {
     region: typeof p.region === 'string' && /^[A-Z]{2}$/.test(p.region) ? p.region : DEFAULT_PREFERENCES.region,
     services,
-    startTime: isTime(p.startTime) ? p.startTime : DEFAULT_PREFERENCES.startTime,
-    bedtime: isTime(p.bedtime) ? p.bedtime : DEFAULT_PREFERENCES.bedtime,
-    watchDays: Array.isArray(p.watchDays)
-      ? [...new Set(p.watchDays.filter((d): d is number => Number.isInteger(d) && d >= 0 && d <= 6))].sort()
-      : [...DEFAULT_PREFERENCES.watchDays],
+    startTime: usual.start,
+    bedtime: usual.end,
+    watchDays: schedule.map((s, d) => (s.length ? d : -1)).filter((d) => d >= 0),
+    schedule,
+    ...(justTonight ? { justTonight } : {}),
+    gapMinutes: minutesIn(p.gapMinutes, 30) ?? 0,
+    windDownMinutes: minutesIn(p.windDownMinutes, 120) ?? 0,
+    weeklyBudgetMinutes: minutesIn(p.weeklyBudgetMinutes, 7 * 24 * 60) ?? 0,
     renewals,
     calendarEpisodes: p.calendarEpisodes === true,
     stalledDays: Number.isInteger(p.stalledDays) && p.stalledDays! >= 7 && p.stalledDays! <= 730 ? p.stalledDays! : DEFAULT_PREFERENCES.stalledDays,
@@ -299,7 +356,12 @@ export function normalizeLibrary(raw: unknown): Library {
   const rawDropped = raw && typeof raw === 'object' ? (raw as { dropped?: unknown }).dropped : undefined
   const rawLeft = raw && typeof raw === 'object' ? (raw as { repairLeft?: unknown }).repairLeft : undefined
   const rawCatch = raw && typeof raw === 'object' ? (raw as { catchUpDismissed?: unknown }).catchUpDismissed : undefined
+  const rawHidden = raw && typeof raw === 'object' ? (raw as { recsHidden?: unknown }).recsHidden : undefined
   const finish = (): Library => {
+    if (Array.isArray(rawHidden)) {
+      const hidden = [...new Set(rawHidden.filter((x): x is string => typeof x === 'string' && /^(movie|tv):\d+$/.test(x)))]
+      if (hidden.length) lib.recsHidden = hidden.slice(-500)
+    }
     if (Array.isArray(rawCatch)) {
       const no = [...new Set(rawCatch.filter((x): x is string => typeof x === 'string' && /^(movie|tv):\d+(@S\d+)?>(movie|tv):\d+(@S\d+)?$/.test(x)))]
       if (no.length) lib.catchUpDismissed = no.slice(-300)
@@ -355,6 +417,8 @@ export function normalizeLibrary(raw: unknown): Library {
   return finish()
 }
 
+const isPlannedAt = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d$/.test(v)
+
 function cleanRewatches(raw: unknown): { rewatches?: Rewatch[] } {
   if (!Array.isArray(raw)) return {}
   const out: Rewatch[] = []
@@ -365,7 +429,8 @@ function cleanRewatches(raw: unknown): { rewatches?: Rewatch[] } {
     const who = typeof x.with === 'string' && x.with.trim() ? x.with.trim().slice(0, 60) : undefined
     // Only one of your own rewatches can still be going (and one per person you watch with).
     if (!done && out.some((o) => !o.finishedOn && o.with === who)) continue
-    out.push({ startedOn: x.startedOn, ...(done ? { finishedOn: done } : {}), ...(cleanEpisodes(x.episodes) ?? {}), ...(who ? { with: who } : {}) })
+    const planned = who && !done && x.planned && typeof x.planned === 'object' && isPlannedAt(x.planned.at) ? { at: x.planned.at, ...(x.planned.weekly === true ? { weekly: true } : {}) } : undefined
+    out.push({ startedOn: x.startedOn, ...(done ? { finishedOn: done } : {}), ...(cleanEpisodes(x.episodes) ?? {}), ...(who ? { with: who } : {}), ...(planned ? { planned } : {}) })
   }
   out.sort((a, b) => (a.finishedOn ? 0 : 1) - (b.finishedOn ? 0 : 1) || a.startedOn.localeCompare(b.startedOn))
   return out.length ? { rewatches: out } : {}
@@ -638,6 +703,59 @@ export function tickWith(library: Library, key: string, index: number, keys: str
   )
 }
 
+/** Sets (or clears, with null) the next time you've arranged to watch with someone. */
+export function planWatchWith(library: Library, key: string, index: number, planned: PlannedTime | null, now: Date = new Date()): Library {
+  const w = library.entries[key]?.rewatches?.[index]
+  if (!w?.with || w.finishedOn) return library
+  if (planned && !isPlannedAt(planned.at)) return library
+  return changeEntry(
+    library,
+    key,
+    (e) => ({
+      ...e,
+      rewatches: (e.rewatches ?? []).map((x, i) => {
+        if (i !== index) return x
+        const next: Rewatch = { ...x }
+        if (planned) next.planned = { at: planned.at, ...(planned.weekly ? { weekly: true } : {}) }
+        else delete next.planned
+        return next
+      })
+    }),
+    now
+  )
+}
+
+/** How long a session counts as "on" after it starts, and how early Home starts showing it. */
+export const SESSION_HOURS = 4
+export const SESSION_LEAD_MINUTES = 90
+
+const atDate = (at: string): Date => {
+  const [d, t] = at.split('T')
+  const [y, m, day] = d.split('-').map(Number)
+  const [h, mi] = t.split(':').map(Number)
+  return new Date(y, m - 1, day, h, mi)
+}
+
+/**
+ * The next session of a watch with someone that hasn't finished yet (a weekly one rolls on to the
+ * next week once a session is over). Null when nothing is arranged, or a one-off is past.
+ */
+export function nextSession(watch: Pick<Rewatch, 'planned' | 'finishedOn'>, now: Date): Date | null {
+  if (!watch.planned || watch.finishedOn) return null
+  const start = atDate(watch.planned.at)
+  const over = (d: Date): boolean => d.getTime() + SESSION_HOURS * 3_600_000 < now.getTime()
+  if (!watch.planned.weekly) return over(start) ? null : start
+  const next = new Date(start)
+  for (let i = 0; over(next) && i < 1000; i++) next.setDate(next.getDate() + 7)
+  return next
+}
+
+/** True from a little before an arranged time until a few hours after it starts. */
+export function sessionIsOn(watch: Pick<Rewatch, 'planned' | 'finishedOn'>, now: Date): boolean {
+  const s = nextSession(watch, now)
+  return !!s && now.getTime() >= s.getTime() - SESSION_LEAD_MINUTES * 60_000
+}
+
 /** Finishes a watch with someone (it counts), or drops it (`keep` false). */
 export function endWatchWith(library: Library, key: string, index: number, keep: boolean, now: Date = new Date()): Library {
   const w = library.entries[key]?.rewatches?.[index]
@@ -707,4 +825,51 @@ export function clearOutOrder(library: Library, order: 'oldest' | 'newest' | 'no
   if (order === 'newest') return want.sort((a, b) => byAdded(b, a))
   if (order === 'oldest') return want.sort(byAdded)
   return want.sort((a, b) => Number(onMine(a.key) === true) - Number(onMine(b.key) === true) || byAdded(a, b))
+}
+
+/** A show you're watching with someone, as Home sees it: that watch's progress, and who it's with. */
+export type TogetherPick = LibraryEntry & { together: { who: string; index: number } }
+
+export const isTogether = (e: LibraryEntry | null | undefined): e is TogetherPick => !!e && 'together' in e && !!(e as TogetherPick).together
+
+const lastDay = (episodes: Record<string, string> | undefined): string | null => {
+  let last: string | null = null
+  for (const [k, day] of Object.entries(episodes ?? {})) if (parseEpisodeKey(k) && day !== UNDATED && (!last || day > last)) last = day
+  return last
+}
+
+/**
+ * Home's picks with your watches with someone mixed in: each one goes just before the first show
+ * you're watching on your own that you last watched earlier, so what you're watching now comes first.
+ */
+export function withTogether(picks: LibraryEntry[], library: Library): LibraryEntry[] {
+  const now = new Date()
+  const views: TogetherPick[] = Object.values(library.entries)
+    .filter((e) => e.type === 'tv')
+    // Only around a time you've arranged: the rest of the time it's not something to pick tonight.
+    .flatMap((e) => watchesWith(e).filter(({ watch }) => sessionIsOn(watch, now)).map(({ index, watch }) => ({ ...e, status: 'watching' as const, episodes: watch.episodes ?? {}, together: { who: watch.with, index } })))
+  if (!views.length) return picks
+  const when = (e: LibraryEntry): string => (isTogether(e) ? (lastDay(e.episodes) ?? e.rewatches![e.together.index].startedOn) : (lastDay(e.episodes) ?? e.updatedAt.slice(0, 10)))
+  // A show you only watch with someone (no ticks of your own) shows up once, as the watch together.
+  const together = new Set(views.map((v) => v.key))
+  const out = picks.filter((p) => !together.has(p.key) || Object.keys(p.episodes ?? {}).length > 0)
+  for (const v of views.sort((a, b) => when(b).localeCompare(when(a)))) {
+    const at = out.findIndex((p) => p.status !== 'watching' || (!isTogether(p) && when(p) < when(v)))
+    out.splice(at < 0 ? out.length : at, 0, v)
+  }
+  return out
+}
+
+/** Watches with someone starting within `minutes` from now: for "Watching … with Jack at 21:00" reminders. */
+export function sessionsStartingSoon(library: Library, now: Date, minutes = 15): { id: string; key: string; name: string; who: string; at: Date }[] {
+  const out: { id: string; key: string; name: string; who: string; at: Date }[] = []
+  for (const e of Object.values(library.entries)) {
+    for (const { index, watch } of watchesWith(e)) {
+      const at = nextSession(watch, now)
+      if (!at) continue
+      const until = at.getTime() - now.getTime()
+      if (until > 0 && until <= minutes * 60_000) out.push({ id: `${e.key}@${index}@${at.getTime()}`, key: e.key, name: e.title.name, who: watch.with, at })
+    }
+  }
+  return out
 }

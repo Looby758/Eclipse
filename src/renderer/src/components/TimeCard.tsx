@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { activeEntry, localDate, preferencesOf } from '@core/library'
 import { formatRuntime, formatShortDay, plural } from '@core/format'
 import { onMyServices } from '@core/providers'
-import { dayBefore, episodeMinutes, finishPlan, fitTonight, formatHours, nextFriday, nextPremiere, nextRenewal, startBy, timeLeft } from '@core/time'
+import { bedtimeTonight, dayBefore, episodeMinutes, finishPlan, fitTonight, formatHours, nextFriday, nextPremiere, nextRenewal, startBy, timeLeft } from '@core/time'
 import type { Provider, TitleDetails } from '@core/types'
 import { useApp } from '../store/app'
 
@@ -36,7 +36,7 @@ export default function TimeCard({ details: d }: { details: TitleDetails }): Rea
   const today = localDate(now)
   const left = timeLeft(d, entry, today)
   const each = d.type === 'movie' ? d.runtime || 0 : episodeMinutes(d)
-  const bed = prefs.bedtime
+  const bed = bedtimeTonight(now, prefs)
 
   if (d.type === 'movie') {
     if (!d.runtime || entry?.status === 'watched') return null
@@ -50,7 +50,7 @@ export default function TimeCard({ details: d }: { details: TitleDetails }): Rea
         <p className="time-line">
           {fits ? (
             <>
-              It’s {formatRuntime(d.runtime)}. Start by <b>{startBy(d.runtime, prefs)}</b> to be in bed by {bed}.
+              It’s {formatRuntime(d.runtime)}. Start by <b>{startBy(d.runtime, prefs, now)}</b> to be in bed by {bed}.
             </>
           ) : (
             <>It’s {formatRuntime(d.runtime)}, longer than you’ve got before {bed} tonight.</>
@@ -119,12 +119,12 @@ export default function TimeCard({ details: d }: { details: TitleDetails }): Rea
             </p>
           ) : (
             <p className="time-line">
-              Not quite: it would take <b>{plural(plan.perNight, 'episode')} a night</b>, and only {plan.maxPerNight} fit between {prefs.startTime} and {bed}.
+              Not quite: it would take <b>{plural(plan.perNight, 'episode')} a night</b>, and only {plan.maxPerNight} fit in your longest evening.
               {plan.earliestFinish ? ` The earliest you could finish is ${formatShortDay(plan.earliestFinish)}.` : ''}
             </p>
           )}
           <p className="muted small">
-            Counting your watching nights ({prefs.watchDays.length === 7 ? 'every night' : `${plural(prefs.watchDays.length, 'night')} a week`}) and about {formatRuntime(each)} an episode. Change your evenings in Settings.
+            Counting your watching nights ({prefs.watchDays.length === 7 ? 'every night' : `${plural(prefs.watchDays.length, 'night')} a week`}{prefs.weeklyBudgetMinutes ? `, about ${formatHours(prefs.weeklyBudgetMinutes)} a week` : ''}) and about {formatRuntime(each)} an episode. Change your evenings in Settings.
           </p>
         </div>
       )}

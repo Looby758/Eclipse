@@ -69,6 +69,8 @@ export interface Tmdb {
   collection(id: number): Promise<CollectionDetails>
   /** A public list on TMDB, by its number. */
   list(id: number): Promise<TmdbListDetails>
+  /** TMDB's "if you liked this" titles for a film or show. */
+  recommendations(type: MediaType, id: number): Promise<SearchResult[]>
 }
 
 export function createTmdb({ key, fetch, language = 'en-GB' }: TmdbOptions): Tmdb {
@@ -106,6 +108,12 @@ export function createTmdb({ key, fetch, language = 'en-GB' }: TmdbOptions): Tmd
       const pages = await Promise.all(['1', '2'].map((page) => get<{ results?: RawSearchItem[] }>('/trending/all/week', { language, page })))
       const seen = new Set<string>()
       return parseSearch(pages.flatMap((p) => p.results ?? [])).filter((r) => r.posterPath && !seen.has(r.key) && seen.add(r.key))
+    },
+
+    async recommendations(type, id) {
+      const body = await get<{ results?: RawSearchItem[] }>(`/${type}/${id}/recommendations`, { language, page: '1' })
+      // Recommendations usually say what they are; when one doesn't, it's the same kind as the title.
+      return parseSearch((body.results ?? []).map((r) => ({ ...r, media_type: r.media_type ?? type })))
     },
 
     async season(tvId, n) {

@@ -10,6 +10,9 @@ import { followed, seasonsToCheck, upcomingReleases, type ReleaseEvent } from '@
 import { localDate, preferencesOf } from '@core/library'
 import { knownFrom, type KnownFrom } from '@core/knownfrom'
 import { catchUps, type CatchUp } from '@core/catchup'
+import { weekStart } from '@core/time'
+import { recommend, seedsOf, type Recommendation, type Seed } from '@core/recommend'
+import { weekSoFar, type WeekSoFar } from '@core/week'
 import type { Fetched, ListView } from '@shared/api'
 import { loadSettings, saveSettings } from './settings'
 import { fileCache } from './cacheStore'
@@ -136,6 +139,27 @@ export async function detailsMany(keys: string[]): Promise<Record<string, TitleD
     )
   }
   return out
+}
+
+/** Recommendations for Search: TMDB's lists for your strongest titles, added up (each list saved for a week). */
+export async function recommendationsFor(library: Library, now = new Date()): Promise<Recommendation[]> {
+  const seeds = seedsOf(library, now)
+  const lists: { seed: Seed; results: SearchResult[] }[] = []
+  for (let i = 0; i < seeds.length; i += 5) {
+    await Promise.all(
+      seeds.slice(i, i + 5).map(async (seed) => {
+        const t = parseTitleKey(seed.key)
+        if (!t) return
+        try {
+          const r = await cached(fileCache, `recs:${seed.key}`, CACHE_TTL.credits, () => tmdb().recommendations(t.type, t.id), { shouldServeStale: serveStaleUnlessKeyProblem })
+          lists.push({ seed, results: r.data })
+        } catch {
+          // Skipped until it can be fetched.
+        }
+      })
+    )
+  }
+  return recommend(library, lists)
 }
 
 export async function services(region: string): Promise<Fetched<Provider[]>> {
@@ -274,6 +298,18 @@ export async function yearData(library: Library, keys: string[]): Promise<{ deta
 }
 
 /** Catch up before the sequel: your films and shows, the series your films are in, and what's coming out in them. */
+/** The weekly budget: how much of this week is watched and left (null with no budget). */
+export async function weekBudget(library: Library, now = new Date()): Promise<WeekSoFar | null> {
+  const prefs = preferencesOf(library)
+  if (!prefs.weeklyBudgetMinutes) return null
+  const from = weekStart(localDate(new Date(now.getTime() - 7 * 86_400_000)))
+  const recent = (day: string | null | undefined): boolean => !!day && day >= from
+  const keys = Object.values(library.entries)
+    .filter((e) => [e.watchedOn, ...Object.values(e.episodes ?? {}), ...(e.rewatches ?? []).flatMap((r) => [r.finishedOn, ...Object.values(r.episodes ?? {})])].some(recent))
+    .map((e) => e.key)
+  return weekSoFar(library, await detailsMany(keys), now, prefs)
+}
+
 export async function catchUpList(library: Library, now = new Date()): Promise<CatchUp[]> {
   const today = localDate(now)
   const prefs = preferencesOf(library)

@@ -78,3 +78,43 @@ describe('do I still need it?', () => {
     expect(r.pause).toBe(false)
   })
 })
+
+describe('best services for your watchlist', () => {
+  it('ranks services by hours and picks the fewest that cover the most', async () => {
+    const { bestServices } = await import('./services')
+    const P = (id: number, name: string) => ({ id, name, logoPath: null })
+    const wp = (stream: { id: number; name: string; logoPath: null }[], free: { id: number; name: string; logoPath: null }[] = []) => ({ region: 'GB', link: null, stream, free, rent: [], buy: [] })
+    const netflix = P(8, 'Netflix')
+    const ads = P(1796, 'Netflix Standard with Ads')
+    const disney = P(337, 'Disney Plus')
+    const now = P(39, 'Now TV')
+    const titles = [
+      { key: 'tv:1', name: 'Big show', minutes: 600 },
+      { key: 'tv:2', name: 'Other show', minutes: 300 },
+      { key: 'movie:3', name: 'Film', minutes: 120 },
+      { key: 'movie:4', name: 'Free film', minutes: 100 },
+      { key: 'movie:5', name: 'Rent only', minutes: 110 },
+      { key: 'movie:6', name: 'Unchecked', minutes: 90 }
+    ]
+    const providers = {
+      'tv:1': wp([netflix, ads, now]),
+      'tv:2': wp([disney]),
+      'movie:3': wp([netflix, disney]),
+      'movie:4': wp([], [P(38, 'BBC iPlayer')]),
+      'movie:5': wp([])
+    }
+    const b = bestServices(titles, providers, [39])
+    expect(b.ranking.map((c) => [c.provider.name, c.minutes, c.mine])).toEqual([
+      ['Netflix', 720, false],
+      ['Now TV', 600, true],
+      ['Disney Plus', 420, false]
+    ])
+    expect(b.combo.map((c) => [c.provider.name, c.addsMinutes])).toEqual([
+      ['Netflix', 720],
+      ['Disney Plus', 300]
+    ])
+    expect(b.free.map((t) => t.key)).toEqual(['movie:4'])
+    expect(b.nowhere.map((t) => t.key)).toEqual(['movie:5'])
+    expect(b.unchecked).toBe(1)
+  })
+})

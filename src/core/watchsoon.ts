@@ -1,7 +1,7 @@
 import type { Library, LibraryEntry, TitleDetails, TitleRef } from './types'
 import { episodeKey } from './types'
 import { localDate } from './library'
-import { DEFAULT_EPISODE_MINUTES, eveningMinutes, tonight, type Evenings } from './time'
+import { DEFAULT_EPISODE_MINUTES, budgetPerNight, dayMinutes, fitIn, slotsOn, tonight, type Evenings } from './time'
 
 /**
  * Watch soon: a short list of films and shows you want to get to next. Eclipse adds up how long
@@ -115,10 +115,6 @@ const addDays = (day: string, n: number): string => {
   const [y, m, d] = day.split('-').map(Number)
   return localDate(new Date(y, m - 1, d + n))
 }
-const weekday = (day: string): number => {
-  const [y, m, d] = day.split('-').map(Number)
-  return new Date(y, m - 1, d).getDay()
-}
 
 /**
  * Fills your watching evenings in your order: tonight's time left first, then whole evenings.
@@ -128,16 +124,20 @@ const weekday = (day: string): number => {
 export function planEvenings(items: SoonItem[], now: Date, ev: Evenings, maxNights = 120): SoonPlan {
   const queue = items.filter((i) => !i.done && !i.unknown && i.minutes > 0).map((i) => ({ item: i, left: [...i.episodes] }))
   const totalMinutes = queue.reduce((n, q) => n + q.item.minutes, 0)
-  const full = eveningMinutes(ev)
   const t = tonight(now, ev)
   const nights: Night[] = []
+  const gap = ev.gapMinutes ?? 0
+  // With a weekly budget, each night gets its share (and never less than one thing).
+  const share = budgetPerNight(ev)
   if (!queue.length) return { nights, finish: null, totalMinutes }
-  if (!ev.watchDays.length || full <= 0) return { nights, finish: null, totalMinutes }
+  if (![0, 1, 2, 3, 4, 5, 6].some((n) => slotsOn(addDays(t.day, n), ev, true).length)) return { nights, finish: null, totalMinutes }
 
   for (let day = t.day, i = 0; queue.length && nights.length < maxNights && i < 3660; day = addDays(day, 1), i++) {
-    if (!ev.watchDays.includes(weekday(day))) continue
+    if (!slotsOn(day, ev).length) continue
     const isTonight = day === t.day
-    const cap = isTonight ? t.minutesLeft : full
+    const full = dayMinutes(day, ev)
+    const raw = isTonight ? t.minutesLeft : full
+    const cap = share === null ? raw : Math.min(raw, share)
     if (cap <= 0) continue
     let room = cap
     const slots: Slot[] = []
@@ -146,23 +146,24 @@ export function planEvenings(items: SoonItem[], now: Date, ev: Evenings, maxNigh
       const it = q.item
       if (it.film) {
         // Longer than a whole evening: it gets a whole evening to itself.
-        const fits = it.minutesEach <= room || (room === full && !isTonight)
+        // The first thing of a night always goes on (tonight only if there's time for it), even past the budget's share.
+        const fits = it.minutesEach <= room || (room === cap && (!isTonight || it.minutesEach <= raw))
         if (!fits) break
         slots.push({ key: it.ref.key, name: it.ref.name, film: true, episodes: [], minutes: it.minutesEach })
-        room -= it.minutesEach
+        room -= it.minutesEach + gap
         queue.shift()
         continue
       }
-      let n = Math.floor(room / it.minutesEach)
-      if (n === 0 && room === full && !isTonight) n = 1
+      let n = fitIn(room, it.minutesEach, gap)
+      if (n === 0 && room === cap && (!isTonight || it.minutesEach <= raw)) n = 1
       if (n === 0) break
       const eps = q.left.splice(0, n)
       slots.push({ key: it.ref.key, name: it.ref.name, film: false, episodes: eps, minutes: eps.length * it.minutesEach })
-      room -= eps.length * it.minutesEach
+      room -= eps.length * (it.minutesEach + gap)
       if (!q.left.length) queue.shift()
       else break
     }
-    if (slots.length) nights.push({ day, tonight: isTonight, slots, minutes: cap - room })
+    if (slots.length) nights.push({ day, tonight: isTonight, slots, minutes: slots.reduce((n, s) => n + s.minutes, 0) })
   }
   return { nights, finish: queue.length ? null : (nights[nights.length - 1]?.day ?? null), totalMinutes }
 }
@@ -174,7 +175,7 @@ export function tonightOptions(items: SoonItem[], now: Date, ev: Evenings): { ke
     .filter((i) => !i.done && !i.unknown)
     .map((i) => {
       if (i.film) return i.minutesEach <= left ? { key: i.ref.key, name: i.ref.name, film: true, episodes: 0, minutes: i.minutesEach } : null
-      const n = Math.min(i.episodes.length, Math.floor(left / i.minutesEach))
+      const n = Math.min(i.episodes.length, fitIn(left, i.minutesEach, ev.gapMinutes))
       return n > 0 ? { key: i.ref.key, name: i.ref.name, film: false, episodes: n, minutes: n * i.minutesEach } : null
     })
     .filter((o): o is NonNullable<typeof o> => !!o)

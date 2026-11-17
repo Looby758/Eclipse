@@ -1,7 +1,8 @@
-import { Check, Users, X } from 'lucide-react'
+import { CalendarClock, Check, Users, X } from 'lucide-react'
 import { useState } from 'react'
-import { companions, nextEpisodeFor, showProgress, watchesWith } from '@core/library'
+import { companions, nextEpisodeFor, nextSession, showProgress, watchesWith } from '@core/library'
 import { formatDate } from '@core/format'
+import { sessionLabel, toLocalInput } from '../lib/together'
 import { episodeKey, type TitleDetails } from '@core/types'
 import { useApp } from '../store/app'
 import { itemOf } from '../lib/item'
@@ -44,6 +45,8 @@ export default function WatchWithPanel({ details: d }: { details: TitleDetails }
         const next = nextEpisodeFor(view, d.seasons)
         const p = showProgress(view, d.seasons)
         const nextKey = next ? episodeKey(next.season, next.episode) : null
+        const session = nextSession(watch, new Date())
+        const plan = (at: string, weekly: boolean): Promise<void> => window.api.planWatchWith(d.key, index, at ? { at, weekly } : null).then(setLibrary)
         return (
           <div className="with-row" key={index}>
             <div className="with-text">
@@ -82,6 +85,35 @@ export default function WatchWithPanel({ details: d }: { details: TitleDetails }
               <button className="rewatch-remove" title={`Stop watching with ${watch.with} (it won't count)`} aria-label={`Stop watching with ${watch.with}`} onClick={async () => setLibrary(await window.api.endWatchWith(d.key, index, false))}>
                 <X size={13} />
               </button>
+            </div>
+            <div className="with-plan">
+              <span className="with-plan-label">
+                <CalendarClock size={15} />
+                {session ? (
+                  <>
+                    Next time: <b>{sessionLabel(session, new Date())}</b>
+                    {watch.planned?.weekly ? ', every week' : ''}
+                  </>
+                ) : (
+                  'No time set'
+                )}
+              </span>
+              <span className="with-plan-controls">
+                <input
+                  type="datetime-local"
+                  aria-label={`When you're next watching with ${watch.with}`}
+                  value={session ? toLocalInput(session) : ''}
+                  onChange={(e) => void plan(e.target.value, !!watch.planned?.weekly)}
+                />
+                <label className="with-weekly small">
+                  <input type="checkbox" checked={!!watch.planned?.weekly} disabled={!session} onChange={(e) => session && void plan(toLocalInput(session), e.target.checked)} /> Every week
+                </label>
+                {session && (
+                  <button className="link-btn inline small" onClick={() => void plan('', false)}>
+                    Clear
+                  </button>
+                )}
+              </span>
             </div>
           </div>
         )

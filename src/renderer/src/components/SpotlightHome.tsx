@@ -1,13 +1,15 @@
 import { Check, Hourglass, Library, ListChecks, Moon, Search, Settings, Sparkles, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { entriesWith, nextEpisodeFor, preferencesOf } from '@core/library'
+import { entriesWith, isTogether, nextEpisodeFor, nextSession, preferencesOf, withTogether } from '@core/library'
+import { sessionLabel } from '../lib/together'
 import { formatRuntime, plural } from '@core/format'
-import { episodeMinutes, fitTonight, startBy } from '@core/time'
+import { clock, episodeMinutes, fitTonight, startBy, tonight } from '@core/time'
 import { episodeKey, type LibraryEntry, type TitleDetails } from '@core/types'
 import { useApp, type View } from '../store/app'
 import { itemOf } from '../lib/item'
 import Poster from './Poster'
 import TonightDial from './TonightDial'
+import JustTonight from './JustTonight'
 import HomeNotes from './HomeNotes'
 import OnThisDay from './OnThisDay'
 import { candidates } from './HomeHero'
@@ -75,7 +77,8 @@ export default function SpotlightHome(): React.JSX.Element {
   const prefs = preferencesOf(library)
 
   const all = entriesWith(library)
-  const picks = candidates(all, (library.watchSoon ?? []).map((r) => r.key))
+  // Watches with someone ("with Jack") are picks too, with that watch's own progress.
+  const picks = withTogether(candidates(all, (library.watchSoon ?? []).map((r) => r.key)), library)
   const pick: LibraryEntry | null = picks.length ? picks[skip % picks.length] : null
 
   // The dot moves with the clock.
@@ -97,16 +100,26 @@ export default function SpotlightHome(): React.JSX.Element {
   const isShow = pick?.type === 'tv'
   const next = details && isShow ? nextEpisodeFor(pick!, details.seasons.map((s) => ({ number: s.number, episodeCount: s.episodeCount }))) : null
   const each = details ? (isShow ? episodeMinutes(details) : details.runtime || 120) : 45
-  const fits = details ? (isShow ? fitTonight(now, prefs, each) : fitTonight(now, prefs, each) > 0 ? 1 : 0) : 0
+  // Watching with someone at a time you've arranged: count from when it starts.
+  const session = isTogether(pick) ? nextSession(pick.rewatches![pick.together.index], now) : null
+  const from = session && session > now ? session : now
+  const t = tonight(now, prefs)
+  // An arranged time on a night you don't usually watch makes it a watching night.
+  const ev = session && !t.slots.length ? { ...prefs, justTonight: { day: t.day, start: clock(from.getHours() * 60 + from.getMinutes()) } } : prefs
+  const offNight = !tonight(now, ev).slots.length
+  const fits = details ? (isShow ? fitTonight(from, ev, each) : fitTonight(from, ev, each) > 0 ? 1 : 0) : 0
 
   let line = ''
-  if (pick && details) {
-    if (isShow && next) line = `S${next.season} E${next.episode} · start by ${startBy(each, prefs)} · ${fits ? `${plural(fits, 'episode')} ${fits === 1 ? 'fits' : 'fit'} before bed` : 'no time for one tonight'}`
+  if (pick && details && offNight) line = isShow && next ? `S${next.season} E${next.episode} · not a watching night` : `${formatRuntime(each)} · not a watching night`
+  else if (pick && details) {
+    if (isShow && next && session && session > now) line = `S${next.season} E${next.episode} · ${sessionLabel(session, now)} · ${fits ? `${plural(fits, 'episode')} ${fits === 1 ? 'fits' : 'fit'} before bed` : 'no time for one before bed'}`
+    else if (isShow && next) line = `S${next.season} E${next.episode} · start by ${startBy(each, ev, now)} · ${fits ? `${plural(fits, 'episode')} ${fits === 1 ? 'fits' : 'fit'} before bed` : 'no time for one tonight'}`
     else if (isShow) line = 'All caught up'
-    else line = `${formatRuntime(each)} · start by ${startBy(each, prefs)} · ${fits ? 'fits before bed' : 'too long for what’s left of tonight'}`
+    else line = `${formatRuntime(each)} · start by ${startBy(each, ev, now)} · ${fits ? 'fits before bed' : 'too long for what’s left of tonight'}`
   } else if (pick) line = pick.type === 'movie' ? 'Film' : 'Show'
 
   const verb = pick?.status === 'watching' ? 'Pick up' : 'Start'
+  const withWho = isTogether(pick) ? ` with ${pick.together.who}` : ''
   const open = (): void => {
     if (pick) go({ name: 'title', type: pick.type, id: pick.id })
   }
@@ -117,7 +130,7 @@ export default function SpotlightHome(): React.JSX.Element {
       <Pills />
 
       <div className="spot-center">
-        <TonightDial evenings={prefs} minutesEach={each} count={pick ? fits : 0} now={now}>
+        <TonightDial evenings={ev} minutesEach={each} count={pick ? fits : 0} now={now}>
           {pick ? (
             <button className="spot-poster" onClick={open} aria-label={`Open ${pick.title.name}`}>
               <Poster path={pick.title.posterPath} type={pick.type} name={pick.title.name} size="w342" />
@@ -131,7 +144,8 @@ export default function SpotlightHome(): React.JSX.Element {
           {pick ? (
             <>
               <h1>
-                {verb} {pick.title.name}?
+                {verb} {pick.title.name}
+                {withWho}?
               </h1>
               <p>{line}</p>
               <div className="spot-btns">
@@ -142,7 +156,8 @@ export default function SpotlightHome(): React.JSX.Element {
                     onClick={async () => {
                       setBusy(true)
                       try {
-                        setLibrary(await window.api.setEpisodes(itemOf(details!), [episodeKey(next.season, next.episode)], true))
+                        const ep = [episodeKey(next.season, next.episode)]
+                        setLibrary(isTogether(pick) ? await window.api.tickWith(pick.key, pick.together.index, ep, true) : await window.api.setEpisodes(itemOf(details!), ep, true))
                       } finally {
                         setBusy(false)
                       }
@@ -161,6 +176,7 @@ export default function SpotlightHome(): React.JSX.Element {
                   </button>
                 )}
               </div>
+              <JustTonight now={now} />
             </>
           ) : (
             <>

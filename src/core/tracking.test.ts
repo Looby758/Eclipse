@@ -80,3 +80,25 @@ describe('notes, dates and preferences', () => {
     expect(lib.entries['tv:1']).toMatchObject({ note: 'hi', rating: 8, episodes: { S1E1: '2026-01-01' } })
   })
 })
+
+describe('your week in preferences (phase 35)', () => {
+  it('builds a week from an older library, and keeps the usual evening in step', () => {
+    const old = normalizeLibrary({ version: 1, entries: {}, preferences: { startTime: '19:30', bedtime: '22:30', watchDays: [5, 6] } })
+    const p = preferencesOf(old)
+    expect(p.schedule[5]).toEqual([{ start: '19:30', end: '22:30' }])
+    expect(p.schedule[1]).toEqual([])
+    const sat = setPreferences(old, { schedule: p.schedule.map((s, d) => (d === 6 ? [{ start: '20:00', end: '00:30' }, { start: '14:00', end: '17:00' }] : d === 0 ? [{ start: '19:30', end: '22:30' }] : s)) })
+    const q = preferencesOf(sat)
+    expect(q.schedule[6]).toEqual([{ start: '14:00', end: '17:00' }, { start: '20:00', end: '00:30' }])
+    expect(q.watchDays).toEqual([0, 5, 6])
+    expect(q).toMatchObject({ startTime: '19:30', bedtime: '22:30', gapMinutes: 0, windDownMinutes: 0, weeklyBudgetMinutes: 0 })
+  })
+  it('rebuilds the week when an older copy changes the usual evening', () => {
+    const lib = setPreferences(emptyLibrary(), { bedtime: '23:30' })
+    expect(preferencesOf(lib).schedule[2]).toEqual([{ start: '20:00', end: '23:30' }])
+  })
+  it('keeps a sensible "just tonight"', () => {
+    expect(preferencesOf(setPreferences(emptyLibrary(), { justTonight: { day: '2026-11-17', off: true, start: '21:00' } })).justTonight).toEqual({ day: '2026-11-17', off: true })
+    expect(preferencesOf(setPreferences(emptyLibrary(), { justTonight: { day: 'soon' } as never })).justTonight).toBeUndefined()
+  })
+})
