@@ -144,6 +144,9 @@ describe('season by season', () => {
     const defenders = rows.filter((r) => r.sections?.includes('The Defenders'))
     expect(defenders.map((r) => r.name)).toContain('The Defenders')
     expect(defenders.map((r) => r.name)).toContain('Daredevil: Born Again')
+    const twd = expandGuide(WALKING_DEAD, {})
+    expect([...new Set(twd.filter((r) => r.sections?.includes('Main story')).map((r) => r.name))].sort()).toEqual(['The Walking Dead', 'The Walking Dead: Daryl Dixon', 'The Walking Dead: Dead City', 'The Walking Dead: The Ones Who Live'])
+    expect([...new Set(twd.filter((r) => r.sections?.includes('Spin-offs')).map((r) => r.name))].sort()).toEqual(['Fear the Walking Dead', 'Tales of the Walking Dead', 'The Walking Dead: World Beyond'])
   })
 
   it('leaves out seasons without a date and specials', () => {

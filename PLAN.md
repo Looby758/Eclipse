@@ -264,7 +264,7 @@ Export this doc as Markdown and save it in the project as `PLAN.md`. Then start 
 - Done: films show **Tonight** on their page and on Home: "Start by 20:14 to be in bed by 23:00", or that it's too long for what's left of tonight.
 - Decisions: you didn't pick evening times, so they're settings with the defaults above. "Before it renews" uses a monthly renewal day.
 
-**Phases 4 to 7 (built overnight in one go, waiting for you to try them)**
+**Phases 4 to 7 (done, merged)**
 
 You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls below myself. Change any you don't like.
 
@@ -281,5 +281,22 @@ You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls
 - Done (after your first look): more hand-made orders: **X-Men (Fox)** from First Class and the original trilogy up to Dark Phoenix, with the Wolverine and Deadpool films; **Harry Potter** with Fantastic Beasts; and **The Boys** with Gen V, Diabolical and Vought Rising. The Walking Dead story order follows your notes (The Ones Who Live and Daryl Dixon straight after season 11, Dead City later, World Beyond and Tales at the end).
 - Done (after your first look): **sections** within an order. The MCU has The Infinity Saga, The Multiverse Saga and The Defenders (Netflix's Daredevil, Jessica Jones, Luke Cage, Iron Fist, The Defenders and The Punisher, plus Daredevil: Born Again); Harry Potter has Harry Potter and Fantastic Beasts. Pick one to see just that part, with its own progress.
 - Added to the plan: Phase 10, seen-before and rewatches (your idea; Polish moves to 11).
-- Next: you try Phases 4 to 7. Then Phase 8 (release calendar).
+
+**Phase 8: Release calendar (done, merged)**
+
+- Done: **Settings → Release calendar.** It shows what's coming up from your library and saves it as an .ics file to import into Google Calendar or Outlook. Films on your Want to watch list appear on their release day. Shows you're watching, want to watch or have finished (for new seasons) appear when a new season starts and on its finale; shows you've stopped are left out. Switch to *Every new episode* to get each episode instead. Dates are all-day events that don't mark you as busy, each with a link to the title on TMDB. It looks up to two years ahead.
+- Decisions: films use TMDB's main release date, which is usually the first release worldwide (often the US cinema date), not the UK or streaming date. A finale is only added once every episode of the season has a date. Each date has a fixed ID, so importing a newer file describes the same events. The tip in the app is to import into a separate "Eclipse" calendar, so it's easy to clear and re-import.
+- Done (asked during this phase): the Walking Dead order has two sections, **Main story** (The Walking Dead, Daryl Dixon, The Ones Who Live, Dead City) and **Spin-offs** (Fear, World Beyond, Tales).
+- To decide after you've tried it: whether re-exporting now and then is fine, or worth a self-updating calendar link (that needs the feed hosted online somewhere free with a private link).
+
+**Phase 9: Watch soon (built, waiting for you to try it)**
+
+- Done: a **Watch soon** button on every film and show page, and a **Soon** button in the dock. Watch soon is a short list in your own order (drag or use the arrows), separate from your watchlist and saved in `library.json`, so both computers share it.
+- Done: the Soon page adds it all up ("19 hours"), says how many evenings it takes and when you'd finish on your usual nights, and shows **Tonight**: what from your list fits before bed ("Dune, then Breaking Bad S4 E12"), plus other things that would fit on their own ("Or instead: 3 episodes of Breaking Bad"). Below that is the list with what's left of each, and **Your evenings**: night by night, what you'd watch.
+- Done: Home's "Pick up …?" suggests what you're already watching first, then Watch soon (in your order), then the rest of your watchlist (changed after your try-out: carrying on comes before starting something new).
+- Decisions: evenings are filled strictly in your order. A film only goes on a night it fits whole (or gets a whole evening to itself if it's longer than one); a show carries on across nights. Tonight counts only if it's one of your watching nights, using the time left before bed. Shows count the episodes after the furthest one you've ticked that are already out. Films with no runtime on TMDB count as 2 hours, and episodes as 45 minutes, shown as "about". Finished things stay on the list marked Done until you take them off.
+- Next: Phase 10 (seen before and rewatches).
+
+**Future ideas**
+
 - Added to the plan (17 Nov 2026): future ideas from a brainstorm, listed under Future ideas as candidate phases 12 to 32. Group A (12 to 26) stand on their own; Group B (27 to 31) is the chain about noticing what I watch, in order; Group C (32, Apple TV) waits until I have a TV. Calendar-aware planning is a maybe. I mostly watch on the computer for now (an Apple TV and iPhone later).

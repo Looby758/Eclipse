@@ -65,6 +65,22 @@ Avoid having Eclipse open on both computers at the same time, so the two copies 
 6. **Watch orders (Phase 7):** on the Lists page, open *Marvel Cinematic Universe* or *Star Wars*. It shows how far through you are and what's next, in release order; press *Story order* to switch. Open a film like *Interstellar* and click *Part of …* to see its film series. Please tell me anything in the Marvel or Star Wars order you'd change.
 7. **Search a franchise:** search *walking dead* or *better call saul*. A *watch order* card appears above the results. **Copy to your lists** makes your own version you can rearrange.
 
+## Phase 8: what to try
+
+1. **See what's coming:** Settings → *Release calendar*. It lists the next dates from your library: films on your watchlist, new seasons and finales of shows you follow.
+2. **Every episode (optional):** press *Every new episode* to list each episode instead.
+3. **Save it:** press **Save calendar file** and save it (it opens the folder for you).
+4. **Add it to Google Calendar:** on calendar.google.com, make a new calendar called "Eclipse" (Settings → Add calendar → Create new calendar). Then Settings → *Import & export* → pick the file and choose the Eclipse calendar. To update later, delete the Eclipse calendar, make it again and import a fresh file.
+5. **Walking Dead sections:** search *walking dead*, open the order and try *Main story* and *Spin-offs*.
+
+## Phase 9: what to try
+
+1. **Add a few:** open a film or show and press **Watch soon** (under the status buttons). Add three or four.
+2. **See the plan:** press **Soon** in the dock. The top says how long it all takes and when you'd finish. *Tonight* says what fits before bed, and *Your evenings* lays it out night by night.
+3. **Reorder:** drag the rows (or use the arrows) and watch the plan change. Press × to take something off.
+4. **Change your evenings:** in Settings → *Your evenings*, change your bedtime or nights and look at Soon again.
+5. **Home:** *Pick up …?* suggests what you're watching first, then the next thing on Watch soon.
+
 ## For development
 
 - `npm test` runs the tests, `npm run typecheck` checks the types.

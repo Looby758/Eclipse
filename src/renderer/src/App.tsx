@@ -10,6 +10,7 @@ import LibrarySheet from './components/LibrarySheet'
 import SearchSheet from './components/SearchSheet'
 import TitleSheet from './components/TitleSheet'
 import SettingsView from './components/SettingsView'
+import WatchSoonSheet from './components/WatchSoonSheet'
 import ListsSheet from './components/ListsSheet'
 import ListSheet from './components/ListSheet'
 
@@ -77,6 +78,7 @@ export default function App(): React.JSX.Element {
           {view.name === 'search' && <SearchSheet />}
           {view.name === 'settings' && <SettingsView />}
           {view.name === 'lists' && <ListsSheet />}
+          {view.name === 'soon' && <WatchSoonSheet />}
           {view.name === 'list' && <ListSheet key={view.id} id={view.id} />}
           {view.name === 'title' && <TitleSheet key={`${view.type}:${view.id}`} type={view.type} id={view.id} />}
           <Dock />

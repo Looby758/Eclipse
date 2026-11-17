@@ -1,4 +1,5 @@
 import type { ImportSummary } from '@core/sequel'
+import type { ReleaseEvent } from '@core/calendar'
 import type { CollectionDetails, Credits, ListSource, PersonDetails, TitleRef, TmdbListDetails } from '@core/types'
 import type { Library, MediaType, Preferences, Provider, SearchResult, SeasonDetails, TitleDetails, TitleKey, TitleSnapshot, WatchProviders, WatchStatus } from '@core/types'
 
@@ -78,6 +79,14 @@ export interface EclipseApi {
   renameList(id: string, name: string): Promise<Library>
   setInList(id: string, ref: TitleRef, inList: boolean): Promise<Library>
   moveInList(id: string, from: number, to: number): Promise<Library>
+  /** Adds a title to Watch soon (at the end) or takes it off. */
+  setWatchSoon(ref: TitleRef, on: boolean): Promise<Library>
+  moveWatchSoon(from: number, to: number): Promise<Library>
+
+  /** What's coming up from your library: watchlist films, new seasons (or every episode) of shows you follow. */
+  calendarPreview(): Promise<Result<ReleaseEvent[]>>
+  /** Saves the release calendar as an .ics file where you choose. */
+  calendarExport(): Promise<Result<{ saved: boolean; path?: string; count: number }>>
 
   getLibrary(): Promise<Library>
   setStatus(item: Item, status: WatchStatus | null): Promise<Library>

@@ -162,7 +162,7 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
           <div className="list-progress">
             <ProgressBar seen={progress.seen} total={progress.total} big />
             <div className="list-progress-text">
-              {progress.total ? progressSentence(id, section ?? view.name, progress.seen, progress.total) : 'Nothing out yet.'}
+              {progress.total ? progressSentence(id, section ? `${view.name}: ${section}` : view.name, progress.seen, progress.total) : 'Nothing out yet.'}
               {progress.total > 0 && progress.seen === progress.total ? ' All done.' : ''}
             </div>
           </div>

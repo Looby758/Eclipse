@@ -134,6 +134,8 @@ export interface Preferences {
   watchDays: number[]
   /** The day of the month each of your services renews, by provider id (optional). */
   renewals: Record<string, number>
+  /** Release calendar: every new episode, not just new seasons, finales and films. */
+  calendarEpisodes: boolean
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -142,7 +144,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   startTime: '20:00',
   bedtime: '23:00',
   watchDays: [1, 2, 3, 4, 5],
-  renewals: {}
+  renewals: {},
+  calendarEpisodes: false
 }
 
 /** Your library file (library.json in your data folder). */
@@ -152,6 +155,8 @@ export interface Library {
   preferences?: Preferences
   /** Lists you're following or made: people, collections, guides, TMDB lists and your own. */
   lists?: SavedList[]
+  /** Watch soon: the few films and shows you want to get to next, in your order. */
+  watchSoon?: TitleRef[]
 }
 
 // ---- Lists, completion and watch orders ----

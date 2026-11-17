@@ -7,6 +7,7 @@ import Sheet from './Sheet'
 import Credits from './Credits'
 import ServicesCard from './ServicesCard'
 import EveningsCard from './EveningsCard'
+import CalendarCard from './CalendarCard'
 import SequelImportCard from './SequelImportCard'
 
 export default function SettingsView(): React.JSX.Element {
@@ -42,6 +43,8 @@ export default function SettingsView(): React.JSX.Element {
       <ServicesCard />
 
       <EveningsCard />
+
+      <CalendarCard />
 
       <SequelImportCard />
 

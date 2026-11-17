@@ -1,7 +1,7 @@
 import type { Library, LibraryEntry, MediaType, Preferences, TitleKey, TitleSnapshot, WatchStatus } from './types'
 import { DEFAULT_PREFERENCES, WATCH_STATUSES, episodeKey, parseEpisodeKey, parseTitleKey } from './types'
 import type { TitleRef } from './types'
-import { normalizeLists, refOf } from './lists'
+import { normalizeLists, normalizeWatchSoon, refOf } from './lists'
 
 export type LibraryItem = { key: TitleKey; type: MediaType; id: number; title: TitleSnapshot }
 
@@ -174,7 +174,8 @@ function normalizePreferences(raw: unknown): Preferences {
     watchDays: Array.isArray(p.watchDays)
       ? [...new Set(p.watchDays.filter((d): d is number => Number.isInteger(d) && d >= 0 && d <= 6))].sort()
       : [...DEFAULT_PREFERENCES.watchDays],
-    renewals
+    renewals,
+    calendarEpisodes: p.calendarEpisodes === true
   }
 }
 
@@ -216,9 +217,12 @@ export function normalizeLibrary(raw: unknown): Library {
   const entries = raw && typeof raw === 'object' ? (raw as { entries?: unknown }).entries : null
   const legacy: { name: string; ref: TitleRef }[] = []
   const rawLists = raw && typeof raw === 'object' ? (raw as { lists?: unknown }).lists : undefined
+  const rawSoon = raw && typeof raw === 'object' ? (raw as { watchSoon?: unknown }).watchSoon : undefined
   const finish = (): Library => {
     const lists = normalizeLists(rawLists, legacy)
     if (lists) lib.lists = lists
+    const soon = normalizeWatchSoon(rawSoon)
+    if (soon) lib.watchSoon = soon
     return lib
   }
   if (!entries || typeof entries !== 'object') return finish()
