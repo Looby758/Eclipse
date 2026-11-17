@@ -101,11 +101,79 @@ export interface LibraryEntry {
   updatedAt: string
   /** The day it was marked Watched (YYYY-MM-DD, your local date). Kept if the status changes later. */
   watchedOn?: string
+  /** A one-line note, e.g. "watched with Dad at Christmas". */
+  note?: string
+  /** Your own rating out of 10, if you gave one (e.g. brought over from Sequel). */
+  rating?: number
+  /** Shows: the episodes you've seen, by episodeKey ("S1E3"), each with the day you ticked it. */
+  episodes?: Record<string, string>
+  /** Your own lists it's on, e.g. "Marvel" (brought over from Sequel's collections). */
+  lists?: string[]
   title: TitleSnapshot
 }
+
+/** "S1E3": how an episode is named in your library file. */
+export const episodeKey = (season: number, episode: number): string => `S${season}E${episode}`
+
+export function parseEpisodeKey(key: string): { season: number; episode: number } | null {
+  const m = /^S(\d+)E(\d+)$/.exec(key)
+  return m ? { season: Number(m[1]), episode: Number(m[2]) } : null
+}
+
+/** Your choices that follow you between computers (kept in library.json). */
+export interface Preferences {
+  /** Two-letter country for where-to-watch, e.g. "GB". */
+  region: string
+  /** The streaming services you pay for, by TMDB provider id (e.g. 337 Disney+, 39 NOW TV). */
+  services: number[]
+}
+
+export const DEFAULT_PREFERENCES: Preferences = { region: 'GB', services: [] }
 
 /** Your library file (library.json in your data folder). */
 export interface Library {
   version: 1
   entries: Record<string, LibraryEntry>
+  preferences?: Preferences
 }
+
+// ---- Episodes and where to watch (from TMDB) ----
+
+export interface Episode {
+  season: number
+  number: number
+  name: string
+  airDate: string | null
+  runtime: number | null
+  overview: string
+  voteAverage: number | null
+  voteCount: number
+  stillPath: string | null
+}
+
+export interface SeasonDetails {
+  tvId: number
+  number: number
+  name: string
+  episodes: Episode[]
+}
+
+export interface Provider {
+  id: number
+  name: string
+  logoPath: string | null
+}
+
+/** Where a title can be watched in one country (TMDB's data comes from JustWatch). */
+export interface WatchProviders {
+  region: string
+  /** TMDB's page listing every option, with links through to each service. */
+  link: string | null
+  stream: Provider[]
+  free: Provider[]
+  rent: Provider[]
+  buy: Provider[]
+}
+
+/** How you can watch something, for the filters. */
+export type Availability = 'mine' | 'stream' | 'rentbuy' | 'none'

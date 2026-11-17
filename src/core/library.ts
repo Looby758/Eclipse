@@ -1,5 +1,7 @@
-import type { Library, LibraryEntry, MediaType, TitleKey, TitleSnapshot, WatchStatus } from './types'
-import { WATCH_STATUSES, parseTitleKey } from './types'
+import type { Library, LibraryEntry, MediaType, Preferences, TitleKey, TitleSnapshot, WatchStatus } from './types'
+import { DEFAULT_PREFERENCES, WATCH_STATUSES, episodeKey, parseEpisodeKey, parseTitleKey } from './types'
+
+export type LibraryItem = { key: TitleKey; type: MediaType; id: number; title: TitleSnapshot }
 
 /**
  * Your library: every film and show you've given a status, kept in library.json in your data
@@ -20,7 +22,7 @@ export function localDate(d: Date): string {
  */
 export function setStatus(
   library: Library,
-  item: { key: TitleKey; type: MediaType; id: number; title: TitleSnapshot },
+  item: LibraryItem,
   status: WatchStatus | null,
   now: Date = new Date()
 ): Library {
@@ -54,12 +56,123 @@ export function countByStatus(library: Library): Record<WatchStatus, number> {
 
 const isDay = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)
 
+/** Changes one entry (if it's in the library), stamping updatedAt. */
+function changeEntry(library: Library, key: string, change: (e: LibraryEntry) => LibraryEntry, now: Date): Library {
+  const old = library.entries[key]
+  if (!old) return library
+  return { ...library, entries: { ...library.entries, [key]: { ...change({ ...old }), updatedAt: now.toISOString() } } }
+}
+
+/**
+ * Ticks (or unticks) episodes of a show. Ticking records today's date (a date already there is
+ * kept), adds the show to your library if it isn't yet, and moves it to Watching from Want to
+ * watch, Stopped or nothing.
+ */
+export function setEpisodes(library: Library, item: LibraryItem, keys: string[], watched: boolean, now: Date = new Date()): Library {
+  let lib = library
+  if (!lib.entries[item.key]) {
+    if (!watched) return lib
+    lib = setStatus(lib, item, 'watching', now)
+  }
+  return changeEntry(
+    lib,
+    item.key,
+    (e) => {
+      const episodes = { ...(e.episodes ?? {}) }
+      for (const k of keys) {
+        if (!parseEpisodeKey(k)) continue
+        if (watched) episodes[k] = episodes[k] ?? localDate(now)
+        else delete episodes[k]
+      }
+      const next: LibraryEntry = { ...e, episodes }
+      if (!Object.keys(episodes).length) delete next.episodes
+      if (watched && (e.status === 'want' || e.status === 'stopped')) next.status = 'watching'
+      return next
+    },
+    now
+  )
+}
+
+/** Sets or clears the one-line note on something in your library. */
+export function setNote(library: Library, key: string, note: string, now: Date = new Date()): Library {
+  const text = note.replace(/\s+/g, ' ').trim().slice(0, 300)
+  return changeEntry(
+    library,
+    key,
+    (e) => {
+      const next: LibraryEntry = { ...e, note: text }
+      if (!text) delete next.note
+      return next
+    },
+    now
+  )
+}
+
+/** Sets or clears the day you watched something (YYYY-MM-DD). */
+export function setWatchedOn(library: Library, key: string, day: string | null, now: Date = new Date()): Library {
+  if (day !== null && !isDay(day)) return library
+  return changeEntry(
+    library,
+    key,
+    (e) => {
+      const next = { ...e }
+      if (day) next.watchedOn = day
+      else delete next.watchedOn
+      return next
+    },
+    now
+  )
+}
+
+export const preferencesOf = (library: Library): Preferences => library.preferences ?? DEFAULT_PREFERENCES
+
+export function setPreferences(library: Library, patch: Partial<Preferences>): Library {
+  return { ...library, preferences: normalizePreferences({ ...preferencesOf(library), ...patch }) }
+}
+
+function normalizePreferences(raw: unknown): Preferences {
+  const p = (raw && typeof raw === 'object' ? raw : {}) as Partial<Preferences>
+  return {
+    region: typeof p.region === 'string' && /^[A-Z]{2}$/.test(p.region) ? p.region : DEFAULT_PREFERENCES.region,
+    services: Array.isArray(p.services) ? [...new Set(p.services.filter((n): n is number => Number.isInteger(n) && n > 0))] : []
+  }
+}
+
+/** Seasons as TMDB lists them: just what's needed to count episodes. */
+export type SeasonCounts = { number: number; episodeCount: number }[]
+
+/** How many regular episodes (no specials) you've ticked, out of how many there are. */
+export function showProgress(entry: LibraryEntry | undefined, seasons: SeasonCounts): { watched: number; total: number } {
+  const regular = seasons.filter((s) => s.number > 0)
+  const total = regular.reduce((n, s) => n + s.episodeCount, 0)
+  const ticked = Object.keys(entry?.episodes ?? {}).filter((k) => {
+    const e = parseEpisodeKey(k)
+    return e && regular.some((s) => s.number === e.season && e.episode <= s.episodeCount)
+  }).length
+  return { watched: ticked, total }
+}
+
+/** The episode after the furthest one you've ticked (S1E1 if none), or null when you're through. */
+export function nextEpisodeFor(entry: LibraryEntry | undefined, seasons: SeasonCounts): { season: number; episode: number } | null {
+  const order: { season: number; episode: number }[] = []
+  for (const s of [...seasons].filter((x) => x.number > 0).sort((a, b) => a.number - b.number)) {
+    for (let e = 1; e <= s.episodeCount; e++) order.push({ season: s.number, episode: e })
+  }
+  const seen = entry?.episodes ?? {}
+  let last = -1
+  order.forEach((ep, i) => {
+    if (seen[episodeKey(ep.season, ep.episode)]) last = i
+  })
+  return order[last + 1] ?? null
+}
+
 /**
  * Reads a library from whatever was in the file, keeping every entry that makes sense and quietly
  * dropping broken ones, so a hand edit or a half-synced file never stops the app from opening.
  */
 export function normalizeLibrary(raw: unknown): Library {
   const lib = emptyLibrary()
+  if (raw && typeof raw === 'object' && 'preferences' in raw) lib.preferences = normalizePreferences((raw as { preferences?: unknown }).preferences)
   const entries = raw && typeof raw === 'object' ? (raw as { entries?: unknown }).entries : null
   if (!entries || typeof entries !== 'object') return lib
   for (const [key, value] of Object.entries(entries as Record<string, unknown>)) {
@@ -77,6 +190,10 @@ export function normalizeLibrary(raw: unknown): Library {
       addedAt: typeof e.addedAt === 'string' ? e.addedAt : now,
       updatedAt: typeof e.updatedAt === 'string' ? e.updatedAt : typeof e.addedAt === 'string' ? e.addedAt : now,
       ...(isDay(e.watchedOn) ? { watchedOn: e.watchedOn } : {}),
+      ...(typeof e.note === 'string' && e.note.trim() ? { note: e.note.trim().slice(0, 300) } : {}),
+      ...(typeof e.rating === 'number' && e.rating >= 0 && e.rating <= 10 ? { rating: e.rating } : {}),
+      ...(cleanEpisodes(e.episodes) ?? {}),
+      ...cleanLists(e.lists),
       title: {
         name: typeof t.name === 'string' ? t.name : 'Untitled',
         year: typeof t.year === 'number' ? t.year : null,
@@ -85,4 +202,20 @@ export function normalizeLibrary(raw: unknown): Library {
     }
   }
   return lib
+}
+
+function cleanEpisodes(raw: unknown): { episodes: Record<string, string> } | null {
+  if (!raw || typeof raw !== 'object') return null
+  const episodes: Record<string, string> = {}
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    const ep = parseEpisodeKey(k)
+    if (ep && isDay(v)) episodes[episodeKey(ep.season, ep.episode)] = v
+  }
+  return Object.keys(episodes).length ? { episodes } : null
+}
+
+function cleanLists(raw: unknown): { lists?: string[] } {
+  if (!Array.isArray(raw)) return {}
+  const lists = [...new Set(raw.filter((l): l is string => typeof l === 'string' && !!l.trim()).map((l) => l.trim()))]
+  return lists.length ? { lists } : {}
 }

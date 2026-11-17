@@ -27,6 +27,16 @@ The app window opens. Close it (or press Ctrl+C in the terminal) to stop.
 
 Each computer needs the key pasted once.
 
+## Phase 2: what to try
+
+1. **Your services:** Settings → *Your services*. Disney+ and NOW TV should already be ticked. Click a service to add or remove it.
+2. **Import from Sequel:** in Sequel, export your library. In Eclipse, Settings → *Import from Sequel* → **Choose export file** and pick the `.zip` (or **Choose unzipped folder**). Check the numbers it shows, then press **Import**. Your old `library.json` is copied aside first (as `library.before-sequel-….json`), so nothing is lost. Importing again later only fills gaps, it never duplicates.
+3. **Tick episodes:** open a show. Click a dot to see that episode, then **Mark watched** or **Watched up to here**. Double-click a dot to tick it straight away. The glowing dot is your next episode.
+4. **Notes and dates:** under the status buttons, type a note and press Enter. For something Watched, change the *Watched on* date if it's wrong.
+5. **Where to watch:** scroll down a title page. Your services are highlighted.
+6. **Filters:** in Library or Search, pick **On my services**, **Rent or buy only** or **Not streaming anywhere**. The first time it checks every title, which takes a few seconds.
+7. **Home:** the suggestion shows the next episode and a button to tick it.
+
 ## Where things are kept
 
 | What | Where | Synced? |
@@ -40,8 +50,8 @@ Avoid having Eclipse open on both computers at the same time, so the two copies 
 ## For development
 
 - `npm test` runs the tests, `npm run typecheck` checks the types.
-- `src/core` holds the tracking logic (TMDB, caching, the library). It has no Electron or UI code, so it can move into Orbit later as it is.
+- `src/core` holds the tracking logic (TMDB, caching, the library, where-to-watch, the Sequel import). It has no Electron or UI code, so it can move into Orbit later as it is.
 - `src/main` is the Electron side (settings, encrypted key, files), `src/preload` the bridge, `src/renderer` the React screens.
 - Every colour, font and size is in `src/renderer/src/styles/theme.css`.
 
-Film and TV data from [TMDB](https://www.themoviedb.org). This product uses the TMDB API but is not endorsed or certified by TMDB.
+Film and TV data from [TMDB](https://www.themoviedb.org). This product uses the TMDB API but is not endorsed or certified by TMDB. Where-to-watch data from [JustWatch](https://www.justwatch.com).

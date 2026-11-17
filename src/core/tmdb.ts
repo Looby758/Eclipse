@@ -1,4 +1,4 @@
-import type { MediaType, NextEpisode, SearchResult, Season, TitleDetails } from './types'
+import type { Episode, MediaType, NextEpisode, Provider, SearchResult, Season, SeasonDetails, TitleDetails, WatchProviders } from './types'
 import { titleKey } from './types'
 
 /**
@@ -55,6 +55,12 @@ export interface Tmdb {
   details(type: MediaType, id: number): Promise<TitleDetails>
   /** This week's trending films and shows (two pages, about 40), for the poster wall. */
   trending(): Promise<SearchResult[]>
+  /** One season of a show, with every episode's title, date, length and rating. */
+  season(tvId: number, season: number): Promise<SeasonDetails>
+  /** Where a film or show can be streamed, rented or bought in `region` (data from JustWatch). */
+  providers(type: MediaType, id: number, region: string): Promise<WatchProviders>
+  /** Every streaming service in `region`, for picking your own. */
+  services(region: string): Promise<Provider[]>
 }
 
 export function createTmdb({ key, fetch, language = 'en-GB' }: TmdbOptions): Tmdb {
@@ -92,6 +98,23 @@ export function createTmdb({ key, fetch, language = 'en-GB' }: TmdbOptions): Tmd
       const pages = await Promise.all(['1', '2'].map((page) => get<{ results?: RawSearchItem[] }>('/trending/all/week', { language, page })))
       const seen = new Set<string>()
       return parseSearch(pages.flatMap((p) => p.results ?? [])).filter((r) => r.posterPath && !seen.has(r.key) && seen.add(r.key))
+    },
+
+    async season(tvId, n) {
+      const raw = await get<RawSeason>(`/tv/${tvId}/season/${n}`, { language })
+      return parseSeason(tvId, raw)
+    },
+
+    async providers(type, id, region) {
+      const raw = await get<{ results?: Record<string, RawRegionProviders> }>(`/${type}/${id}/watch/providers`)
+      return parseProviders(region, raw.results?.[region])
+    },
+
+    async services(region) {
+      const lists = await Promise.all(
+        (['movie', 'tv'] as const).map((t) => get<{ results?: RawProvider[] }>(`/watch/providers/${t}`, { watch_region: region, language }))
+      )
+      return mergeServices(lists.flatMap((l) => l.results ?? []))
     },
 
     async details(type, id) {
@@ -208,4 +231,81 @@ export function parseDetails(type: MediaType, raw: RawDetails): TitleDetails {
     lastAirDate: movie ? null : raw.last_air_date || null,
     collection: movie && raw.belongs_to_collection ? { id: raw.belongs_to_collection.id, name: raw.belongs_to_collection.name } : null
   }
+}
+
+interface RawSeason {
+  name?: string
+  season_number?: number
+  episodes?: {
+    season_number: number
+    episode_number: number
+    name?: string
+    air_date?: string | null
+    runtime?: number | null
+    overview?: string
+    vote_average?: number
+    vote_count?: number
+    still_path?: string | null
+  }[]
+}
+
+export function parseSeason(tvId: number, raw: RawSeason): SeasonDetails {
+  const episodes: Episode[] = (raw.episodes ?? [])
+    .map((e) => ({
+      season: e.season_number,
+      number: e.episode_number,
+      name: e.name ?? `Episode ${e.episode_number}`,
+      airDate: e.air_date || null,
+      runtime: e.runtime || null,
+      overview: e.overview ?? '',
+      voteAverage: e.vote_count ? (e.vote_average ?? null) : null,
+      voteCount: e.vote_count ?? 0,
+      stillPath: e.still_path ?? null
+    }))
+    .sort((a, b) => a.number - b.number)
+  return { tvId, number: raw.season_number ?? episodes[0]?.season ?? 0, name: raw.name ?? '', episodes }
+}
+
+interface RawProvider {
+  provider_id: number
+  provider_name: string
+  logo_path?: string | null
+  display_priority?: number
+  display_priorities?: Record<string, number>
+}
+
+interface RawRegionProviders {
+  link?: string
+  flatrate?: RawProvider[]
+  free?: RawProvider[]
+  ads?: RawProvider[]
+  rent?: RawProvider[]
+  buy?: RawProvider[]
+}
+
+const toProvider = (p: RawProvider): Provider => ({ id: p.provider_id, name: p.provider_name, logoPath: p.logo_path ?? null })
+
+function uniqueProviders(list: RawProvider[] | undefined): Provider[] {
+  const seen = new Set<number>()
+  return [...(list ?? [])]
+    .sort((a, b) => (a.display_priority ?? 99) - (b.display_priority ?? 99))
+    .filter((p) => !seen.has(p.provider_id) && seen.add(p.provider_id))
+    .map(toProvider)
+}
+
+export function parseProviders(region: string, raw: RawRegionProviders | undefined): WatchProviders {
+  return {
+    region,
+    link: raw?.link ?? null,
+    stream: uniqueProviders(raw?.flatrate),
+    // "Free" and "with ads" are both free to watch.
+    free: uniqueProviders([...(raw?.free ?? []), ...(raw?.ads ?? [])]),
+    rent: uniqueProviders(raw?.rent),
+    buy: uniqueProviders(raw?.buy)
+  }
+}
+
+/** Films' and shows' service lists merged, most popular first. */
+export function mergeServices(list: RawProvider[]): Provider[] {
+  return uniqueProviders(list)
 }

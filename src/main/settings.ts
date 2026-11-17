@@ -19,12 +19,10 @@ export interface Settings {
   dataFolder: string | null
   /** The TMDB key, encrypted with the system's own protection (see tmdbKey.ts). */
   tmdbKey?: string
-  /** Region for streaming availability (Phase 2). */
-  region: string
   window?: WindowBounds
 }
 
-const defaults: Settings = { dataFolder: null, region: 'GB' }
+const defaults: Settings = { dataFolder: null }
 
 export const settingsFile = (): string => join(app.getPath('userData'), 'settings.json')
 

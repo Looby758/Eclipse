@@ -8,6 +8,9 @@ import Poster from './Poster'
 import Sheet from './Sheet'
 import StatusPicker from './StatusPicker'
 import Credits from './Credits'
+import EntryDetails from './EntryDetails'
+import EpisodeTimeline from './EpisodeTimeline'
+import WhereToWatch from './WhereToWatch'
 
 /** A film or show's page: a sheet over the wall, lit in the poster's own colour. */
 export default function TitleSheet({ type, id }: { type: MediaType; id: number }): React.JSX.Element {
@@ -16,7 +19,6 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
   const [stale, setStale] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [glow, setGlow] = useState<Hsl>(DEFAULT_GLOW)
-  const [season, setSeason] = useState<number | null>(null)
 
   const load = async (refresh = false): Promise<void> => {
     setRefreshing(refresh)
@@ -57,8 +59,6 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
   }
 
   const d = details
-  const regular = d.seasons.filter((s) => s.number > 0)
-  const shownSeason = d.seasons.find((s) => s.number === (season ?? regular[0]?.number)) ?? d.seasons[0]
   const facts = [
     d.year ? String(d.year) : '',
     d.genres.slice(0, 2).join(' · '),
@@ -85,6 +85,7 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
           <div className="title-facts">{facts.join(' · ')}</div>
           {d.tagline && <p className="tagline">{d.tagline}</p>}
           <StatusPicker details={d} />
+          <EntryDetails titleKey={d.key} />
         </div>
 
         <div className="title-body">
@@ -123,34 +124,9 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
             )}
           </dl>
 
-          {shownSeason && (
-            <section className="seasons">
-              <div className="seasons-head">
-                <div className="season-tabs">
-                  {d.seasons.map((s) => (
-                    <button key={s.number} className={s.number === shownSeason.number ? 'on' : ''} onClick={() => setSeason(s.number)}>
-                      {s.number === 0 ? 'Specials' : `Season ${s.number}`}
-                    </button>
-                  ))}
-                </div>
-                <div className="muted">
-                  {plural(shownSeason.episodeCount, 'episode')}
-                  {shownSeason.airDate ? ` · ${shownSeason.airDate.slice(0, 4)}` : ''}
-                </div>
-              </div>
-              <div className="timeline">
-                <div className="timeline-rail" aria-hidden />
-                <ol className="timeline-dots">
-                  {Array.from({ length: shownSeason.episodeCount }, (_, i) => (
-                    <li key={i} className="timeline-dot" title={`Episode ${i + 1}`}>
-                      {i + 1}
-                    </li>
-                  ))}
-                </ol>
-              </div>
-              <p className="muted small">Ticking off episodes, with the date you watched them, comes in the next update.</p>
-            </section>
-          )}
+          {d.type === 'tv' && d.seasons.length > 0 && <EpisodeTimeline details={d} />}
+
+          <WhereToWatch type={d.type} id={d.id} />
 
           <div className="title-actions">
             <button className="btn glass" onClick={() => load(true)} disabled={refreshing}>
@@ -160,7 +136,7 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
               <ExternalLink size={15} /> Open on TMDB
             </button>
           </div>
-          <Credits />
+          <Credits justWatch />
         </div>
       </Sheet>
     </>

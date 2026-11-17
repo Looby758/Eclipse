@@ -1,12 +1,14 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { join } from 'path'
-import { setStatus } from '@core/library'
+import { preferencesOf, setEpisodes, setNote, setPreferences, setStatus, setWatchedOn } from '@core/library'
 import { TmdbError } from '@core/tmdb'
+import { mergeSequel, summarizeImport, type SequelImport } from '@core/sequel'
 import type { AppStatus, Result } from '@shared/api'
 import { loadSettings, saveSettings } from './settings'
 import { clearCache } from './cacheStore'
 import * as tmdb from './tmdb'
-import { getLibrary, isDirectory, openLibrary, saveLibrary } from './library'
+import { backupLibrary, getLibrary, isDirectory, openLibrary, saveLibrary } from './library'
+import { readSequelExport } from './sequelImport'
 
 // Window background, matching --bg in src/renderer/src/styles/theme.css so there's no flash on start.
 const BG = '#040309'
@@ -25,7 +27,8 @@ app.on('second-instance', () => {
 })
 
 function status(): AppStatus {
-  const { dataFolder, region } = loadSettings()
+  const { dataFolder } = loadSettings()
+  const { region } = preferencesOf(getLibrary())
   return {
     dataFolder,
     dataFolderMissing: !!dataFolder && !isDirectory(dataFolder),
@@ -81,6 +84,11 @@ function setupIpc(): void {
   ipcMain.handle('tmdb:setKey', (_e, key: string) => attempt(async () => (await tmdb.setKey(key), status())))
   ipcMain.handle('tmdb:clearKey', () => (tmdb.clearKey(), status()))
   ipcMain.handle('tmdb:search', (_e, query: string) => attempt(() => tmdb.search(query)))
+  const region = (): string => preferencesOf(getLibrary()).region
+  ipcMain.handle('tmdb:season', (_e, tvId: number, n: number, refresh?: boolean) => attempt(() => tmdb.season(tvId, n, refresh)))
+  ipcMain.handle('tmdb:providers', (_e, type: 'movie' | 'tv', id: number, refresh?: boolean) => attempt(() => tmdb.providers(type, id, region(), refresh)))
+  ipcMain.handle('tmdb:providersMany', (_e, keys: string[]) => tmdb.providersMany(keys, region()))
+  ipcMain.handle('tmdb:services', () => attempt(() => tmdb.services(region())))
   ipcMain.handle('tmdb:trending', () => attempt(() => tmdb.trending()))
   ipcMain.handle('tmdb:details', (_e, type: 'movie' | 'tv', id: number, refresh?: boolean) => attempt(() => tmdb.details(type, id, refresh)))
   ipcMain.handle('cache:clear', () => clearCache())
@@ -91,6 +99,40 @@ function setupIpc(): void {
     return getLibrary()
   })
   ipcMain.handle('library:setStatus', (_e, item, newStatus) => saveLibrary(setStatus(getLibrary(), item, newStatus)))
+  ipcMain.handle('library:setEpisodes', (_e, item, keys: string[], watched: boolean) => saveLibrary(setEpisodes(getLibrary(), item, keys, watched)))
+  ipcMain.handle('library:setNote', (_e, key: string, note: string) => saveLibrary(setNote(getLibrary(), key, note)))
+  ipcMain.handle('library:setWatchedOn', (_e, key: string, day: string | null) => saveLibrary(setWatchedOn(getLibrary(), key, day)))
+  ipcMain.handle('library:setPreferences', (_e, patch) => saveLibrary(setPreferences(getLibrary(), patch)))
+
+  // Sequel import: pick the export and see what it holds, then apply it (or don't).
+  let pending: SequelImport | null = null
+  ipcMain.handle('import:pickSequel', async (event, folder?: boolean) => {
+    const win = BrowserWindow.fromWebContents(event.sender)!
+    const result = await dialog.showOpenDialog(win, {
+      title: 'Choose your Sequel export',
+      buttonLabel: 'Read it',
+      properties: folder ? ['openDirectory'] : ['openFile'],
+      filters: folder ? undefined : [{ name: 'Sequel export', extensions: ['zip', 'csv'] }]
+    })
+    const path = result.filePaths[0]
+    if (result.canceled || !path) return { ok: true, value: null }
+    return attempt(async () => {
+      pending = readSequelExport(path)
+      return summarizeImport(pending, getLibrary())
+    })
+  })
+  ipcMain.handle('import:applySequel', () =>
+    attempt(async () => {
+      if (!pending) throw new Error('Pick your Sequel export first.')
+      backupLibrary('before-sequel')
+      const lib = saveLibrary(mergeSequel(getLibrary(), pending))
+      pending = null
+      return lib
+    })
+  )
+  ipcMain.handle('import:cancel', () => {
+    pending = null
+  })
 }
 
 function createWindow(): BrowserWindow {

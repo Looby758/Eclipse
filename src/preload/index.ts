@@ -14,14 +14,26 @@ const api: EclipseApi = {
   search: (query) => ipcRenderer.invoke('tmdb:search', query),
   details: (type, id, refresh) => ipcRenderer.invoke('tmdb:details', type, id, refresh),
   trending: () => ipcRenderer.invoke('tmdb:trending'),
+  season: (tvId, n, refresh) => ipcRenderer.invoke('tmdb:season', tvId, n, refresh),
+  providers: (type, id, refresh) => ipcRenderer.invoke('tmdb:providers', type, id, refresh),
+  providersMany: (keys) => ipcRenderer.invoke('tmdb:providersMany', keys),
+  services: () => ipcRenderer.invoke('tmdb:services'),
 
   getLibrary: () => ipcRenderer.invoke('library:get'),
   setStatus: (item, status) => ipcRenderer.invoke('library:setStatus', item, status),
+  setEpisodes: (item, keys, watched) => ipcRenderer.invoke('library:setEpisodes', item, keys, watched),
+  setNote: (key, note) => ipcRenderer.invoke('library:setNote', key, note),
+  setWatchedOn: (key, day) => ipcRenderer.invoke('library:setWatchedOn', key, day),
+  setPreferences: (patch) => ipcRenderer.invoke('library:setPreferences', patch),
   onLibraryChanged: (callback) => {
     const handler = (_e: unknown, library: Parameters<typeof callback>[0]): void => callback(library)
     ipcRenderer.on('library:changed', handler)
     return () => ipcRenderer.removeListener('library:changed', handler)
   },
+
+  pickSequel: (folder) => ipcRenderer.invoke('import:pickSequel', folder),
+  applySequel: () => ipcRenderer.invoke('import:applySequel'),
+  cancelSequel: () => ipcRenderer.invoke('import:cancel'),
 
   openExternal: (url) => ipcRenderer.invoke('app:openExternal', url),
   platform: process.platform === 'darwin' ? 'mac' : process.platform === 'win32' ? 'win' : 'linux'

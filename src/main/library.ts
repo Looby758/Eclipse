@@ -83,3 +83,10 @@ export function saveLibrary(library: Library): Library {
   renameSync(`${file}.tmp`, file)
   return current
 }
+
+/** Copies library.json aside (e.g. library.before-sequel-<time>.json) before a big change. */
+export function backupLibrary(label: string): void {
+  if (!folder) return
+  const file = join(folder, LIBRARY_FILE)
+  if (existsSync(file)) copyFileSync(file, join(folder, `library.${label}-${Date.now()}.json`))
+}

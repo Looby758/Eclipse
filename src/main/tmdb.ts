@@ -1,7 +1,8 @@
 import { net, safeStorage } from 'electron'
 import { cached, CACHE_TTL } from '@core/cache'
 import { createTmdb, TmdbError, type Tmdb } from '@core/tmdb'
-import type { MediaType, SearchResult, TitleDetails } from '@core/types'
+import type { MediaType, Provider, SearchResult, SeasonDetails, TitleDetails, WatchProviders } from '@core/types'
+import { parseTitleKey } from '@core/types'
 import type { Fetched } from '@shared/api'
 import { loadSettings, saveSettings } from './settings'
 import { fileCache } from './cacheStore'
@@ -76,5 +77,42 @@ export async function details(type: MediaType, id: number, refresh = false): Pro
 
 export async function trending(): Promise<Fetched<SearchResult[]>> {
   const r = await cached(fileCache, 'trending:week', CACHE_TTL.trending, () => tmdb().trending(), { shouldServeStale: serveStaleUnlessKeyProblem })
+  return { data: r.data, stale: r.source === 'stale', savedAt: r.savedAt }
+}
+
+export async function season(tvId: number, n: number, refresh = false): Promise<Fetched<SeasonDetails>> {
+  const r = await cached(fileCache, `season:${tvId}:${n}`, CACHE_TTL.season, () => tmdb().season(tvId, n), { force: refresh, shouldServeStale: serveStaleUnlessKeyProblem })
+  return { data: r.data, stale: r.source === 'stale', savedAt: r.savedAt }
+}
+
+export async function providers(type: MediaType, id: number, region: string, refresh = false): Promise<Fetched<WatchProviders>> {
+  const r = await cached(fileCache, `providers:${region}:${type}:${id}`, CACHE_TTL.providers, () => tmdb().providers(type, id, region), {
+    force: refresh,
+    shouldServeStale: serveStaleUnlessKeyProblem
+  })
+  return { data: r.data, stale: r.source === 'stale', savedAt: r.savedAt }
+}
+
+/** Where to watch for many titles (the library filters): a few at a time, from the cache where fresh. */
+export async function providersMany(keys: string[], region: string): Promise<Record<string, WatchProviders>> {
+  const out: Record<string, WatchProviders> = {}
+  const todo = [...new Set(keys)].filter((k) => parseTitleKey(k))
+  for (let i = 0; i < todo.length; i += 6) {
+    await Promise.all(
+      todo.slice(i, i + 6).map(async (key) => {
+        const { type, id } = parseTitleKey(key)!
+        try {
+          out[key] = (await providers(type, id, region)).data
+        } catch {
+          // Unknown for now; it simply won't match the filters until it can be checked.
+        }
+      })
+    )
+  }
+  return out
+}
+
+export async function services(region: string): Promise<Fetched<Provider[]>> {
+  const r = await cached(fileCache, `services:${region}`, CACHE_TTL.services, () => tmdb().services(region), { shouldServeStale: serveStaleUnlessKeyProblem })
   return { data: r.data, stale: r.source === 'stale', savedAt: r.savedAt }
 }
