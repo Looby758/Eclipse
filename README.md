@@ -79,7 +79,7 @@ Avoid having Eclipse open on both computers at the same time, so the two copies 
 2. **See the plan:** press **Soon** in the dock. The top says how long it all takes and when you'd finish. *Tonight* says what fits before bed, and *Your evenings* lays it out night by night.
 3. **Reorder:** drag the rows (or use the arrows) and watch the plan change. Press × to take something off.
 4. **Change your evenings:** in Settings → *Your evenings*, change your bedtime or nights and look at Soon again.
-5. **Home:** the first thing on Watch soon that's in your library is what *Pick up …?* suggests.
+5. **Home:** *Pick up …?* suggests what you're watching first, then the next thing on Watch soon.
 
 ## For development
 

@@ -12,12 +12,12 @@ function greeting(now: Date): string {
   return h < 5 ? 'Up late.' : h < 12 ? 'Good morning.' : h < 18 ? 'Good afternoon.' : 'Good evening.'
 }
 
-/** What to suggest: your Watch soon list first (in your order), then things you're watching (latest first), then your watchlist. */
+/** What to suggest: things you're watching first (latest first), then your Watch soon list (in your order), then your watchlist. */
 function candidates(entries: LibraryEntry[], soon: string[]): LibraryEntry[] {
-  const first = soon.map((k) => entries.find((e) => e.key === k && e.status !== 'watched' && e.status !== 'stopped')).filter((e): e is LibraryEntry => !!e)
-  const watching = entries.filter((e) => e.status === 'watching' && !first.includes(e))
-  const want = entries.filter((e) => e.status === 'want' && !first.includes(e))
-  return [...first, ...watching, ...want]
+  const watching = entries.filter((e) => e.status === 'watching')
+  const next = soon.map((k) => entries.find((e) => e.key === k && e.status === 'want')).filter((e): e is LibraryEntry => !!e)
+  const want = entries.filter((e) => e.status === 'want' && !next.includes(e))
+  return [...watching, ...next, ...want]
 }
 
 /** The home screen: one suggestion, big, over the moving poster wall. */
