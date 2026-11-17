@@ -206,7 +206,7 @@ They're ordered by what they need. Group A ideas stand on their own (they only u
     - **Just for tonight:** from Home (and the phone remote), "Not watching tonight", "Starting late" or "Later bedtime tonight". It changes that one evening only, then goes back to the usual schedule.
     - **Gaps and wind-down:** a few minutes between episodes, and a stretch before bed with nothing on, so "3 episodes fit" is realistic. Both adjustable, both 0 by default.
     - **A weekly budget (optional):** "about 10 hours a week" on top of the schedule. Plans spread to stay under it, and Home says how much of this week is left.
-    - Turned down: date ranges for holidays, and reading busy evenings from Google Calendar (the "Maybe" idea below is dropped).
+    - Turned down: date ranges for holidays, and reading busy evenings from Google Calendar (so the old "Maybe" calendar idea is gone).
 
 ### Group B: noticing what I watch (in this order)
 
