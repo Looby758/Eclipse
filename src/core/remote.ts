@@ -71,3 +71,29 @@ export function sameToken(a: string, b: string): boolean {
   for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
   return diff === 0
 }
+
+/** Phase 26: the menu bar / tray menu's words, from the same state as the phone page. */
+export interface TrayMenu {
+  shows: { key: string; season: number; episode: number; label: string; done: string }[]
+  tonight: string
+  startBy: string | null
+  minutesLeft: number
+}
+
+const hm = (m: number): string => (m < 60 ? `${m}m` : `${Math.floor(m / 60)}h${m % 60 ? ` ${m % 60}m` : ''}`)
+
+export function trayMenuOf(s: RemoteState, max = 8): TrayMenu {
+  const shows = s.shows
+    .filter((x) => x.next)
+    .slice(0, max)
+    .map((x) => {
+      const ep = `S${x.next!.season} E${x.next!.episode}`
+      return { key: x.key, season: x.next!.season, episode: x.next!.episode, label: `${x.name}: ${ep}`, done: `${x.name} ${ep} is marked watched.` }
+    })
+  return {
+    shows,
+    tonight: s.minutesLeft > 0 ? `Tonight: ${hm(s.minutesLeft)} left before bed (${s.bedtime})` : `Past bedtime (${s.bedtime})`,
+    startBy: s.minutesLeft > 0 ? `Start an episode by ${s.startBy}` : null,
+    minutesLeft: s.minutesLeft
+  }
+}

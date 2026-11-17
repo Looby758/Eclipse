@@ -13,6 +13,7 @@ import ExportCard from './ExportCard'
 import UpdatesCard from './UpdatesCard'
 import RemoteCard from './RemoteCard'
 import HistoryCard from './HistoryCard'
+import TrayCard from './TrayCard'
 
 export default function SettingsView(): React.JSX.Element {
   const status = useApp((s) => s.status)!
@@ -49,6 +50,8 @@ export default function SettingsView(): React.JSX.Element {
       <EveningsCard />
 
       <RemoteCard />
+
+      <TrayCard />
 
       <CalendarCard />
 

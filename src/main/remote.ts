@@ -2,7 +2,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { networkInterfaces } from 'os'
 import { randomBytes } from 'crypto'
 import { preferencesOf, setEpisodes } from '@core/library'
-import { newRemoteToken, remoteState, sameToken } from '@core/remote'
+import { newRemoteToken, remoteState, sameToken, type RemoteState } from '@core/remote'
 import { episodeKey } from '@core/types'
 import { watchSoonOf } from '@core/watchsoon'
 import type { RemoteStatus } from '@shared/api'
@@ -52,7 +52,16 @@ export function remoteStatus(): RemoteStatus {
   }
 }
 
-async function state(): Promise<unknown> {
+/** Ticks one episode (on your rewatch, if you're on one). False if the show has gone. Throws while read-only. */
+export function tickEpisode(key: string, season: number, episode: number): boolean {
+  const e = getLibrary().entries[key]
+  if (!e || !Number.isInteger(season) || !Number.isInteger(episode)) return false
+  saveLibrary(setEpisodes(getLibrary(), { key: e.key, type: e.type, id: e.id, title: e.title }, [episodeKey(season, episode)], true))
+  return true
+}
+
+/** What the phone page (and the tray menu) shows. */
+export async function state(): Promise<RemoteState> {
   const lib = getLibrary()
   const keys = [...Object.values(lib.entries).filter((e) => e.type === 'tv' && e.status === 'watching').map((e) => e.key as string), ...watchSoonOf(lib).map((r) => r.key as string)]
   const details = tmdb.hasKey() ? await tmdb.detailsMany(keys) : {}
@@ -87,9 +96,7 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
   if (req.method === 'POST' && url.pathname === '/api/tick') {
     try {
       const { key, season, episode } = JSON.parse(await readBody(req)) as { key: string; season: number; episode: number }
-      const e = getLibrary().entries[key]
-      if (!e || !Number.isInteger(season) || !Number.isInteger(episode)) return send(res, 400, JSON.stringify({ error: 'That show isn’t in your library any more.' }))
-      saveLibrary(setEpisodes(getLibrary(), { key: e.key, type: e.type, id: e.id, title: e.title }, [episodeKey(season, episode)], true))
+      if (!tickEpisode(key, season, episode)) return send(res, 400, JSON.stringify({ error: 'That show isn’t in your library any more.' }))
       onChange()
       return send(res, 200, JSON.stringify(await state()))
     } catch (err) {

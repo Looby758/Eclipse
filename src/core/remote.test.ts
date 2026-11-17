@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_PREFERENCES, type Library, type LibraryEntry, type TitleDetails } from './types'
 import { emptyLibrary } from './library'
-import { newRemoteToken, remoteState, sameToken } from './remote'
+import { newRemoteToken, remoteState, sameToken, trayMenuOf } from './remote'
 
 const entry = (key: string, status: LibraryEntry['status'], over: Partial<LibraryEntry> = {}): LibraryEntry => {
   const [type, id] = key.split(':')
@@ -39,5 +39,19 @@ describe('phone remote', () => {
     expect(sameToken(t, 'ab'.repeat(15) + 'ac')).toBe(false)
     expect(sameToken('', '')).toBe(false)
     expect(sameToken(t, 'ab')).toBe(false)
+  })
+})
+
+describe('menu bar and tray', () => {
+  it('lists next episodes to tick and tonight’s time', () => {
+    const state = { bedtime: '23:00', minutesLeft: 130, startBy: '22:15', shows: [
+      { key: 'tv:1', name: 'Severance', posterPath: null, next: { season: 2, episode: 3 }, left: 5, minutesEach: 50, fits: 2 },
+      { key: 'tv:2', name: 'Done', posterPath: null, next: null, left: 0, minutesEach: 50, fits: 0 }
+    ], soon: [] }
+    const m = trayMenuOf(state)
+    expect(m.shows).toEqual([{ key: 'tv:1', season: 2, episode: 3, label: 'Severance: S2 E3', done: 'Severance S2 E3 is marked watched.' }])
+    expect(m.tonight).toBe('Tonight: 2h 10m left before bed (23:00)')
+    expect(m.startBy).toBe('Start an episode by 22:15')
+    expect(trayMenuOf({ ...state, minutesLeft: 0 }).startBy).toBeNull()
   })
 })

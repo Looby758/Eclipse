@@ -166,6 +166,10 @@ export interface EclipseApi {
   /** Your year in Eclipse: hours, busiest month, most-watched director and actor, longest binge. */
   yearReview(year: number): Promise<Result<YearReview>>
 
+  /** Eclipse in the menu bar / tray (Phase 26), and whether closing the window keeps it running there. */
+  trayOn(): Promise<boolean>
+  setTray(on: boolean): Promise<boolean>
+
   remoteStatus(): Promise<RemoteStatus>
   setRemote(on: boolean): Promise<RemoteStatus>
   newRemoteCode(): Promise<RemoteStatus>

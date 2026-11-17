@@ -72,6 +72,10 @@ export function openLibrary(dataFolder: string | null, onChange: (library: Libra
 
 export const getLibrary = (): Library => current
 
+const saveListeners: (() => void)[] = []
+/** Called after every save made here (the tray menu follows along). */
+export const onSave = (fn: () => void): void => void saveListeners.push(fn)
+
 export function saveLibrary(library: Library): Library {
   if (!folder) throw new Error('Choose a data folder first.')
   const reason = blocked()
@@ -86,6 +90,7 @@ export function saveLibrary(library: Library): Library {
   // Temp file then rename, so a crash (or Drive) never sees half a file.
   writeFileSync(`${file}.tmp`, lastText, 'utf8')
   renameSync(`${file}.tmp`, file)
+  for (const fn of saveListeners) fn()
   return current
 }
 

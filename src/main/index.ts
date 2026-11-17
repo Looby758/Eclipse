@@ -13,12 +13,13 @@ import type { AppStatus, Result } from '@shared/api'
 import { loadSettings, saveSettings } from './settings'
 import { clearCache } from './cacheStore'
 import * as tmdb from './tmdb'
-import { backupLibrary, getLibrary, isDirectory, openLibrary, saveLibrary } from './library'
+import { backupLibrary, getLibrary, isDirectory, onSave, openLibrary, saveLibrary } from './library'
 import { readSequelExport } from './sequelImport'
 import { setupUpdater } from './updater'
 import { getHistory, startServiceWatch } from './services'
 import { keysWatchedIn, yearInReview } from '@core/year'
 import { repairBatch, type Batch, type RepairChoice } from '@core/repair'
+import { refreshTray, setTray, setupTray, trayOn } from './tray'
 import { newRemoteCode, remoteStatus, setRemote, setupRemote, stopRemote } from './remote'
 import { guardStatus, readOnlyReason, startGuard, stopGuard, takeOver } from './guard'
 
@@ -33,9 +34,8 @@ let mainWindow: BrowserWindow | null = null
 // Only one copy runs (two copies writing the same library would fight); starting it again shows the window.
 if (!app.requestSingleInstanceLock()) app.quit()
 app.on('second-instance', () => {
-  if (!mainWindow) return
-  if (mainWindow.isMinimized()) mainWindow.restore()
-  mainWindow.focus()
+  // Opening Eclipse again while it's in the tray brings the window back.
+  if (app.isReady()) showWindow()
 })
 
 function status(): AppStatus {
@@ -51,7 +51,10 @@ function status(): AppStatus {
   }
 }
 
-const broadcastLibrary = (): void => mainWindow?.webContents.send('library:changed', getLibrary())
+const broadcastLibrary = (): void => {
+  mainWindow?.webContents.send('library:changed', getLibrary())
+  refreshTray()
+}
 const sendRemote = (s: unknown): void => mainWindow?.webContents.send('remote:changed', s)
 
 /** Shows ticked season by season as seen before, all the way through, move from Watching to Watched. */
@@ -233,6 +236,8 @@ function setupIpc(): void {
       return yearInReview(getLibrary(), year, details, credits, lists, localDate(new Date()))
     })
   )
+  ipcMain.handle('tray:get', () => trayOn())
+  ipcMain.handle('tray:set', (_e, on: boolean) => setTray(!!on))
   ipcMain.handle('remote:status', () => remoteStatus())
   ipcMain.handle('remote:set', (_e, on: boolean) => setRemote(!!on, sendRemote))
   ipcMain.handle('remote:newCode', () => newRemoteCode())
@@ -317,6 +322,18 @@ function createWindow(): BrowserWindow {
   return win
 }
 
+/** Opens the window, or brings it to the front (from the tray, or the dock on a Mac). */
+function showWindow(): void {
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.show()
+    mainWindow.focus()
+    return
+  }
+  mainWindow = createWindow()
+  mainWindow.on('closed', () => (mainWindow = null))
+}
+
 app.whenReady().then(() => {
   // Trailers: YouTube's player refuses to play without a Referer, which a page loaded from a file
   // doesn't send. Name the app's own home page instead.
@@ -326,17 +343,15 @@ app.whenReady().then(() => {
   })
   reopenLibrary()
   setupIpc()
-  mainWindow = createWindow()
-  mainWindow.on('closed', () => (mainWindow = null))
+  showWindow()
   void settleOnStart()
+  setupTray(showWindow, broadcastLibrary)
+  onSave(refreshTray)
   setupRemote(broadcastLibrary, sendRemote)
   startServiceWatch(getLibrary, () => mainWindow?.webContents.send('services:changed', getHistory()))
   void setupUpdater()
   app.on('activate', () => {
-    if (!BrowserWindow.getAllWindows().length) {
-      mainWindow = createWindow()
-      mainWindow.on('closed', () => (mainWindow = null))
-    }
+    if (!BrowserWindow.getAllWindows().length) showWindow()
   })
 })
 
@@ -346,5 +361,6 @@ app.on('will-quit', () => {
 })
 
 app.on('window-all-closed', () => {
-  if (!IS_MAC) app.quit()
+  // With the tray / menu bar on, Eclipse keeps running there until you choose Quit.
+  if (!IS_MAC && !trayOn()) app.quit()
 })

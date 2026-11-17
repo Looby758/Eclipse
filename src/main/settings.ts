@@ -23,6 +23,8 @@ export interface Settings {
   /** Phase 23: the phone remote is switched on (this computer only), and its pairing code. */
   remoteOn?: boolean
   remoteToken?: string
+  /** Phase 26: show Eclipse in the menu bar / tray, and keep running there when the window is closed. */
+  trayOn?: boolean
 }
 
 const defaults: Settings = { dataFolder: null }
