@@ -46,7 +46,7 @@ export default function EveningsCard(): React.JSX.Element {
           ))}
         </div>
       </div>
-      <label className="entry-field">
+      <label className="renewal-row stalled-row">
         <span>Ask “keep going or stop?” about a show I haven’t watched in</span>
         <select value={prefs.stalledDays} onChange={(e) => save({ stalledDays: Number(e.target.value) })}>
           {[30, 60, 90, 180, 365].map((n) => (

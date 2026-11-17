@@ -312,12 +312,27 @@ You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls
 - Done: **updates.** Settings → *Version and updates* (copied from Orbit's): the installed app checks GitHub Releases every few hours. On Windows the update downloads in the background and installs when you restart; on a Mac it says a new version is out and opens the download page.
 - Decisions: the version is now **1.0.0**, the first installable one. Your settings and key are kept if you uninstall, and the library is never touched.
 
-**Phase 12: Two-computer guard (built, waiting for you to try it)**
+**Phase 12: Two-computer guard (done, merged)**
 
 - Done: while Eclipse is open it keeps a small file, `eclipse-open.json`, in the data folder, with the computer's name and the time, refreshed every minute. Quitting removes it.
 - Done: open Eclipse on the other computer while that file is fresh and it opens **read-only**, with a banner: "Eclipse is open on DESKTOP-4F2K9 (Windows) since 19:02". You can look around, but nothing is saved, so the two copies can't overwrite each other. When the other one closes, this copy notices within a minute and carries on normally by itself.
 - Done: **Take over** on the banner, for when the other one was left open by mistake. The other copy then turns read-only within a minute and says it was taken over.
 - Decisions: a file not refreshed for 5 minutes counts as left behind (a crash, a laptop asleep, Drive offline) and is ignored, as is one from an earlier run on the same computer. Read-only copies still show changes arriving from the other computer. Trying to change something while read-only gives the banner a little shake instead of an error.
+
+
+**Phases 13 to 22 (built, waiting for you to try them)**
+
+- Phase 13, **watching with someone**: on a show's page, *Watch with someone* starts a watch tagged with a name ("Sam"), with its own episode ticks and dates, kept apart from yours. A show can have several at once. Home shows *Next with Sam: Breaking Bad S1 E3* with a *Watched it with Sam* button. Ticking ahead on your own never moves it. The export has a With column.
+- Phase 14, **stay for the credits**: film pages say *Stay for the credits: there's a scene at the very end* (or mid-credits, or both) from TMDB's tags, and watch orders show a small chip on each film that has one. Details are fetched again once so this and the trailer show up.
+- Phase 15, **who recommended it**: every title has a *From* box next to the note (with names you've used before offered). Lists → *Recommended by* has a list per person or place ("Sam: you've watched 3 of 7"). The export has a From column.
+- Phase 16, **clear out the watchlist**: Library → Want to watch → *Clear out the watchlist*. Go through it one title at a time with its trailer, and press Keep, Drop or Skip (or →/K, ←/D, S). Start with the oldest, the newest, or ones not on your services. Dropped titles go to *Recently dropped* (the last 30), with *Put back*.
+- Phase 17, **where do I know them from**: title pages list cast you've seen in other things you've watched or are watching: "You know Rhea Seehorn from Better Call Saul."
+- Phase 18, **free UK TV**: Where to watch has a *Free* group (BBC iPlayer, ITVX, Channel 4, My5) after yours, the verdict says "Free on BBC iPlayer", list chips and Up next say so too, and the filters have *On my services or free*.
+- Phase 19, **arriving and leaving**: once a day (checked when Eclipse opens and every six hours) it notes where your watchlist, Watching shows and Watch soon titles stream, and compares with the day before. Home's *Your services* card says "Just arrived on Disney+: Andor, Loki" and "Gone from NOW TV: …" for the last two weeks, and each title's Where to watch lists its own arrivals and departures. Kept in the app's own folder (`services-history.json`), not the synced data folder.
+- Phase 20, **do I still need it**: *Your services* (from Home's card, or Settings → Your services) has a card per service: hours waiting for you on it, what you watched on it in the last 30 days, its renewal day, and a verdict. Nothing you want on it and it renews within a week: "Pause it before it renews on Thu 19 Nov." Home also mentions any service renewing in the next three days.
+- Phase 21, **keep going or stop**: a Watching show you haven't ticked in 60 days gets a Home card with *Keep going* (opens it and stops asking for a while), *Stop watching* and *Remind me later* (two weeks). Shows you're caught up on (waiting for the next season) aren't counted. The number of days is in Settings → Your evenings (30 days to a year).
+- Phase 22, **back after a long gap**: when a new season came out in the last six weeks, and you finished the one before it at least six months before that, Home says "The Last of Us: season 3 is out. You finished season 2 in May 2025" with the summaries of that season's last two episodes, *Start season 3* and *Not now*.
+- Decisions: "Remind me later" and "Not now" are saved on the title (`snoozedUntil`), so both computers agree. Arrivals only count titles that were already being watched for, so adding something new isn't "news". If a title can't be checked one day, yesterday's answer is kept rather than calling it gone.
 
 
 **Future ideas**
