@@ -1,24 +1,25 @@
-import { Search } from 'lucide-react'
 import { useState } from 'react'
 import { countByStatus, entriesWith } from '@core/library'
 import type { MediaType, WatchStatus } from '@core/types'
 import { STATUS_LABELS, WATCH_STATUSES } from '@core/types'
 import { useApp } from '../store/app'
+import Sheet from './Sheet'
 import TitleCard from './TitleCard'
 import Credits from './Credits'
+import { focusSearch } from './Dock'
 
-/** Your library, one status at a time. (The real home screen comes from the design drafts.) */
-export default function Home(): React.JSX.Element {
+export default function LibrarySheet(): React.JSX.Element {
   const library = useApp((s) => s.library)
-  const [tab, setTab] = useState<WatchStatus>('want')
-  const [type, setType] = useState<MediaType | undefined>()
   const counts = countByStatus(library)
+  // Open on the first status that has something in it.
+  const [tab, setTab] = useState<WatchStatus>(() => WATCH_STATUSES.find((s) => counts[s] > 0) ?? 'want')
+  const [type, setType] = useState<MediaType | undefined>()
   const entries = entriesWith(library, tab, type)
   const empty = Object.keys(library.entries).length === 0
 
   return (
-    <div className="page">
-      <div className="page-head">
+    <Sheet>
+      <div className="sheet-head">
         <h1>Your library</h1>
         <div className="segmented">
           {([undefined, 'movie', 'tv'] as const).map((t) => (
@@ -37,12 +38,16 @@ export default function Home(): React.JSX.Element {
       </nav>
       {empty ? (
         <div className="empty">
-          <Search size={28} />
-          <p>Nothing here yet. Search for a film or show at the top (Ctrl+K), open it, and give it a status.</p>
+          <p>Nothing here yet.</p>
+          <button className="btn primary" onClick={focusSearch}>
+            Search for something
+          </button>
         </div>
       ) : entries.length === 0 ? (
         <div className="empty">
-          <p>Nothing marked “{STATUS_LABELS[tab]}”{type ? ` in ${type === 'movie' ? 'films' : 'shows'}` : ''}.</p>
+          <p>
+            Nothing marked “{STATUS_LABELS[tab]}”{type ? ` in ${type === 'movie' ? 'films' : 'shows'}` : ''}.
+          </p>
         </div>
       ) : (
         <div className="grid">
@@ -52,6 +57,6 @@ export default function Home(): React.JSX.Element {
         </div>
       )}
       <Credits />
-    </div>
+    </Sheet>
   )
 }

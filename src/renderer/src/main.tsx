@@ -1,5 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import '@fontsource-variable/sora'
+import '@fontsource-variable/inter'
 import App from './App'
 import { applyThemeMode, savedThemeMode } from './lib/themeMode'
 import './styles/theme.css'

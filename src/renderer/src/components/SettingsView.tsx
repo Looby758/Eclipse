@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { applyThemeMode, savedThemeMode, type ThemeMode } from '../lib/themeMode'
 import { useApp } from '../store/app'
 import KeyForm from './KeyForm'
+import Sheet from './Sheet'
 import Credits from './Credits'
 
 export default function SettingsView(): React.JSX.Element {
@@ -12,8 +13,10 @@ export default function SettingsView(): React.JSX.Element {
   const [cleared, setCleared] = useState(false)
 
   return (
-    <div className="page settings">
-      <h1>Settings</h1>
+    <Sheet className="settings">
+      <div className="sheet-head">
+        <h1>Settings</h1>
+      </div>
 
       <section className="card">
         <h2>Appearance</h2>
@@ -39,7 +42,7 @@ export default function SettingsView(): React.JSX.Element {
         <p className="path">{status.dataFolder}</p>
         <div className="row">
           <button
-            className="btn"
+            className="btn glass"
             onClick={async () => {
               setStatus(await window.api.pickDataFolder())
               setLibrary(await window.api.getLibrary())
@@ -47,7 +50,7 @@ export default function SettingsView(): React.JSX.Element {
           >
             <FolderOpen size={16} /> Change folder
           </button>
-          <button className="btn ghost" onClick={() => window.api.revealDataFolder()}>
+          <button className="btn glass" onClick={() => window.api.revealDataFolder()}>
             Show in {window.api.platform === 'mac' ? 'Finder' : 'File Explorer'}
           </button>
         </div>
@@ -58,7 +61,7 @@ export default function SettingsView(): React.JSX.Element {
         <p className="muted">{status.hasKey ? 'A key is saved (encrypted on this computer).' : 'No key saved.'}</p>
         <KeyForm replacing={status.hasKey} />
         {status.hasKey && (
-          <button className="btn ghost danger" onClick={async () => setStatus(await window.api.clearTmdbKey())}>
+          <button className="btn glass danger" onClick={async () => setStatus(await window.api.clearTmdbKey())}>
             Remove key
           </button>
         )}
@@ -68,7 +71,7 @@ export default function SettingsView(): React.JSX.Element {
         <h2>Saved TMDB data</h2>
         <p className="muted">Eclipse keeps copies of TMDB details so it’s quick and works offline. Details refresh weekly and searches daily. Clearing them is safe; your library isn’t touched.</p>
         <button
-          className="btn ghost"
+          className="btn glass"
           onClick={async () => {
             await window.api.clearCache()
             setCleared(true)
@@ -85,6 +88,6 @@ export default function SettingsView(): React.JSX.Element {
 
       <p className="muted small">Eclipse {status.version}</p>
       <Credits />
-    </div>
+    </Sheet>
   )
 }

@@ -9,7 +9,7 @@ import * as tmdb from './tmdb'
 import { getLibrary, isDirectory, openLibrary, saveLibrary } from './library'
 
 // Window background, matching --bg in src/renderer/src/styles/theme.css so there's no flash on start.
-const BG = '#121218'
+const BG = '#040309'
 const IS_MAC = process.platform === 'darwin'
 
 app.setPath('userData', join(app.getPath('appData'), 'Eclipse'))
@@ -107,7 +107,7 @@ function createWindow(): BrowserWindow {
     // Same window style as Orbit: our own title bar, with the system's buttons kept.
     ...(IS_MAC
       ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: { x: 14, y: 14 } }
-      : { titleBarStyle: 'hidden' as const, titleBarOverlay: { color: BG, symbolColor: '#9a98a8', height: 44 } }),
+      : { titleBarStyle: 'hidden' as const, titleBarOverlay: { color: '#00000000', symbolColor: '#b3afd0', height: 40 } }),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,

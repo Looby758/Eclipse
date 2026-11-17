@@ -27,7 +27,7 @@ export default function Setup(): React.JSX.Element {
           </p>
           {status.dataFolderMissing && <p className="error">Can’t find {status.dataFolder}. Is Google Drive running? Start it, or choose the folder again.</p>}
           {status.dataFolder && !status.dataFolderMissing && <p className="path">{status.dataFolder}</p>}
-          <button className="btn" onClick={pick}>
+          <button className="btn glass" onClick={pick}>
             <FolderOpen size={16} /> {folderDone ? 'Change folder' : 'Choose folder'}
           </button>
         </div>

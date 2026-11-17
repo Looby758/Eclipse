@@ -1,27 +1,32 @@
+import { ArrowLeft } from 'lucide-react'
 import { useEffect } from 'react'
 import { currentView, useApp } from './store/app'
-import TopBar from './components/TopBar'
+import PosterWall from './components/PosterWall'
+import Dock from './components/Dock'
 import Setup from './components/Setup'
-import Home from './components/Home'
-import SearchView from './components/SearchView'
-import TitlePage from './components/TitlePage'
+import HomeHero from './components/HomeHero'
+import LibrarySheet from './components/LibrarySheet'
+import SearchSheet from './components/SearchSheet'
+import TitleSheet from './components/TitleSheet'
 import SettingsView from './components/SettingsView'
 
 export default function App(): React.JSX.Element {
   const status = useApp((s) => s.status)
   const view = useApp(currentView)
-  const { setStatus, setLibrary, back } = useApp.getState()
+  const canGoBack = useApp((s) => s.history.length > 1)
+  const { setStatus, setLibrary, back, go } = useApp.getState()
 
   useEffect(() => {
     window.api.status().then(setStatus)
     window.api.getLibrary().then(setLibrary)
     const stop = window.api.onLibraryChanged(setLibrary)
-    // Mouse back button and Alt+Left go back, like a browser.
+    // Mouse back button, Alt+Left and Escape go back, like a browser.
     const onMouse = (e: MouseEvent): void => {
       if (e.button === 3) back()
     }
     const onKey = (e: KeyboardEvent): void => {
-      if (e.altKey && e.key === 'ArrowLeft') back()
+      const typing = e.target instanceof HTMLInputElement
+      if ((e.altKey && e.key === 'ArrowLeft') || (e.key === 'Escape' && !typing)) back()
     }
     window.addEventListener('mouseup', onMouse)
     window.addEventListener('keydown', onKey)
@@ -34,23 +39,39 @@ export default function App(): React.JSX.Element {
 
   if (!status) return <div className="app" />
   const needsSetup = !status.dataFolder || status.dataFolderMissing || !status.hasKey
+  const onHome = !needsSetup && view.name === 'home'
 
   return (
-    <div className="app">
-      <TopBar minimal={needsSetup} />
-      <main className="content">
-        {needsSetup ? (
-          <Setup />
-        ) : view.name === 'search' ? (
-          <SearchView />
-        ) : view.name === 'title' ? (
-          <TitlePage key={`${view.type}:${view.id}`} type={view.type} id={view.id} />
-        ) : view.name === 'settings' ? (
-          <SettingsView />
+    <div className={`app ${onHome ? 'on-home' : 'on-page'}`}>
+      <PosterWall />
+      <div className="veil" aria-hidden />
+      <div className="drag-strip" aria-hidden />
+
+      <header className="corner">
+        {onHome || needsSetup ? (
+          <div className="brand">
+            <span className="brand-mark" aria-hidden />
+            ECLIPSE
+          </div>
         ) : (
-          <Home />
+          <button className="back-btn" onClick={() => (canGoBack ? back() : go({ name: 'home' }))}>
+            <ArrowLeft size={18} /> Back
+          </button>
         )}
-      </main>
+      </header>
+
+      {needsSetup ? (
+        <Setup />
+      ) : (
+        <>
+          {view.name === 'home' && <HomeHero />}
+          {view.name === 'library' && <LibrarySheet />}
+          {view.name === 'search' && <SearchSheet />}
+          {view.name === 'settings' && <SettingsView />}
+          {view.name === 'title' && <TitleSheet key={`${view.type}:${view.id}`} type={view.type} id={view.id} />}
+          <Dock />
+        </>
+      )}
     </div>
   )
 }

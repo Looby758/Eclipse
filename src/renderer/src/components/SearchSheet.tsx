@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import type { SearchResult } from '@core/types'
 import { useApp } from '../store/app'
+import Sheet from './Sheet'
 import TitleCard from './TitleCard'
 import Credits from './Credits'
 
-export default function SearchView(): React.JSX.Element {
+export default function SearchSheet(): React.JSX.Element {
   const query = useApp((s) => s.query)
   const library = useApp((s) => s.library)
   const [results, setResults] = useState<SearchResult[]>([])
@@ -17,6 +18,7 @@ export default function SearchView(): React.JSX.Element {
     if (!q) {
       setResults([])
       setError('')
+      setLoading(false)
       return
     }
     let cancelled = false
@@ -42,14 +44,14 @@ export default function SearchView(): React.JSX.Element {
   }, [query])
 
   return (
-    <div className="page">
-      <div className="page-head">
-        <h1>{query.trim() ? `Results for “${query.trim()}”` : 'Search'}</h1>
+    <Sheet>
+      <div className="sheet-head">
+        <h1>{query.trim() ? `“${query.trim()}”` : 'Search'}</h1>
         {loading && <span className="muted">Searching…</span>}
       </div>
       {stale && <p className="notice">Offline: showing results saved earlier.</p>}
       {error && <p className="error">{error}</p>}
-      {!query.trim() && <p className="muted">Type a film or show name in the box at the top.</p>}
+      {!query.trim() && <p className="muted">Type a film or show in the search box below.</p>}
       {query.trim() && !loading && !error && results.length === 0 && <p className="muted">No films or shows found.</p>}
       <div className="grid">
         {results.map((r) => (
@@ -57,6 +59,6 @@ export default function SearchView(): React.JSX.Element {
         ))}
       </div>
       <Credits />
-    </div>
+    </Sheet>
   )
 }
