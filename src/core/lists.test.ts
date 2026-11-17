@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { emptyLibrary, normalizeLibrary, setStatus } from './library'
 import { createList, customListsWith, followList, listIdFor, moveInList, progressOf, releaseOrder, removeList, renameList, setInList, sourceOf } from './lists'
-import { GUIDES, guideRefs, guidesWith } from './guides'
+import { GUIDES, guideForQuery, guideRefs, guidesWith } from './guides'
 import { parseCredits, parsePerson, refFromRaw } from './tmdb'
 import type { TitleRef } from './types'
 
@@ -97,9 +97,19 @@ describe('guides', () => {
     for (const g of GUIDES) {
       const keys = guideRefs(g).map((r) => r.key)
       expect(new Set(keys).size).toBe(keys.length)
-      expect(keys.length).toBeGreaterThan(20)
+      expect(keys.length).toBeGreaterThan(2)
     }
     expect(guidesWith('tv:83867').map((g) => g.id)).toEqual(['star-wars'])
     expect(guideRefs(GUIDES[0])[0]).toMatchObject({ key: 'movie:1771' })
+    expect(guidesWith('tv:60059').map((g) => g.id)).toEqual(['breaking-bad'])
+  })
+
+  it('are found by what you search for', () => {
+    expect(guideForQuery('The Walking Dead')?.id).toBe('walking-dead')
+    expect(guideForQuery('better call saul')?.id).toBe('breaking-bad')
+    expect(guideForQuery('MCU')?.id).toBe('marvel')
+    expect(guideForQuery('The Avengers')?.id).toBe('marvel')
+    expect(guideForQuery('Star Wars: Andor')?.id).toBe('star-wars')
+    expect(guideForQuery('Interstellar')).toBeUndefined()
   })
 })

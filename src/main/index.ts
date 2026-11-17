@@ -3,7 +3,7 @@ import { join } from 'path'
 import { preferencesOf, setEpisodes, setFinishBy, setNote, setPreferences, setStatus, setWatchedOn } from '@core/library'
 import { TmdbError } from '@core/tmdb'
 import { createList, followList, moveInList, removeList, renameList, setInList } from '@core/lists'
-import type { MediaType, TitleRef } from '@core/types'
+import type { TitleRef } from '@core/types'
 import { mergeSequel, summarizeImport, type SequelImport } from '@core/sequel'
 import type { AppStatus, Result } from '@shared/api'
 import { loadSettings, saveSettings } from './settings'
@@ -94,8 +94,6 @@ function setupIpc(): void {
   ipcMain.handle('tmdb:person', (_e, id: number) => attempt(() => tmdb.person(id)))
   ipcMain.handle('tmdb:collection', (_e, id: number) => attempt(() => tmdb.collection(id)))
   ipcMain.handle('tmdb:list', (_e, id: number) => attempt(() => tmdb.tmdbList(id)))
-  ipcMain.handle('lists:franchiseForQuery', (_e, query: string) => attempt(() => tmdb.franchiseForQuery(query)))
-  ipcMain.handle('lists:franchiseForTitle', (_e, type: MediaType, id: number) => attempt(() => tmdb.franchiseForTitle(type, id)))
   ipcMain.handle('lists:open', (_e, id: string, refresh?: boolean) => attempt(() => tmdb.openList(id, getLibrary(), refresh)))
   ipcMain.handle('tmdb:detailsMany', (_e, keys: string[]) => tmdb.detailsMany(keys))
   ipcMain.handle('tmdb:services', () => attempt(() => tmdb.services(region())))

@@ -173,8 +173,6 @@ export type ListSource =
   | { kind: 'collection'; collectionId: number }
   | { kind: 'tmdbList'; listId: number }
   | { kind: 'guide'; guideId: string }
-  /** Every film and show with this phrase in its name, worked out from TMDB. */
-  | { kind: 'franchise'; phrase: string }
   | { kind: 'custom' }
 
 /** A list in your library. Only your own lists keep their titles here; the rest come from TMDB or the guides. */

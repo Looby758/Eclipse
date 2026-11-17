@@ -1,6 +1,5 @@
 import type { CollectionDetails, Credits, Episode, MediaType, NextEpisode, PersonDetails, PersonRef, Provider, SearchResult, Season, SeasonDetails, TitleDetails, TitleRef, TmdbListDetails, WatchProviders } from './types'
 import { titleKey } from './types'
-import type { FranchiseHit } from './franchise'
 
 /**
  * A small client for TMDB's free API (https://developer.themoviedb.org). It takes the key and a
@@ -70,8 +69,6 @@ export interface Tmdb {
   collection(id: number): Promise<CollectionDetails>
   /** A public list on TMDB, by its number. */
   list(id: number): Promise<TmdbListDetails>
-  /** Films and shows whose title matches, two pages of each, with votes and genres (for franchises). */
-  searchTitles(query: string): Promise<FranchiseHit[]>
 }
 
 export function createTmdb({ key, fetch, language = 'en-GB' }: TmdbOptions): Tmdb {
@@ -159,15 +156,6 @@ export function createTmdb({ key, fetch, language = 'en-GB' }: TmdbOptions): Tmd
         posterPath: raw.poster_path ?? null,
         items: (raw.items ?? []).map((p) => refFromRaw(p)).filter((r): r is TitleRef => !!r)
       }
-    },
-
-    async searchTitles(query) {
-      const q = query.trim()
-      if (!q) return []
-      const pages = await Promise.all(
-        (['movie', 'tv'] as const).flatMap((type) => ['1', '2'].map(async (page) => ({ type, body: await get<{ results?: RawHit[] }>(`/search/${type}`, { query: q, include_adult: 'false', language, page }) })))
-      )
-      return pages.flatMap(({ type, body }) => (body.results ?? []).map((r) => hitFromRaw(r, type)).filter((h): h is FranchiseHit => !!h))
     },
 
     async details(type, id) {
@@ -382,16 +370,6 @@ interface RawTitleCredit {
 }
 
 /** A film or show from any TMDB list-like answer, or null for people and broken rows. */
-interface RawHit extends RawTitleCredit {
-  vote_count?: number
-  original_language?: string
-}
-
-export function hitFromRaw(raw: RawHit, type: MediaType): FranchiseHit | null {
-  const ref = refFromRaw(raw, type)
-  return ref ? { ...ref, votes: raw.vote_count ?? 0, genres: raw.genre_ids ?? [], language: raw.original_language ?? '' } : null
-}
-
 export function refFromRaw(raw: RawTitleCredit, fallback?: MediaType): TitleRef | null {
   const type = raw.media_type === 'movie' || raw.media_type === 'tv' ? raw.media_type : raw.media_type ? null : (fallback ?? (raw.title !== undefined ? 'movie' : raw.name !== undefined ? 'tv' : null))
   if (!type || !raw.id) return null

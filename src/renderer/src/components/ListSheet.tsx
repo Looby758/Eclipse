@@ -49,7 +49,7 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
         <div className="sheet-head">
           <h1>{saved?.name ?? 'List'}</h1>
         </div>
-        {error ? <p className="error">{error}</p> : <p className="muted">Loading{source?.kind === 'guide' || source?.kind === 'franchise' ? ' the watch order (the first time takes a few seconds)' : ''}…</p>}
+        {error ? <p className="error">{error}</p> : <p className="muted">Loading{source?.kind === 'guide' ? ' the watch order (the first time takes a few seconds)' : ''}…</p>}
       </Sheet>
     )
   }
@@ -199,7 +199,7 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
                   <Trash2 size={15} /> Delete list
                 </button>
               ))}
-            {(source?.kind === 'guide' || source?.kind === 'franchise') && (
+            {source?.kind === 'guide' && (
               <button
                 className="btn glass"
                 title="Make a copy you can reorder, add to and take things off"

@@ -2,7 +2,9 @@ import type { MediaType, TitleRef } from '../types'
 import { titleKey } from '../types'
 import { MARVEL } from './marvel'
 import { STAR_WARS } from './starWars'
-import { normalizeName } from '../franchise'
+import { WALKING_DEAD } from './walkingDead'
+import { BREAKING_BAD } from './breakingBad'
+
 
 /**
  * Hand-made watch orders for franchises that mix films and shows, which TMDB doesn't cover.
@@ -29,7 +31,7 @@ export interface Guide {
   entries: GuideEntry[]
 }
 
-export const GUIDES: Guide[] = [MARVEL, STAR_WARS]
+export const GUIDES: Guide[] = [MARVEL, STAR_WARS, WALKING_DEAD, BREAKING_BAD]
 
 export const guideById = (id: string): Guide | undefined => GUIDES.find((g) => g.id === id)
 
@@ -38,6 +40,18 @@ export const guideRefs = (g: Guide): TitleRef[] =>
 
 /** The guides a title appears in. */
 export const guidesWith = (key: string): Guide[] => GUIDES.filter((g) => g.entries.some((e) => titleKey(e.type, e.id) === key))
+
+/** Lower case, no accents or punctuation, "&" as "and", and no leading "The". */
+export function normalizeName(name: string): string {
+  return name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/^(the|a|an) /, '')
+}
 
 /** The guide a search is after ("star wars", "MCU"), if any. */
 export function guideForQuery(query: string): Guide | undefined {

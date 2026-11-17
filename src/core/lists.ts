@@ -17,8 +17,6 @@ export function listIdFor(source: ListSource, ownId?: string): string {
       return `tmdblist:${source.listId}`
     case 'guide':
       return `guide:${source.guideId}`
-    case 'franchise':
-      return `franchise:${source.phrase.replace(/ /g, '-')}`
     case 'custom':
       return `custom:${ownId ?? Math.random().toString(36).slice(2, 8)}`
   }
@@ -31,7 +29,6 @@ export function sourceOf(id: string): ListSource | null {
   if ((m = /^collection:(\d+)$/.exec(id))) return { kind: 'collection', collectionId: Number(m[1]) }
   if ((m = /^tmdblist:(\d+)$/.exec(id))) return { kind: 'tmdbList', listId: Number(m[1]) }
   if ((m = /^guide:([a-z0-9-]+)$/.exec(id))) return { kind: 'guide', guideId: m[1] }
-  if ((m = /^franchise:([a-z0-9]+(?:-[a-z0-9]+)*)$/.exec(id))) return { kind: 'franchise', phrase: m[1].replace(/-/g, ' ') }
   if (/^custom:[a-z0-9-]+$/.test(id)) return { kind: 'custom' }
   return null
 }

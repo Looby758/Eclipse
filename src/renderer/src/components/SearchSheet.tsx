@@ -1,8 +1,8 @@
 import { Clapperboard } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { guideForQuery } from '@core/guides'
-import { matchesPhrase, normalizeName } from '@core/franchise'
-import type { FranchiseMatch } from '@shared/api'
+import { listIdFor } from '@core/lists'
+import { plural } from '@core/format'
 import type { SearchResult } from '@core/types'
 import { useApp } from '../store/app'
 import Sheet from './Sheet'
@@ -23,20 +23,8 @@ export default function SearchSheet(): React.JSX.Element {
   const { map, checking } = useAvailability(results.map((r) => r.key), filter !== 'any')
   const shown = results.filter((r) => passesFilter(filter, map[r.key]))
   const go = useApp((s) => s.go)
-  const [order, setOrder] = useState<FranchiseMatch | null>(null)
-
-  // A watch order for what you searched: a curated one, or worked out when two or more results share the name.
-  useEffect(() => {
-    setOrder(null)
-    const q = query.trim()
-    const phrase = normalizeName(q)
-    if (!guideForQuery(q) && results.filter((r) => matchesPhrase(r.name, phrase)).length < 2) return
-    let cancelled = false
-    window.api.franchiseForQuery(q).then((r) => !cancelled && r.ok && setOrder(r.value))
-    return () => {
-      cancelled = true
-    }
-  }, [results])
+  // A hand-made watch order for what you searched ("walking dead", "MCU").
+  const order = guideForQuery(query)
 
   useEffect(() => {
     const q = query.trim()
@@ -78,12 +66,12 @@ export default function SearchSheet(): React.JSX.Element {
       {error && <p className="error">{error}</p>}
       {!query.trim() && <p className="muted">Type a film or show in the search box below.</p>}
       {order && (
-        <button className="order-card" onClick={() => go({ name: 'list', id: order.id })}>
+        <button className="order-card" onClick={() => go({ name: 'list', id: listIdFor({ kind: 'guide', guideId: order.id }) })}>
           <Clapperboard size={22} />
           <span className="order-card-text">
             <span className="order-card-name">{order.name} watch order</span>
             <span className="muted small">
-              {order.count} titles{order.curated ? ', in release or story order' : ' in release order'}
+              {plural(order.entries.length, order.entries.every((e) => e.type === 'tv') ? 'show' : order.entries.every((e) => e.type === 'movie') ? 'film' : 'title')}, in release or story order
             </span>
           </span>
         </button>

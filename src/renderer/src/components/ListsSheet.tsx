@@ -66,7 +66,7 @@ export default function ListsSheet(): React.JSX.Element {
   const lists = listsOf(library)
   const orders = [
     ...GUIDES.map((g) => ({ id: listIdFor({ kind: 'guide', guideId: g.id }), name: g.name })),
-    ...lists.filter((l) => l.source.kind === 'collection' || l.source.kind === 'franchise').map((l) => ({ id: l.id, name: l.name }))
+    ...lists.filter((l) => l.source.kind === 'collection').map((l) => ({ id: l.id, name: l.name }))
   ]
   const people = lists.filter((l) => l.source.kind === 'person')
   const own = lists.filter((l) => l.source.kind === 'custom')
@@ -85,7 +85,7 @@ export default function ListsSheet(): React.JSX.Element {
           <ListCard key={o.id} id={o.id} name={o.name} />
         ))}
       </div>
-      <p className="muted small">Search for any franchise (say, The Walking Dead) to get its watch order, then “Add to your lists” to keep it here. Film series work the same way from a film’s page (“Part of …”).</p>
+      <p className="muted small">Film series appear here when you add them from a film’s page (“Part of …”). Want another watch order? Ask for it and it gets added by hand.</p>
 
       <h2 className="list-sub">People</h2>
       {people.length ? (

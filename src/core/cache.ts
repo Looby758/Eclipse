@@ -24,8 +24,6 @@ export const CACHE_TTL = {
   credits: 7 * DAY,
   person: 7 * DAY,
   collection: 7 * DAY,
-  /** Automatic franchise watch orders: weekly. */
-  franchise: 7 * DAY,
   /** Public TMDB lists can change any time: daily. */
   list: DAY
 } as const
