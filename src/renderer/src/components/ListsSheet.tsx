@@ -17,7 +17,7 @@ function ListCard({ id, name }: { id: string; name: string }): React.JSX.Element
   const go = useApp((s) => s.go)
   const { view, error } = useList(id)
   const progress = view ? progressOf(view.items, library, localDate(new Date())) : null
-  const posters = (view?.items ?? []).filter((i) => i.posterPath).slice(0, 4)
+  const posters = (view?.items ?? []).filter((i, n, all) => i.posterPath && all.findIndex((o) => o.key === i.key) === n).slice(0, 4)
   const image = imageUrl(view?.imagePath, 'w185')
   return (
     <button className="list-card" onClick={() => go({ name: 'list', id })}>

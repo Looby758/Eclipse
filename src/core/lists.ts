@@ -1,5 +1,5 @@
 import type { Library, LibraryEntry, ListSource, SavedList, TitleKey, TitleRef } from './types'
-import { parseTitleKey } from './types'
+import { parseEpisodeKey, parseTitleKey } from './types'
 
 /**
  * Lists: the people, collections, watch-order guides and TMDB lists you follow, and your own
@@ -39,6 +39,9 @@ const slug = (name: string): string =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
     .slice(0, 40) || 'list'
+
+/** A list row's own id: the title, or the title and season for a season row. */
+export const itemKey = (r: Pick<TitleRef, 'key' | 'season'>): string => (r.season ? `${r.key}#s${r.season}` : r.key)
 
 export const refOf = (e: Pick<LibraryEntry, 'key' | 'type' | 'id' | 'title'>): TitleRef => ({ key: e.key, type: e.type, id: e.id, name: e.title.name, year: e.title.year, posterPath: e.title.posterPath })
 
@@ -86,8 +89,9 @@ export function setInList(library: Library, id: string, ref: TitleRef, inList: b
   return changeList(library, id, (l) => {
     if (l.source.kind !== 'custom') return l
     const items = l.items ?? []
-    if (inList) return items.some((i) => i.key === ref.key) ? l : { ...l, items: [...items, ref] }
-    return { ...l, items: items.filter((i) => i.key !== ref.key) }
+    const k = itemKey(ref)
+    if (inList) return items.some((i) => itemKey(i) === k) ? l : { ...l, items: [...items, ref] }
+    return { ...l, items: items.filter((i) => itemKey(i) !== k) }
   })
 }
 
@@ -135,7 +139,9 @@ function cleanRef(raw: unknown): TitleRef | null {
     name: typeof r.name === 'string' ? r.name : 'Untitled',
     year: typeof r.year === 'number' ? r.year : null,
     posterPath: typeof r.posterPath === 'string' ? r.posterPath : null,
-    ...(typeof r.date === 'string' ? { date: r.date } : {})
+    ...(typeof r.date === 'string' ? { date: r.date } : {}),
+    ...(parsed.type === 'tv' && typeof r.season === 'number' && r.season > 0 ? { season: r.season } : {}),
+    ...(typeof r.episodes === 'number' && r.episodes > 0 ? { episodes: r.episodes } : {})
   }
 }
 
@@ -160,7 +166,7 @@ export function normalizeLists(raw: unknown, legacy: { name: string; ref: TitleR
     }
     if (source.kind === 'custom') {
       const seen = new Set<string>()
-      list.items = (Array.isArray(l.items) ? l.items : []).map(cleanRef).filter((r): r is TitleRef => !!r && !seen.has(r.key) && !!seen.add(r.key))
+      list.items = (Array.isArray(l.items) ? l.items : []).map(cleanRef).filter((r): r is TitleRef => !!r && !seen.has(itemKey(r)) && !!seen.add(itemKey(r)))
     }
     out.push(list)
   }
@@ -174,6 +180,14 @@ export function normalizeLists(raw: unknown, legacy: { name: string; ref: TitleR
 // ---- Completion ----
 
 export const isSeen = (library: Library, key: string): boolean => library.entries[key]?.status === 'watched'
+
+/** A row is seen when its title is Watched, or (for a season row) every episode of that season is ticked. */
+export function isItemSeen(library: Library, ref: Pick<TitleRef, 'key' | 'season' | 'episodes'>): boolean {
+  if (isSeen(library, ref.key)) return true
+  if (!ref.season || !ref.episodes) return false
+  const ticked = Object.keys(library.entries[ref.key]?.episodes ?? {}).filter((k) => parseEpisodeKey(k)?.season === ref.season).length
+  return ticked >= ref.episodes
+}
 
 export interface Progress {
   /** Out by today (or with no date), in the list's order. */
@@ -190,8 +204,8 @@ export interface Progress {
 export function progressOf(items: TitleRef[], library: Library, today: string): Progress {
   const released = items.filter((i) => !i.date || i.date <= today)
   const upcoming = items.filter((i) => i.date && i.date > today)
-  const seen = released.filter((i) => isSeen(library, i.key)).length
-  return { released, upcoming, seen, total: released.length, next: released.find((i) => !isSeen(library, i.key)) ?? null }
+  const seen = released.filter((i) => isItemSeen(library, i)).length
+  return { released, upcoming, seen, total: released.length, next: released.find((i) => !isItemSeen(library, i)) ?? null }
 }
 
 /** Release order: by date (undated last), then name. */
@@ -199,6 +213,6 @@ export function releaseOrder(items: TitleRef[]): TitleRef[] {
   return [...items].sort((a, b) => {
     const da = a.date ?? (a.year ? `${a.year}-12-31` : '9999')
     const db = b.date ?? (b.year ? `${b.year}-12-31` : '9999')
-    return da.localeCompare(db) || a.name.localeCompare(b.name)
+    return da.localeCompare(db) || a.name.localeCompare(b.name) || (a.season ?? 0) - (b.season ?? 0)
   })
 }

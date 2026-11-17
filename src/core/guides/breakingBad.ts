@@ -5,7 +5,7 @@ export const BREAKING_BAD: Guide = {
   id: 'breaking-bad',
   name: 'Breaking Bad',
   aliases: ['breaking bad', 'better call saul', 'el camino'],
-  description: 'Breaking Bad, Better Call Saul and El Camino, in release order or in story order.',
+  description: 'Breaking Bad, Better Call Saul and El Camino, season by season, in release order or in story order.',
   entries: [
     { type: 'tv', id: 60059, name: 'Better Call Saul', year: 2015, note: 'Mostly before Breaking Bad; its black-and-white scenes come after it' },
     { type: 'tv', id: 1396, name: 'Breaking Bad', year: 2008 },

@@ -1,6 +1,6 @@
 import { Clapperboard } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { guideForQuery } from '@core/guides'
+import { guideForQuery, guideTitleCount } from '@core/guides'
 import { listIdFor } from '@core/lists'
 import { plural } from '@core/format'
 import type { SearchResult } from '@core/types'
@@ -71,7 +71,7 @@ export default function SearchSheet(): React.JSX.Element {
           <span className="order-card-text">
             <span className="order-card-name">{order.name} watch order</span>
             <span className="muted small">
-              {plural(order.entries.length, order.entries.every((e) => e.type === 'tv') ? 'show' : order.entries.every((e) => e.type === 'movie') ? 'film' : 'title')}, in release or story order
+              {plural(guideTitleCount(order), order.entries.every((e) => e.type === 'tv') ? 'show' : 'film and show', order.entries.every((e) => e.type === 'tv') ? 'shows' : 'films and shows')}, season by season
             </span>
           </span>
         </button>

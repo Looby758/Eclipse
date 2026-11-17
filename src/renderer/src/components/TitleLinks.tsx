@@ -1,6 +1,6 @@
 import { Check, Clapperboard, ListPlus, Plus, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { guidesWith, guideRefs } from '@core/guides'
+import { guidesWith } from '@core/guides'
 import { customListsWith, listIdFor, listsOf } from '@core/lists'
 import { imageUrl } from '@core/tmdb'
 import type { Credits, TitleDetails, TitleRef } from '@core/types'
@@ -68,14 +68,11 @@ export default function TitleLinks({ details: d }: { details: TitleDetails }): R
                 {d.collection.name}
               </button>
             )}
-            {guides.map((g) => {
-              const n = guideRefs(g).findIndex((r) => r.key === d.key) + 1
-              return (
-                <button key={g.id} className="chip" onClick={() => go({ name: 'list', id: listIdFor({ kind: 'guide', guideId: g.id }) })}>
-                  {g.name} · #{n} of {g.entries.length}
-                </button>
-              )
-            })}
+            {guides.map((g) => (
+              <button key={g.id} className="chip" onClick={() => go({ name: 'list', id: listIdFor({ kind: 'guide', guideId: g.id }) })}>
+                {g.name} watch order
+              </button>
+            ))}
           </div>
         </div>
       )}

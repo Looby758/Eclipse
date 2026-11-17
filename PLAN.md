@@ -103,6 +103,11 @@ Select a few films and shows I want to watch soon, as a short list separate from
 
 It reuses the Phase 3 runtime maths and my evening settings (start time, bedtime, watching nights).
 
+### Seen before and rewatches (added later, your idea)
+
+- **Seen it, no date:** mark a film, show or season as watched without saying when (things watched years ago, before Sequel, like Breaking Bad, Better Call Saul and El Camino). It counts everywhere as watched (completion, watch orders, watchlist hours) but On this day skips it, since there's no day to remember.
+- **Rewatching:** say you're rewatching something. It tracks this rewatch's episode progress separately from the first watch, keeps each finished rewatch's dates, and shows how many times you've watched it ("Watched 3 times").
+
 ### Watch-order guides
 
 Show a franchise as an ordered list of films and shows, with my progress and where each one streams.
@@ -157,7 +162,8 @@ Build in this order, and finish each phase so the app is usable before moving on
 7. **Watch-order guides.** TMDB collections first, then curated franchise files and custom orders.
 8. **Release calendar.** .ics export, then decide whether an auto-updating feed is worth it.
 9. **Watch soon.** Pick a few films and shows to watch soon; see the total time and how much fits each evening (see Watch soon above).
-10. **Polish.** Export all data (JSON and CSV), the TMDB and JustWatch credits, and Windows and Mac installers with electron-builder and GitHub Actions releases, as in Orbit.
+10. **Seen before and rewatches.** Mark things watched without a date, and track rewatches with a count and their own episode progress (see Seen before and rewatches above).
+11. **Polish.** Export all data (JSON and CSV), the TMDB and JustWatch credits, and Windows and Mac installers with electron-builder and GitHub Actions releases, as in Orbit.
 
 ## Open questions
 
@@ -225,6 +231,8 @@ You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls
 - Decisions: only titles already out count towards "seen X of Y"; upcoming ones are listed under *Coming up*. "Seen" means marked Watched (a show you're partway through doesn't count yet). An actor's list counts their films plus TV where they were in 3 or more episodes, and leaves out cameos as themselves, talk shows and reality TV. A director's list is films only. The two curated orders are always on the Lists page; people, series and TMDB lists appear once you add them. Your Sequel "Marvel" collection is now one of your own lists (it moved over automatically; nothing is lost).
 - **Please check:** the Marvel and Star Wars orders are my drafts in `src/core/guides/marvel.ts` and `starWars.ts`. Every title is checked against TMDB, but the order is a judgement call, especially after Endgame, where the series overlap. Tell me anything you'd move, add or drop. It includes announced titles (Avengers: Doomsday and Secret Wars, Spider-Man: Brand New Day, The Mandalorian and Grogu, Maul: Shadow Lord), which sit under *Coming up* until they're out.
 - Done (after your first look): **release order is the default** for watch orders, with story order a click away.
+- Done (after your first look): **watch orders go season by season.** Each season of a show is its own row with its own air date, so in release order The Walking Dead and Fear the Walking Dead interleave as they aired, and story order puts each season where its story fits. A season counts as seen once all its episodes are ticked (or the show is marked Watched). This applies to every watch order, Marvel and Star Wars included.
 - Tried and dropped: automatic watch orders worked out from TMDB by name. They missed spin-offs with other names (Better Call Saul) and pulled in unrelated old films, so you chose hand-made orders instead.
 - Done (after your first look): two more hand-made orders, **The Walking Dead** (all seven series) and **Breaking Bad** (with Better Call Saul and El Camino). Searching a franchise ("walking dead", "better call saul", "MCU", "star wars") shows its watch order above the results, and any guide can be copied to your lists to make your own version. Ask for any other franchise and it gets added by hand.
+- Added to the plan: Phase 10, seen-before and rewatches (your idea; Polish moves to 11).
 - Next: you try Phases 4 to 7. Then Phase 8 (release calendar).

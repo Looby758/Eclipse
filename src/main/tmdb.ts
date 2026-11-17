@@ -2,7 +2,7 @@ import { net, safeStorage } from 'electron'
 import { cached, CACHE_TTL } from '@core/cache'
 import { createTmdb, TmdbError, type Tmdb } from '@core/tmdb'
 import type { CollectionDetails, Credits, MediaType, PersonDetails, Provider, SearchResult, SeasonDetails, TitleDetails, TitleRef, TmdbListDetails, WatchProviders } from '@core/types'
-import { guideById, guideRefs } from '@core/guides'
+import { expandGuide, guideById, guideRefs, type Guide, type GuideTitleInfo } from '@core/guides'
 import { releaseOrder, sourceOf, findList } from '@core/lists'
 import type { Library } from '@core/types'
 import { parseTitleKey } from '@core/types'
@@ -149,13 +149,12 @@ export const person = (id: number, refresh = false): Promise<Fetched<PersonDetai
 export const collection = (id: number, refresh = false): Promise<Fetched<CollectionDetails>> => keep(`collection:${id}`, CACHE_TTL.collection, () => tmdb().collection(id), refresh)
 export const tmdbList = (id: number, refresh = false): Promise<Fetched<TmdbListDetails>> => keep(`list:${id}`, CACHE_TTL.list, () => tmdb().list(id), refresh)
 
-/** Fills in posters and release dates for titles that only have names (the hand-made guides). */
-async function withPosters(refs: TitleRef[]): Promise<TitleRef[]> {
-  const found = await detailsMany(refs.map((r) => r.key))
-  return refs.map((r) => {
-    const d = found[r.key]
-    return d ? { ...r, name: r.name || d.name, posterPath: d.posterPath, date: d.date, year: d.year ?? r.year } : r
-  })
+/** A hand-made guide laid out season by season, with posters and air dates from TMDB. */
+async function guideItems(g: Guide): Promise<TitleRef[]> {
+  const found = await detailsMany(guideRefs(g).map((r) => r.key))
+  const info: Record<string, GuideTitleInfo> = {}
+  for (const [key, d] of Object.entries(found)) info[key] = { name: d.name, year: d.year, date: d.date, posterPath: d.posterPath, seasons: d.type === 'tv' ? d.seasons : [] }
+  return expandGuide(g, info)
 }
 
 /** Everything in a list, wherever it comes from. */
@@ -185,7 +184,7 @@ export async function openList(id: string, library: Library, refresh = false): P
     case 'guide': {
       const g = guideById(source.guideId)
       if (!g) throw new Error('That guide doesn’t exist.')
-      const items = await withPosters(guideRefs(g))
+      const items = await guideItems(g)
       return { id, name: g.name, description: g.description, imagePath: null, items, releaseItems: releaseOrder(items) }
     }
     case 'custom': {

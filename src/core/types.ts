@@ -164,8 +164,12 @@ export interface TitleRef {
   name: string
   year: number | null
   posterPath: string | null
-  /** Release or first air date, YYYY-MM-DD, when known. */
+  /** Release or first air date, YYYY-MM-DD, when known (a season's own air date for a season). */
   date?: string | null
+  /** Watch orders go season by season: this row is just this season of the show. */
+  season?: number
+  /** How many episodes the season has, so it counts as seen once they're all ticked. */
+  episodes?: number
 }
 
 export type ListSource =

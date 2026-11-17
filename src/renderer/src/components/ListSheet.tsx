@@ -1,11 +1,11 @@
 import { ArrowDown, ArrowUp, Check, Copy, GripVertical, Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
-import { findList, isSeen, progressOf, sourceOf } from '@core/lists'
+import { findList, isItemSeen, itemKey, progressOf, sourceOf } from '@core/lists'
 import { localDate, preferencesOf } from '@core/library'
 import { onMyServices, type AvailabilityFilter as Filter, passesFilter, FILTER_LABELS } from '@core/providers'
 import { formatShortDay } from '@core/format'
 import { imageUrl } from '@core/tmdb'
-import { STATUS_LABELS, type TitleRef } from '@core/types'
+import { parseEpisodeKey, STATUS_LABELS, type TitleRef } from '@core/types'
 import { useApp } from '../store/app'
 import { useAvailability } from '../lib/availability'
 import { kindLabel, progressSentence, useList } from '../lib/lists'
@@ -40,7 +40,7 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
 
   const items = view ? (order === 'release' && view.releaseItems ? view.releaseItems : view.items) : []
   const progress = progressOf(items, library, today)
-  const unseenKeys = progress.released.filter((i) => !isSeen(library, i.key)).map((i) => i.key)
+  const unseenKeys = [...new Set(progress.released.filter((i) => !isItemSeen(library, i)).map((i) => i.key))]
   const { map, providers, checking } = useAvailability(unseenKeys, unseenKeys.length > 0)
 
   if (!view) {
@@ -54,15 +54,16 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
     )
   }
 
-  const rows = progress.released.filter((i) => (show === 'all' || !isSeen(library, i.key)) && (filter === 'any' || (!isSeen(library, i.key) && passesFilter(filter, map[i.key]))))
-  const numberOf = new Map(items.map((i, n) => [i.key, n + 1]))
+  const rows = progress.released.filter((i) => (show === 'all' || !isItemSeen(library, i)) && (filter === 'any' || (!isItemSeen(library, i) && passesFilter(filter, map[i.key]))))
+  const numberOf = new Map(items.map((i, n) => [itemKey(i), n + 1]))
+  const label = (r: TitleRef): string => (r.season ? `${r.name}, season ${r.season}` : r.name)
   const follow = async (): Promise<void> => {
     if (!source || own) return
     setLibrary(saved ? await window.api.removeList(id) : await window.api.followList({ name: view.name, source, imagePath: view.imagePath }))
   }
 
   const where = (r: TitleRef): React.JSX.Element | null => {
-    if (isSeen(library, r.key)) return null
+    if (isItemSeen(library, r)) return null
     const p = providers[r.key]
     if (!p) return null
     const yours = onMyServices(p, services)
@@ -74,13 +75,14 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
 
   const row = (r: TitleRef, index: number): React.JSX.Element => {
     const entry = library.entries[r.key]
-    const seen = isSeen(library, r.key)
-    const next = progress.next?.key === r.key
-    const pos = own ? items.findIndex((i) => i.key === r.key) : -1
+    const seen = isItemSeen(library, r)
+    const next = !!progress.next && itemKey(progress.next) === itemKey(r)
+    const pos = own ? items.findIndex((i) => itemKey(i) === itemKey(r)) : -1
+    const ticked = r.season && !seen ? Object.keys(entry?.episodes ?? {}).filter((k) => parseEpisodeKey(k)?.season === r.season).length : 0
     const canDrag = own && show === 'all' && filter === 'any'
     return (
       <li
-        key={r.key}
+        key={itemKey(r)}
         className={`list-row ${seen ? 'seen' : ''} ${next ? 'next' : ''} ${dragFrom === pos && canDrag ? 'dragging' : ''}`}
         draggable={canDrag}
         onDragStart={() => setDragFrom(pos)}
@@ -92,7 +94,7 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
         onDragEnd={() => setDragFrom(null)}
       >
         {canDrag && <GripVertical className="list-grip" size={16} aria-hidden />}
-        <span className="list-num">{numberOf.get(r.key) ?? index + 1}</span>
+        <span className="list-num">{numberOf.get(itemKey(r)) ?? index + 1}</span>
         <button className="list-open" onClick={() => go({ name: 'title', type: r.type, id: r.id })}>
           <span className="list-poster">
             <Poster path={r.posterPath} type={r.type} name={r.name} size="w92" />
@@ -100,9 +102,9 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
           <span className="list-text">
             <span className="list-name">{r.name}</span>
             <span className="list-meta">
-              {r.type === 'movie' ? 'Film' : 'Show'}
+              {r.season ? `Season ${r.season}` : r.type === 'movie' ? 'Film' : 'Show'}
               {r.year ? ` · ${r.year}` : ''}
-              {entry && !seen ? ` · ${STATUS_LABELS[entry.status]}` : ''}
+              {r.season ? (ticked ? ` · ${ticked} of ${r.episodes ?? '?'} episodes` : '') : entry && !seen ? ` · ${STATUS_LABELS[entry.status]}` : ''}
               {next ? ' · Up next' : ''}
             </span>
           </span>
@@ -170,7 +172,7 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
             )}
             {progress.next && (
               <button className="btn glass" onClick={() => go({ name: 'title', type: progress.next!.type, id: progress.next!.id })}>
-                Next: {progress.next.name}
+                Next: {label(progress.next)}
               </button>
             )}
             {own && renaming === null && (
@@ -254,15 +256,17 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
           <h2 className="list-sub">Coming up</h2>
           <ol className="list-rows">
             {progress.upcoming.map((r) => (
-              <li key={r.key} className="list-row upcoming">
-                <span className="list-num">{numberOf.get(r.key)}</span>
+              <li key={itemKey(r)} className="list-row upcoming">
+                <span className="list-num">{numberOf.get(itemKey(r))}</span>
                 <button className="list-open" onClick={() => go({ name: 'title', type: r.type, id: r.id })}>
                   <span className="list-poster">
                     <Poster path={r.posterPath} type={r.type} name={r.name} size="w92" />
                   </span>
                   <span className="list-text">
                     <span className="list-name">{r.name}</span>
-                    <span className="list-meta">Out {formatShortDay(r.date)} {r.date?.slice(0, 4)}</span>
+                    <span className="list-meta">
+                      {r.season ? `Season ${r.season} · ` : ''}Out {formatShortDay(r.date)} {r.date?.slice(0, 4)}
+                    </span>
                   </span>
                 </button>
               </li>

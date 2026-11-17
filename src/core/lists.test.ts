@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { emptyLibrary, normalizeLibrary, setStatus } from './library'
-import { createList, customListsWith, followList, listIdFor, moveInList, progressOf, releaseOrder, removeList, renameList, setInList, sourceOf } from './lists'
-import { GUIDES, guideForQuery, guideRefs, guidesWith } from './guides'
+import { createList, customListsWith, isItemSeen, itemKey, followList, listIdFor, moveInList, progressOf, releaseOrder, removeList, renameList, setInList, sourceOf } from './lists'
+import { expandGuide, GUIDES, guideForQuery, guideRefs, guidesWith } from './guides'
+import { WALKING_DEAD } from './guides/walkingDead'
 import { parseCredits, parsePerson, refFromRaw } from './tmdb'
-import type { TitleRef } from './types'
+import type { Library, TitleRef } from './types'
 
 const ref = (id: number, date: string | null = '2020-01-01', type: 'movie' | 'tv' = 'movie'): TitleRef => ({ key: `${type}:${id}`, type, id, name: `T${id}`, year: date ? Number(date.slice(0, 4)) : null, posterPath: null, date })
 const now = new Date('2026-11-17T12:00:00Z')
@@ -111,5 +112,37 @@ describe('guides', () => {
     expect(guideForQuery('The Avengers')?.id).toBe('marvel')
     expect(guideForQuery('Star Wars: Andor')?.id).toBe('star-wars')
     expect(guideForQuery('Interstellar')).toBeUndefined()
+  })
+})
+
+describe('season by season', () => {
+  const season = (number: number, airDate: string | null, episodeCount = 6) => ({ number, name: `Season ${number}`, episodeCount, airDate, posterPath: null })
+  const info = {
+    'tv:1402': { name: 'The Walking Dead', year: 2010, date: '2010-10-31', posterPath: '/twd.jpg', seasons: [season(0, '2010-01-01'), ...Array.from({ length: 11 }, (_, i) => season(i + 1, `${2010 + i}-10-01`))] },
+    'tv:62286': { name: 'Fear the Walking Dead', year: 2015, date: '2015-08-23', posterPath: null, seasons: Array.from({ length: 8 }, (_, i) => season(i + 1, `${2015 + i}-06-01`)) }
+  }
+
+  it('lays shows out one season per row, interleaving by air date in release order', () => {
+    const rows = expandGuide(WALKING_DEAD, info)
+    const twd = rows.filter((r) => r.key === 'tv:1402')
+    expect(twd.map((r) => r.season)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
+    expect(rows.filter((r) => r.key === 'tv:62286')).toHaveLength(8)
+    expect(rows[0]).toMatchObject({ key: 'tv:62286', season: 1, date: '2015-06-01' })
+    const release = releaseOrder(rows.filter((r) => r.key === 'tv:1402' || r.key === 'tv:62286')).map((r) => `${r.key === 'tv:1402' ? 'T' : 'F'}${r.season}`)
+    expect(release.slice(0, 8)).toEqual(['T1', 'T2', 'T3', 'T4', 'T5', 'F1', 'T6', 'F2'])
+  })
+
+  it('leaves out seasons without a date and specials', () => {
+    const rows = expandGuide(WALKING_DEAD, { 'tv:1402': { ...info['tv:1402'], seasons: [season(0, '2010-01-01'), season(1, '2010-10-31'), season(2, null)] } })
+    expect(rows.filter((r) => r.key === 'tv:1402').map((r) => r.season)).toEqual([1])
+  })
+
+  it('counts a season as seen once its episodes are ticked', () => {
+    const ref = { key: 'tv:1402' as const, season: 2, episodes: 2 }
+    const lib = (episodes: Record<string, string>, status: 'watching' | 'watched' = 'watching') => ({ version: 1, entries: { 'tv:1402': { key: 'tv:1402', type: 'tv', id: 1402, status, addedAt: '', updatedAt: '', title: { name: 'TWD', year: 2010, posterPath: null }, episodes } } }) as unknown as Library
+    expect(isItemSeen(lib({ S2E1: '2020-01-01' }), ref)).toBe(false)
+    expect(isItemSeen(lib({ S2E1: '2020-01-01', S2E2: '2020-01-02', S1E1: '2019-01-01' }), ref)).toBe(true)
+    expect(isItemSeen(lib({}, 'watched'), ref)).toBe(true)
+    expect(itemKey({ key: 'tv:1402', season: 2 })).toBe('tv:1402#s2')
   })
 })
