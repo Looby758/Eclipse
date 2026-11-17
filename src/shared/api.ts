@@ -9,7 +9,7 @@ import type { WeekSoFar } from '@core/week'
 import type { Recommendation } from '@core/recommend'
 import type { NowPlaying, Recognised, Suggestion } from '@core/watching'
 import type { CollectionDetails, Credits, ListSource, PersonDetails, TitleRef, TmdbListDetails } from '@core/types'
-import type { Library, MediaType, Preferences, Provider, SearchResult, SeasonDetails, TitleDetails, TitleKey, TitleSnapshot, WatchProviders, WatchStatus } from '@core/types'
+import type { Library, MediaType, PlannedTime, Preferences, Provider, SearchResult, SeasonDetails, TitleDetails, TitleKey, TitleSnapshot, WatchProviders, WatchStatus } from '@core/types'
 
 type Item = { key: TitleKey; type: MediaType; id: number; title: TitleSnapshot }
 
@@ -161,6 +161,8 @@ export interface EclipseApi {
   /** Watching a show with someone: its own progress, apart from yours. */
   startWatchWith(item: Item, name: string): Promise<Library>
   tickWith(key: TitleKey, index: number, keys: string[], watched: boolean): Promise<Library>
+  /** Sets (or clears, with null) the next time you've arranged to watch with someone. */
+  planWatchWith(key: TitleKey, index: number, planned: PlannedTime | null): Promise<Library>
   endWatchWith(key: TitleKey, index: number, keep: boolean): Promise<Library>
   /** A list or watch-order row: seen with no date (a season row ticks its episodes), or undo that. */
   markRowSeen(ref: TitleRef, on: boolean): Promise<Library>

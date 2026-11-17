@@ -1,6 +1,7 @@
 import { Check, Eye, History, Hourglass, Play, Sparkles, Tv, Users, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { localDate, nextEpisodeFor, preferencesOf, watchesWith } from '@core/library'
+import { localDate, nextEpisodeFor, nextSession, preferencesOf, sessionIsOn, watchesWith } from '@core/library'
+import { sessionLabel } from '../lib/together'
 import { comebacks, daysAfter, stalledShows, type ComebackShow } from '@core/nudges'
 import { servicesNews } from '@core/services'
 import { daysAgo, formatMonth, formatRuntime, formatShortDay } from '@core/format'
@@ -18,7 +19,10 @@ const itemOf = (e: LibraryEntry): { key: LibraryEntry['key']; type: LibraryEntry
 
 const label = (s: number, e: number): string => `S${s} E${e}`
 
-/** Home: "Next with Sam: The Boys S3 E2", one card per show you're watching with someone. */
+/**
+ * Home: your watches with someone and when you've arranged the next one ("Next with Jack: The
+ * Walking Dead S4 E12, Fri at 21:00"). The tick button only shows around that time.
+ */
 function Together(): React.JSX.Element | null {
   const library = useApp((s) => s.library)
   const { go, setLibrary } = useApp.getState()
@@ -27,33 +31,45 @@ function Together(): React.JSX.Element | null {
     shows.map((e) => e.key),
     shows.length > 0
   )
-  const rows = shows.flatMap((e) =>
-    watchesWith(e).map(({ index, watch }) => {
-      const d = map[e.key]
-      const next = d ? nextEpisodeFor({ ...e, episodes: watch.episodes }, d.seasons) : null
-      const fits = d && next ? fitTonight(new Date(), preferencesOf(library), episodeMinutes(d)) : 0
-      return { e, index, who: watch.with, next, fits }
-    })
-  )
+  const now = new Date()
+  const rows = shows
+    .flatMap((e) =>
+      watchesWith(e).map(({ index, watch }) => {
+        const d = map[e.key]
+        const next = d ? nextEpisodeFor({ ...e, episodes: watch.episodes }, d.seasons) : null
+        const session = nextSession(watch, now)
+        const on = sessionIsOn(watch, now)
+        const fits = on && d && next ? fitTonight(session && session > now ? session : now, preferencesOf(library), episodeMinutes(d)) : 0
+        return { e, index, who: watch.with, next, session, on, fits }
+      })
+    )
+    // Soonest arranged first; ones with no time set last.
+    .sort((a, b) => (a.session?.getTime() ?? Infinity) - (b.session?.getTime() ?? Infinity))
   if (!rows.length) return null
   return (
     <section className="note" aria-label="Watching with someone">
       <div className="note-kicker">
         <Users size={14} /> Watching together
       </div>
-      {rows.map(({ e, index, who, next, fits }) => (
+      {rows.map(({ e, index, who, next, session, on, fits }) => (
         <div key={`${e.key}:${index}`} className="note-line">
           <button className="note-open" onClick={() => go({ name: 'title', type: e.type, id: e.id })}>
-            Next with {who}: <strong>{e.title.name}</strong>
+            {session ? `${sessionLabel(session, now)[0].toUpperCase()}${sessionLabel(session, now).slice(1)} with ${who}` : `With ${who}, no time set`}: <strong>{e.title.name}</strong>
             {next ? ` ${label(next.season, next.episode)}` : ' (all caught up)'}
-            {next && fits > 0 ? ` · ${fits} ${fits === 1 ? 'fits' : 'fit'} before bed` : ''}
+            {on && next && fits > 0 ? ` · ${fits} ${fits === 1 ? 'fits' : 'fit'} before bed` : ''}
           </button>
-          {next && (
+          {on && next ? (
             <div className="row" style={{ marginTop: 6 }}>
               <button className="chip" onClick={async () => setLibrary(await window.api.tickWith(e.key, index, [episodeKey(next.season, next.episode)], true))}>
                 <Check size={14} /> Watched it with {who}
               </button>
             </div>
+          ) : (
+            !session && (
+              <button className="link-btn inline small" onClick={() => go({ name: 'title', type: e.type, id: e.id })}>
+                Set a time
+              </button>
+            )
           )}
         </div>
       ))}

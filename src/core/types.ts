@@ -139,6 +139,14 @@ export interface Rewatch {
   episodes?: Record<string, string>
   /** Watching with someone ("Sam"): kept apart from your own progress, and several can run at once. */
   with?: string
+  /** Watching with someone: the next time you've arranged, and whether it's the same time every week. */
+  planned?: PlannedTime
+}
+
+/** A time arranged with someone: local "YYYY-MM-DDTHH:MM". */
+export interface PlannedTime {
+  at: string
+  weekly?: boolean
 }
 
 /** An episode ticked as seen with no date (watched before Eclipse). */

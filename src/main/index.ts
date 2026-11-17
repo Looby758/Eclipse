@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import { exportFiles } from '@core/export'
 import { toIcs } from '@core/calendar'
 import { moveWatchSoon, setWatchSoon } from '@core/watchsoon'
-import { dropTitle, restoreDropped, setFrom, endWatchWith, startWatchWith, tickWith, endRewatch, localDate, markRowSeen, settleSeenShows, markSeenBefore, preferencesOf, removeRewatch, setEpisodes, startRewatch, setFinishBy, snoozeTitle, setNote, setPreferences, setStatus, setWatchedOn } from '@core/library'
+import { dropTitle, restoreDropped, setFrom, endWatchWith, planWatchWith, startWatchWith, tickWith, endRewatch, localDate, markRowSeen, settleSeenShows, markSeenBefore, preferencesOf, removeRewatch, setEpisodes, startRewatch, setFinishBy, snoozeTitle, setNote, setPreferences, setStatus, setWatchedOn } from '@core/library'
 import { TmdbError } from '@core/tmdb'
 import { createList, followList, moveInList, removeList, renameList, setInList } from '@core/lists'
 import { UNDATED, type TitleRef } from '@core/types'
@@ -20,6 +20,7 @@ import { getHistory, startServiceWatch } from './services'
 import { keysWatchedIn, yearInReview } from '@core/year'
 import { repairBatch, type Batch, type RepairChoice } from '@core/repair'
 import { refreshTray, setTray, setupTray, trayOn } from './tray'
+import { startTogetherReminders } from './together'
 import { acceptSuggestion, dismissSuggestion, noticingStatus, scanHistory, setNoticing, setupNoticing, stopNoticing } from './noticing'
 import { editMoment } from '@core/watching'
 import { CATCH_UP_ID, dismissCatchUp } from '@core/catchup'
@@ -191,6 +192,7 @@ function setupIpc(): void {
   ipcMain.handle('library:setFrom', (_e, key, from) => saveLibrary(setFrom(getLibrary(), key, from)))
   ipcMain.handle('library:startWith', (_e, item, name) => saveLibrary(startWatchWith(getLibrary(), item, name)))
   ipcMain.handle('library:tickWith', (_e, key, index, keys, watched) => saveLibrary(tickWith(getLibrary(), key, index, keys, watched)))
+  ipcMain.handle('library:planWith', (_e, key, index, planned) => saveLibrary(planWatchWith(getLibrary(), key, index, planned)))
   ipcMain.handle('library:endWith', (_e, key, index, keep) => saveLibrary(endWatchWith(getLibrary(), key, index, keep)))
   ipcMain.handle('library:seenBefore', (_e, item) => saveLibrary(markSeenBefore(getLibrary(), item)))
   ipcMain.handle('library:markRowSeen', async (_e, ref, on) => {
@@ -370,6 +372,7 @@ app.whenReady().then(() => {
   onSave(refreshTray)
   setupRemote(broadcastLibrary, sendRemote)
   setupNoticing({ changed: () => mainWindow?.webContents.send('noticing:changed'), show: showWindow, libraryChanged: broadcastLibrary })
+  startTogetherReminders(getLibrary, showWindow)
   startServiceWatch(getLibrary, () => mainWindow?.webContents.send('services:changed', getHistory()))
   void setupUpdater()
   app.on('activate', () => {

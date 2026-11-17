@@ -59,16 +59,42 @@ describe('watching with someone', () => {
 
 describe('watching together on Home', () => {
   it('puts a watch with someone among your picks, newest first', async () => {
-    const { withTogether, isTogether, startWatchWith, tickWith, setEpisodes, emptyLibrary } = await import('./library')
+    const { withTogether, isTogether, startWatchWith, tickWith, setEpisodes, emptyLibrary, planWatchWith } = await import('./library')
     const item = (id: number) => ({ key: `tv:${id}` as const, type: 'tv' as const, id, title: { name: `Show ${id}`, year: null, posterPath: null } })
     let lib = setEpisodes(emptyLibrary(), item(1), ['S1E1'], true, new Date(2026, 10, 10))
     lib = setEpisodes(lib, item(2), ['S1E1'], true, new Date(2026, 10, 12))
     lib = startWatchWith(lib, item(3), 'Jack', new Date(2026, 10, 15))
     lib = tickWith(lib, 'tv:3', 0, ['S1E1', 'S1E2'], true, new Date(2026, 10, 17))
+    // With no time arranged it stays off Home.
+    expect(withTogether(Object.values(lib.entries), lib).some(isTogether)).toBe(false)
+    const soon = new Date(Date.now() + 30 * 60_000)
+    const pad = (n: number) => String(n).padStart(2, '0')
+    lib = planWatchWith(lib, 'tv:3', 0, { at: `${soon.getFullYear()}-${pad(soon.getMonth() + 1)}-${pad(soon.getDate())}T${pad(soon.getHours())}:${pad(soon.getMinutes())}` })
     const own = Object.values(lib.entries)
     const picks = withTogether(own.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)), lib)
     expect(picks.map((p) => (isTogether(p) ? `${p.key} with ${p.together.who}` : p.key))).toEqual(['tv:3 with Jack', 'tv:2', 'tv:1'])
     const jack = picks[0]
     expect(isTogether(jack) && Object.keys(jack.episodes ?? {})).toEqual(['S1E1', 'S1E2'])
+  })
+})
+
+describe('arranging a time to watch together', () => {
+  it('finds the next session, rolls weekly ones on, and reminds 15 minutes before', async () => {
+    const { nextSession, sessionIsOn, sessionsStartingSoon, startWatchWith, planWatchWith, emptyLibrary, normalizeLibrary } = await import('./library')
+    const fri = { at: '2026-11-20T21:00' }
+    expect(nextSession({ planned: fri }, new Date(2026, 10, 17, 12, 0))).toEqual(new Date(2026, 10, 20, 21, 0))
+    // Still "on" a couple of hours in; a one-off is gone the next day.
+    expect(sessionIsOn({ planned: fri }, new Date(2026, 10, 20, 23, 0))).toBe(true)
+    expect(sessionIsOn({ planned: fri }, new Date(2026, 10, 20, 18, 0))).toBe(false)
+    expect(nextSession({ planned: fri }, new Date(2026, 10, 21, 12, 0))).toBeNull()
+    expect(nextSession({ planned: { ...fri, weekly: true } }, new Date(2026, 11, 2, 12, 0))).toEqual(new Date(2026, 11, 4, 21, 0))
+    const item = { key: 'tv:9' as const, type: 'tv' as const, id: 9, title: { name: 'The Walking Dead', year: null, posterPath: null } }
+    let lib = startWatchWith(emptyLibrary(), item, 'Jack')
+    lib = planWatchWith(lib, 'tv:9', 0, { at: '2026-11-20T21:00', weekly: true })
+    expect(normalizeLibrary(JSON.parse(JSON.stringify(lib))).entries['tv:9'].rewatches![0].planned).toEqual({ at: '2026-11-20T21:00', weekly: true })
+    expect(sessionsStartingSoon(lib, new Date(2026, 10, 20, 20, 50)).map((s) => s.who)).toEqual(['Jack'])
+    expect(sessionsStartingSoon(lib, new Date(2026, 10, 20, 20, 30))).toEqual([])
+    expect(planWatchWith(lib, 'tv:9', 0, { at: 'soon' })).toBe(lib)
+    expect(planWatchWith(lib, 'tv:9', 0, null).entries['tv:9'].rewatches![0].planned).toBeUndefined()
   })
 })

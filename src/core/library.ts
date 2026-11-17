@@ -1,4 +1,5 @@
 import type { Dropped, JustTonight, Library, LibraryEntry, MediaType, Preferences, Rewatch, TitleDetails, TitleKey, TitleSnapshot, WatchSlot, WatchStatus } from './types'
+import type { PlannedTime } from './types'
 import { DEFAULT_PREFERENCES, UNDATED, WATCH_STATUSES, episodeKey, parseEpisodeKey, parseTitleKey } from './types'
 import type { TitleRef } from './types'
 import { normalizeLists, normalizeWatchSoon, refOf } from './lists'
@@ -416,6 +417,8 @@ export function normalizeLibrary(raw: unknown): Library {
   return finish()
 }
 
+const isPlannedAt = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d$/.test(v)
+
 function cleanRewatches(raw: unknown): { rewatches?: Rewatch[] } {
   if (!Array.isArray(raw)) return {}
   const out: Rewatch[] = []
@@ -426,7 +429,8 @@ function cleanRewatches(raw: unknown): { rewatches?: Rewatch[] } {
     const who = typeof x.with === 'string' && x.with.trim() ? x.with.trim().slice(0, 60) : undefined
     // Only one of your own rewatches can still be going (and one per person you watch with).
     if (!done && out.some((o) => !o.finishedOn && o.with === who)) continue
-    out.push({ startedOn: x.startedOn, ...(done ? { finishedOn: done } : {}), ...(cleanEpisodes(x.episodes) ?? {}), ...(who ? { with: who } : {}) })
+    const planned = who && !done && x.planned && typeof x.planned === 'object' && isPlannedAt(x.planned.at) ? { at: x.planned.at, ...(x.planned.weekly === true ? { weekly: true } : {}) } : undefined
+    out.push({ startedOn: x.startedOn, ...(done ? { finishedOn: done } : {}), ...(cleanEpisodes(x.episodes) ?? {}), ...(who ? { with: who } : {}), ...(planned ? { planned } : {}) })
   }
   out.sort((a, b) => (a.finishedOn ? 0 : 1) - (b.finishedOn ? 0 : 1) || a.startedOn.localeCompare(b.startedOn))
   return out.length ? { rewatches: out } : {}
@@ -699,6 +703,59 @@ export function tickWith(library: Library, key: string, index: number, keys: str
   )
 }
 
+/** Sets (or clears, with null) the next time you've arranged to watch with someone. */
+export function planWatchWith(library: Library, key: string, index: number, planned: PlannedTime | null, now: Date = new Date()): Library {
+  const w = library.entries[key]?.rewatches?.[index]
+  if (!w?.with || w.finishedOn) return library
+  if (planned && !isPlannedAt(planned.at)) return library
+  return changeEntry(
+    library,
+    key,
+    (e) => ({
+      ...e,
+      rewatches: (e.rewatches ?? []).map((x, i) => {
+        if (i !== index) return x
+        const next: Rewatch = { ...x }
+        if (planned) next.planned = { at: planned.at, ...(planned.weekly ? { weekly: true } : {}) }
+        else delete next.planned
+        return next
+      })
+    }),
+    now
+  )
+}
+
+/** How long a session counts as "on" after it starts, and how early Home starts showing it. */
+export const SESSION_HOURS = 4
+export const SESSION_LEAD_MINUTES = 90
+
+const atDate = (at: string): Date => {
+  const [d, t] = at.split('T')
+  const [y, m, day] = d.split('-').map(Number)
+  const [h, mi] = t.split(':').map(Number)
+  return new Date(y, m - 1, day, h, mi)
+}
+
+/**
+ * The next session of a watch with someone that hasn't finished yet (a weekly one rolls on to the
+ * next week once a session is over). Null when nothing is arranged, or a one-off is past.
+ */
+export function nextSession(watch: Pick<Rewatch, 'planned' | 'finishedOn'>, now: Date): Date | null {
+  if (!watch.planned || watch.finishedOn) return null
+  const start = atDate(watch.planned.at)
+  const over = (d: Date): boolean => d.getTime() + SESSION_HOURS * 3_600_000 < now.getTime()
+  if (!watch.planned.weekly) return over(start) ? null : start
+  const next = new Date(start)
+  for (let i = 0; over(next) && i < 1000; i++) next.setDate(next.getDate() + 7)
+  return next
+}
+
+/** True from a little before an arranged time until a few hours after it starts. */
+export function sessionIsOn(watch: Pick<Rewatch, 'planned' | 'finishedOn'>, now: Date): boolean {
+  const s = nextSession(watch, now)
+  return !!s && now.getTime() >= s.getTime() - SESSION_LEAD_MINUTES * 60_000
+}
+
 /** Finishes a watch with someone (it counts), or drops it (`keep` false). */
 export function endWatchWith(library: Library, key: string, index: number, keep: boolean, now: Date = new Date()): Library {
   const w = library.entries[key]?.rewatches?.[index]
@@ -786,9 +843,11 @@ const lastDay = (episodes: Record<string, string> | undefined): string | null =>
  * you're watching on your own that you last watched earlier, so what you're watching now comes first.
  */
 export function withTogether(picks: LibraryEntry[], library: Library): LibraryEntry[] {
+  const now = new Date()
   const views: TogetherPick[] = Object.values(library.entries)
     .filter((e) => e.type === 'tv')
-    .flatMap((e) => watchesWith(e).map(({ index, watch }) => ({ ...e, status: 'watching' as const, episodes: watch.episodes ?? {}, together: { who: watch.with, index } })))
+    // Only around a time you've arranged: the rest of the time it's not something to pick tonight.
+    .flatMap((e) => watchesWith(e).filter(({ watch }) => sessionIsOn(watch, now)).map(({ index, watch }) => ({ ...e, status: 'watching' as const, episodes: watch.episodes ?? {}, together: { who: watch.with, index } })))
   if (!views.length) return picks
   const when = (e: LibraryEntry): string => (isTogether(e) ? (lastDay(e.episodes) ?? e.rewatches![e.together.index].startedOn) : (lastDay(e.episodes) ?? e.updatedAt.slice(0, 10)))
   // A show you only watch with someone (no ticks of your own) shows up once, as the watch together.
@@ -797,6 +856,20 @@ export function withTogether(picks: LibraryEntry[], library: Library): LibraryEn
   for (const v of views.sort((a, b) => when(b).localeCompare(when(a)))) {
     const at = out.findIndex((p) => p.status !== 'watching' || (!isTogether(p) && when(p) < when(v)))
     out.splice(at < 0 ? out.length : at, 0, v)
+  }
+  return out
+}
+
+/** Watches with someone starting within `minutes` from now: for "Watching … with Jack at 21:00" reminders. */
+export function sessionsStartingSoon(library: Library, now: Date, minutes = 15): { id: string; key: string; name: string; who: string; at: Date }[] {
+  const out: { id: string; key: string; name: string; who: string; at: Date }[] = []
+  for (const e of Object.values(library.entries)) {
+    for (const { index, watch } of watchesWith(e)) {
+      const at = nextSession(watch, now)
+      if (!at) continue
+      const until = at.getTime() - now.getTime()
+      if (until > 0 && until <= minutes * 60_000) out.push({ id: `${e.key}@${index}@${at.getTime()}`, key: e.key, name: e.title.name, who: watch.with, at })
+    }
   }
   return out
 }

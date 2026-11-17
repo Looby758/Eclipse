@@ -1,7 +1,8 @@
-import { Check, Users, X } from 'lucide-react'
+import { CalendarClock, Check, Users, X } from 'lucide-react'
 import { useState } from 'react'
-import { companions, nextEpisodeFor, showProgress, watchesWith } from '@core/library'
+import { companions, nextEpisodeFor, nextSession, showProgress, watchesWith } from '@core/library'
 import { formatDate } from '@core/format'
+import { sessionLabel, toLocalInput } from '../lib/together'
 import { episodeKey, type TitleDetails } from '@core/types'
 import { useApp } from '../store/app'
 import { itemOf } from '../lib/item'
@@ -44,6 +45,8 @@ export default function WatchWithPanel({ details: d }: { details: TitleDetails }
         const next = nextEpisodeFor(view, d.seasons)
         const p = showProgress(view, d.seasons)
         const nextKey = next ? episodeKey(next.season, next.episode) : null
+        const session = nextSession(watch, new Date())
+        const plan = (at: string, weekly: boolean): Promise<void> => window.api.planWatchWith(d.key, index, at ? { at, weekly } : null).then(setLibrary)
         return (
           <div className="with-row" key={index}>
             <div className="with-text">
@@ -53,6 +56,24 @@ export default function WatchWithPanel({ details: d }: { details: TitleDetails }
               <span className="muted small">
                 {nextKey ? `Next together: ${label(nextKey)}` : 'All caught up together'} · {p.watched} of {p.total} episodes · since {formatDate(watch.startedOn)}
               </span>
+              <div className="with-plan">
+                <CalendarClock size={15} />
+                <span className="small">{session ? `Next time: ${sessionLabel(session, new Date())}${watch.planned?.weekly ? ', every week' : ''}` : 'No time set'}</span>
+                <input
+                  type="datetime-local"
+                  aria-label={`When you're next watching with ${watch.with}`}
+                  value={session ? toLocalInput(session) : ''}
+                  onChange={(e) => void plan(e.target.value, !!watch.planned?.weekly)}
+                />
+                <label className="with-weekly small">
+                  <input type="checkbox" checked={!!watch.planned?.weekly} disabled={!session} onChange={(e) => session && void plan(toLocalInput(session), e.target.checked)} /> Every week
+                </label>
+                {session && (
+                  <button className="link-btn inline small" onClick={() => void plan('', false)}>
+                    Clear
+                  </button>
+                )}
+              </div>
             </div>
             <div className="row">
               {nextKey && (
