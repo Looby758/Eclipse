@@ -616,3 +616,7 @@ button.list-seen.undo:hover { background: var(--glass-hover); }
 .spot-panel-head h2 { margin: 0; font: 650 var(--text-lg) var(--font-display); }
 .dock.tucked { opacity: 0; pointer-events: none; transform: translate(-50%, 140%); }
 .app.spot .home-credit { right: 30px; bottom: 34px; }
+/* Keep Spotlight's pills clickable over the drag strip, and clear of Windows' minimise, maximise and close buttons. */
+.spot-pills, .spot-foryou { -webkit-app-region: no-drag; z-index: 6; }
+[data-platform='win'] .spot-pills { top: 52px; }
+[data-platform='win'] .spot-panel { top: 114px; }
