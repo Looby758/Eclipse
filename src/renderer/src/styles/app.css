@@ -689,6 +689,13 @@ button.list-seen.undo:hover { background: var(--glass-hover); }
 .rec-card:hover .rec-hide, .rec-hide:focus-visible { opacity: 1; }
 
 /* ---- Watching together: an arranged time ---- */
-.with-plan { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 8px; color: var(--text-muted); }
+.with-plan { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-top: 2px; padding-top: 10px; border-top: 1px solid var(--line); color: var(--text-muted); font-size: var(--text-sm); }
+.with-plan-label { display: inline-flex; align-items: center; gap: 8px; }
+.with-plan-label b { color: var(--text-strong); font-weight: 600; }
+.with-plan-controls { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
 .with-plan input[type='datetime-local'] { height: 34px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--glass-soft); color: var(--text); color-scheme: inherit; font-size: var(--text-sm); }
 .with-weekly { display: inline-flex; align-items: center; gap: 6px; color: var(--text); cursor: pointer; }
+
+/* Native dropdown lists: Windows draws these popups itself, so give them solid colours */
+select option, select optgroup { background-color: var(--menu-bg); color: var(--menu-text); }
+select option:checked { background-color: var(--accent); color: #ffffff; }

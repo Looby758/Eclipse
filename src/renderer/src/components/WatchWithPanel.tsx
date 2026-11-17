@@ -56,24 +56,6 @@ export default function WatchWithPanel({ details: d }: { details: TitleDetails }
               <span className="muted small">
                 {nextKey ? `Next together: ${label(nextKey)}` : 'All caught up together'} · {p.watched} of {p.total} episodes · since {formatDate(watch.startedOn)}
               </span>
-              <div className="with-plan">
-                <CalendarClock size={15} />
-                <span className="small">{session ? `Next time: ${sessionLabel(session, new Date())}${watch.planned?.weekly ? ', every week' : ''}` : 'No time set'}</span>
-                <input
-                  type="datetime-local"
-                  aria-label={`When you're next watching with ${watch.with}`}
-                  value={session ? toLocalInput(session) : ''}
-                  onChange={(e) => void plan(e.target.value, !!watch.planned?.weekly)}
-                />
-                <label className="with-weekly small">
-                  <input type="checkbox" checked={!!watch.planned?.weekly} disabled={!session} onChange={(e) => session && void plan(toLocalInput(session), e.target.checked)} /> Every week
-                </label>
-                {session && (
-                  <button className="link-btn inline small" onClick={() => void plan('', false)}>
-                    Clear
-                  </button>
-                )}
-              </div>
             </div>
             <div className="row">
               {nextKey && (
@@ -103,6 +85,35 @@ export default function WatchWithPanel({ details: d }: { details: TitleDetails }
               <button className="rewatch-remove" title={`Stop watching with ${watch.with} (it won't count)`} aria-label={`Stop watching with ${watch.with}`} onClick={async () => setLibrary(await window.api.endWatchWith(d.key, index, false))}>
                 <X size={13} />
               </button>
+            </div>
+            <div className="with-plan">
+              <span className="with-plan-label">
+                <CalendarClock size={15} />
+                {session ? (
+                  <>
+                    Next time: <b>{sessionLabel(session, new Date())}</b>
+                    {watch.planned?.weekly ? ', every week' : ''}
+                  </>
+                ) : (
+                  'No time set'
+                )}
+              </span>
+              <span className="with-plan-controls">
+                <input
+                  type="datetime-local"
+                  aria-label={`When you're next watching with ${watch.with}`}
+                  value={session ? toLocalInput(session) : ''}
+                  onChange={(e) => void plan(e.target.value, !!watch.planned?.weekly)}
+                />
+                <label className="with-weekly small">
+                  <input type="checkbox" checked={!!watch.planned?.weekly} disabled={!session} onChange={(e) => session && void plan(toLocalInput(session), e.target.checked)} /> Every week
+                </label>
+                {session && (
+                  <button className="link-btn inline small" onClick={() => void plan('', false)}>
+                    Clear
+                  </button>
+                )}
+              </span>
             </div>
           </div>
         )
