@@ -1,5 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { join } from 'path'
+import { writeFileSync } from 'fs'
+import { toIcs } from '@core/calendar'
 import { preferencesOf, setEpisodes, setFinishBy, setNote, setPreferences, setStatus, setWatchedOn } from '@core/library'
 import { TmdbError } from '@core/tmdb'
 import { createList, followList, moveInList, removeList, renameList, setInList } from '@core/lists'
@@ -94,6 +96,23 @@ function setupIpc(): void {
   ipcMain.handle('tmdb:person', (_e, id: number) => attempt(() => tmdb.person(id)))
   ipcMain.handle('tmdb:collection', (_e, id: number) => attempt(() => tmdb.collection(id)))
   ipcMain.handle('tmdb:list', (_e, id: number) => attempt(() => tmdb.tmdbList(id)))
+  ipcMain.handle('calendar:preview', () => attempt(() => tmdb.calendarEvents(getLibrary())))
+  ipcMain.handle('calendar:export', (event) =>
+    attempt(async () => {
+      const events = await tmdb.calendarEvents(getLibrary())
+      const win = BrowserWindow.fromWebContents(event.sender)!
+      const result = await dialog.showSaveDialog(win, {
+        title: 'Save your release calendar',
+        defaultPath: join(app.getPath('downloads'), 'Eclipse releases.ics'),
+        buttonLabel: 'Save',
+        filters: [{ name: 'Calendar file', extensions: ['ics'] }]
+      })
+      if (result.canceled || !result.filePath) return { saved: false, count: events.length }
+      writeFileSync(result.filePath, toIcs(events), 'utf8')
+      shell.showItemInFolder(result.filePath)
+      return { saved: true, path: result.filePath, count: events.length }
+    })
+  )
   ipcMain.handle('lists:open', (_e, id: string, refresh?: boolean) => attempt(() => tmdb.openList(id, getLibrary(), refresh)))
   ipcMain.handle('tmdb:detailsMany', (_e, keys: string[]) => tmdb.detailsMany(keys))
   ipcMain.handle('tmdb:services', () => attempt(() => tmdb.services(region())))

@@ -174,7 +174,8 @@ function normalizePreferences(raw: unknown): Preferences {
     watchDays: Array.isArray(p.watchDays)
       ? [...new Set(p.watchDays.filter((d): d is number => Number.isInteger(d) && d >= 0 && d <= 6))].sort()
       : [...DEFAULT_PREFERENCES.watchDays],
-    renewals
+    renewals,
+    calendarEpisodes: p.calendarEpisodes === true
   }
 }
 

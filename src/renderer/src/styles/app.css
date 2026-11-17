@@ -406,3 +406,10 @@ code { font-size: 0.92em; }
 .order-card-text { display: flex; flex-direction: column; gap: 2px; }
 .order-card-name { font-family: var(--font-display); font-weight: 700; font-size: var(--text-md); }
 .section-chips { order: 3; flex-basis: 100%; }
+
+/* Release calendar */
+.calendar-preview { list-style: none; margin: 14px 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.calendar-preview li { display: flex; gap: 14px; align-items: baseline; }
+.calendar-day { flex: none; width: 112px; color: var(--text-muted); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+.calendar-title { font-weight: 600; }
+.calendar-help { margin-top: 14px; }
