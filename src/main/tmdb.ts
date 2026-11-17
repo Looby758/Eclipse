@@ -242,3 +242,32 @@ export async function knownFromFor(type: MediaType, id: number, library: Library
   }
   return knownFrom(cast, people, library, `${type}:${id}`)
 }
+
+/** Everything "Your year in Eclipse" needs: details and credits of what you watched that year, and your lists' titles. */
+export async function yearData(library: Library, keys: string[]): Promise<{ details: Record<string, TitleDetails>; credits: Record<string, Credits>; lists: Record<string, { name: string; items: TitleRef[] }> }> {
+  const details = await detailsMany(keys)
+  const creditsByKey: Record<string, Credits> = {}
+  for (let i = 0; i < keys.length; i += 6) {
+    await Promise.all(
+      keys.slice(i, i + 6).map(async (key) => {
+        const p = parseTitleKey(key)
+        if (!p) return
+        try {
+          creditsByKey[key] = (await credits(p.type, p.id)).data
+        } catch {
+          // Left out: they just won't count towards the director and actor.
+        }
+      })
+    )
+  }
+  const lists: Record<string, { name: string; items: TitleRef[] }> = {}
+  for (const l of library.lists ?? []) {
+    try {
+      const v = await openList(l.id, library)
+      lists[l.id] = { name: l.name, items: v.items }
+    } catch {
+      // A list that can't be opened right now doesn't count.
+    }
+  }
+  return { details, credits: creditsByKey, lists }
+}

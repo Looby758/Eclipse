@@ -53,6 +53,17 @@ Each computer needs the key pasted once.
 6. **Filters:** in Library or Search, pick **On my services**, **Rent or buy only** or **Not streaming anywhere**. The first time it checks every title, which takes a few seconds.
 7. **Home:** the suggestion shows the next episode and a button to tick it.
 
+## Phases 27 to 31: what to try
+
+No new packages this time, so no `npm install` needed (just pull and `npm run dev`). These need Windows or a Mac, so try them on your computer.
+
+1. **Settings shortcut:** press **Ctrl+,** anywhere in Eclipse.
+2. **History:** Settings → *Noticing what you watch* → *From your browser history* → **On**, then **Check now**. Go to Tonight: a *Did you watch these?* card lists episodes you watched in Opera GX, Chrome or Edge in the last two weeks. Press **Tick it** on one and **Not this** on another.
+3. **What's playing:** turn **What's playing** on, then play an episode of a show in your library on Disney+ or NOW in Opera GX, Chrome or Edge. Back in Settings, *What Eclipse sees right now* should list it within a few seconds. Screenshot that box for me, whether or not it recognises the show: it tells us what the services give away. The first time, Windows may briefly show a PowerShell window or ask about it: that's Eclipse asking what's playing.
+4. **Bookmark a moment:** while it plays, press **Ctrl+Alt+B**. A notification says it's saved; the show's page has it under *Saved moments*, where you can add a note.
+5. **Bedtime guard:** turn it on, set your bedtime a few minutes from now (Settings → Your evenings), and start an episode.
+6. **Continue on:** after a history check, a show you watched on NOW or Disney+ gets a **Continue on …** button on its page and in Up next.
+
 ## Where things are kept
 
 | What | Where | Synced? |
@@ -60,6 +71,7 @@ Each computer needs the key pasted once.
 | Your library (`library.json`) | The folder you chose | Yes, if it's in Google Drive |
 | Settings and the encrypted key (`settings.json`) | Windows: `%APPDATA%\Eclipse` · Mac: `~/Library/Application Support/Eclipse` | No |
 | Saved TMDB answers (`tmdb-cache`) | Same app folder | No (can always be rebuilt) |
+| Suggestions from noticing what you watch (`noticing.json`) | Same app folder | No |
 
 Avoid having Eclipse open on both computers at the same time, so the two copies don't overwrite each other's changes.
 
@@ -131,6 +143,13 @@ You need both computers and the shared Google Drive folder.
 7. **Your services:** Settings → *Your services* → **Do I still need them?** Set a renewal day for each service to get the "pause it" advice. After a day or two of use, Home starts saying what arrived on your services and what left.
 8. **Keep going or stop:** a show you haven't ticked in 60 days shows on Home. Try **Remind me later**. Change the 60 days in Settings → *Your evenings*.
 9. **Back after a break:** when a show you finished a season of long ago gets a new season, Home reminds you how the last one ended. (This only shows when it happens, so you may not see it straight away.)
+
+## Phases 23 to 26: what to try
+
+1. **Phone remote:** Settings → *Your phone as a remote* → **On**. If Windows asks about the network, allow **private networks**. Point your iPhone camera at the QR code and tap the link (it must be on the same Wi-Fi). Press **Watched** on a show: the app on the computer ticks it too.
+2. **Repair old dates:** Settings → *Your history* → **Repair old dates**. Try **Spread them out** on one batch and look at that show's episodes. A copy of `library.json` is saved beside it first.
+3. **Your year:** Lists → **Your year in Eclipse** (top right). Pick 2025 at the top to see last year.
+4. **Tray:** Settings → *Eclipse in the system tray* → **On**. Find the Eclipse icon by the clock (it may be behind the ^ arrow) and open its menu. Tick an episode from there. Close the window: Eclipse keeps running in the tray until you choose **Quit Eclipse**.
 
 ## For development
 

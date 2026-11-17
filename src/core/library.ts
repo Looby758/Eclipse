@@ -2,6 +2,7 @@ import type { Dropped, Library, LibraryEntry, MediaType, Preferences, Rewatch, T
 import { DEFAULT_PREFERENCES, UNDATED, WATCH_STATUSES, episodeKey, parseEpisodeKey, parseTitleKey } from './types'
 import type { TitleRef } from './types'
 import { normalizeLists, normalizeWatchSoon, refOf } from './lists'
+import { normalizeLinks, normalizeMoments } from './watching'
 
 export type LibraryItem = { key: TitleKey; type: MediaType; id: number; title: TitleSnapshot }
 
@@ -295,7 +296,12 @@ export function normalizeLibrary(raw: unknown): Library {
   const rawLists = raw && typeof raw === 'object' ? (raw as { lists?: unknown }).lists : undefined
   const rawSoon = raw && typeof raw === 'object' ? (raw as { watchSoon?: unknown }).watchSoon : undefined
   const rawDropped = raw && typeof raw === 'object' ? (raw as { dropped?: unknown }).dropped : undefined
+  const rawLeft = raw && typeof raw === 'object' ? (raw as { repairLeft?: unknown }).repairLeft : undefined
   const finish = (): Library => {
+    if (Array.isArray(rawLeft)) {
+      const left = [...new Set(rawLeft.filter((x): x is string => typeof x === 'string' && /^(movie|tv):\d+@\d{4}-\d{2}-\d{2}$/.test(x)))]
+      if (left.length) lib.repairLeft = left
+    }
     const dropped = normalizeDropped(rawDropped)
     if (dropped) lib.dropped = dropped
     const lists = normalizeLists(rawLists, legacy)
@@ -322,6 +328,8 @@ export function normalizeLibrary(raw: unknown): Library {
       ...(isDay(e.watchedOn) ? { watchedOn: e.watchedOn } : {}),
       ...(isDay(e.finishBy) ? { finishBy: e.finishBy } : {}),
       ...(isDay(e.snoozedUntil) ? { snoozedUntil: e.snoozedUntil } : {}),
+      ...(normalizeMoments(e.moments) ? { moments: normalizeMoments(e.moments) } : {}),
+      ...(normalizeLinks(e.links) ? { links: normalizeLinks(e.links) } : {}),
       ...(typeof e.note === 'string' && e.note.trim() ? { note: e.note.trim().slice(0, 300) } : {}),
       ...(typeof e.from === 'string' && e.from.trim() ? { from: e.from.trim().slice(0, 80) } : {}),
       ...(typeof e.rating === 'number' && e.rating >= 0 && e.rating <= 10 ? { rating: e.rating } : {}),

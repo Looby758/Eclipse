@@ -2,6 +2,9 @@ import type { ImportSummary } from '@core/sequel'
 import type { ReleaseEvent } from '@core/calendar'
 import type { KnownFrom } from '@core/knownfrom'
 import type { ServiceHistory } from '@core/services'
+import type { Batch, RepairChoice } from '@core/repair'
+import type { YearReview } from '@core/year'
+import type { NowPlaying, Recognised, Suggestion } from '@core/watching'
 import type { CollectionDetails, Credits, ListSource, PersonDetails, TitleRef, TmdbListDetails } from '@core/types'
 import type { Library, MediaType, Preferences, Provider, SearchResult, SeasonDetails, TitleDetails, TitleKey, TitleSnapshot, WatchProviders, WatchStatus } from '@core/types'
 
@@ -65,6 +68,35 @@ export interface UpdateStatus {
   error?: string
   /** Why updates are off (e.g. running from source). */
   reason?: string
+}
+
+/** Your phone as a remote (Phase 23). */
+export interface RemoteStatus {
+  on: boolean
+  running: boolean
+  /** What the QR code holds: this computer's address on your Wi-Fi with the pairing code. */
+  url: string | null
+  error: string | null
+}
+
+/** Noticing what you watch (Phases 27 to 30): all off until you switch them on, per computer. */
+export interface NoticingSettings {
+  history: boolean
+  playing: boolean
+  bedtime: boolean
+}
+
+export interface NoticingStatus {
+  settings: NoticingSettings
+  /** Browsers whose history Eclipse found on this computer. */
+  browsers: string[]
+  lastScan: { at: number; browsers: string[]; errors: string[]; visits: number } | null
+  /** What the computer says is playing right now, and what Eclipse made of it. */
+  playing: { raw: NowPlaying[]; error: string | null; recognised: Recognised | null; line: string | null }
+  /** "Did you watch these?" */
+  suggestions: Suggestion[]
+  /** The bookmark shortcut, as shown on this computer. */
+  momentKey: string
 }
 
 export const GITHUB_REPO = 'Looby758/Eclipse'
@@ -148,6 +180,32 @@ export interface EclipseApi {
   /** What arrived on and left your services lately (checked once a day). */
   servicesHistory(): Promise<ServiceHistory>
   onServicesChanged(callback: (history: ServiceHistory) => void): () => void
+
+  /** Repair old dates: spread a batch out, mark it undated, or leave it (library.json is copied aside first). */
+  repairBatch(batch: Batch, choice: RepairChoice): Promise<Library>
+
+  /** Your year in Eclipse: hours, busiest month, most-watched director and actor, longest binge. */
+  yearReview(year: number): Promise<Result<YearReview>>
+
+  /** Eclipse in the menu bar / tray (Phase 26), and whether closing the window keeps it running there. */
+  trayOn(): Promise<boolean>
+  setTray(on: boolean): Promise<boolean>
+
+  noticingStatus(): Promise<NoticingStatus>
+  setNoticing(patch: Partial<NoticingSettings>): Promise<NoticingStatus>
+  /** Reads browser history now instead of waiting for the next half-hourly check. */
+  scanHistory(): Promise<NoticingStatus>
+  /** Ticks a suggestion on the day it was watched. */
+  acceptSuggestion(id: string): Promise<Library>
+  dismissSuggestion(id: string): Promise<NoticingStatus>
+  onNoticingChanged(callback: () => void): () => void
+  /** Changes a saved moment's note (empty clears it), or deletes the moment with null. */
+  editMoment(key: TitleKey, index: number, note: string | null): Promise<Library>
+
+  remoteStatus(): Promise<RemoteStatus>
+  setRemote(on: boolean): Promise<RemoteStatus>
+  newRemoteCode(): Promise<RemoteStatus>
+  onRemoteStatus(callback: (status: RemoteStatus) => void): () => void
   setPreferences(patch: Partial<Preferences>): Promise<Library>
   /** Called when library.json changes on disk (e.g. Google Drive synced it from your other computer). */
   onLibraryChanged(callback: (library: Library) => void): () => void

@@ -7,8 +7,11 @@ directories:
 files:
   - out/**
   - package.json
-  # The window icon is loaded at run time on Windows.
+  # The window icon is loaded at run time on Windows, and the tray / menu bar icons everywhere.
   - build/icon.png
+  - build/tray.png
+  - build/trayTemplate.png
+  - build/trayTemplate@2x.png
 win:
   target:
     - target: nsis

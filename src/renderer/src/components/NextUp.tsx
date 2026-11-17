@@ -7,6 +7,7 @@ import { episodeMinutes, finishPlan, fitTonight, startBy, timeLeft } from '@core
 import { episodeKey, type Episode, type LibraryEntry, type Provider, type TitleDetails } from '@core/types'
 import { itemOf } from '../lib/item'
 import { useApp } from '../store/app'
+import ContinueButton from './ContinueButton'
 
 /** For a show you're watching: the next episode, where it's on, and a button to tick it. */
 export default function NextUp({ entry }: { entry: LibraryEntry }): React.JSX.Element | null {
@@ -96,6 +97,7 @@ export default function NextUp({ entry }: { entry: LibraryEntry }): React.JSX.El
           <Check size={15} /> Mark S{next.season} E{next.episode} watched
         </button>
       )}
+      <ContinueButton titleKey={entry.key} className="btn glass next-up-tick" />
     </div>
   )
 }

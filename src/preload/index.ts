@@ -56,6 +56,29 @@ const api: EclipseApi = {
   setFinishBy: (key, day) => ipcRenderer.invoke('library:setFinishBy', key, day),
   snooze: (key, until) => ipcRenderer.invoke('library:snooze', key, until),
   servicesHistory: () => ipcRenderer.invoke('services:history'),
+  repairBatch: (batch, choice) => ipcRenderer.invoke('library:repair', batch, choice),
+  yearReview: (year) => ipcRenderer.invoke('year:review', year),
+  trayOn: () => ipcRenderer.invoke('tray:get'),
+  setTray: (on) => ipcRenderer.invoke('tray:set', on),
+  noticingStatus: () => ipcRenderer.invoke('noticing:status'),
+  setNoticing: (patch) => ipcRenderer.invoke('noticing:set', patch),
+  scanHistory: () => ipcRenderer.invoke('noticing:scan'),
+  acceptSuggestion: (id) => ipcRenderer.invoke('noticing:accept', id),
+  dismissSuggestion: (id) => ipcRenderer.invoke('noticing:dismiss', id),
+  onNoticingChanged: (callback) => {
+    const handler = (): void => callback()
+    ipcRenderer.on('noticing:changed', handler)
+    return () => ipcRenderer.removeListener('noticing:changed', handler)
+  },
+  editMoment: (key, index, note) => ipcRenderer.invoke('moments:edit', key, index, note),
+  remoteStatus: () => ipcRenderer.invoke('remote:status'),
+  setRemote: (on) => ipcRenderer.invoke('remote:set', on),
+  newRemoteCode: () => ipcRenderer.invoke('remote:newCode'),
+  onRemoteStatus: (callback) => {
+    const handler = (_e: unknown, s: Parameters<typeof callback>[0]): void => callback(s)
+    ipcRenderer.on('remote:changed', handler)
+    return () => ipcRenderer.removeListener('remote:changed', handler)
+  },
   onServicesChanged: (callback) => {
     const handler = (_e: unknown, h: Parameters<typeof callback>[0]): void => callback(h)
     ipcRenderer.on('services:changed', handler)

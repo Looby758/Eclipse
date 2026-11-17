@@ -11,6 +11,8 @@ import GuardBanner from './components/GuardBanner'
 import HomeNotes from './components/HomeNotes'
 import ClearOutSheet from './components/ClearOutSheet'
 import ServicesSheet from './components/ServicesSheet'
+import RepairSheet from './components/RepairSheet'
+import YearSheet from './components/YearSheet'
 import LibrarySheet from './components/LibrarySheet'
 import SearchSheet from './components/SearchSheet'
 import TitleSheet from './components/TitleSheet'
@@ -36,6 +38,11 @@ export default function App(): React.JSX.Element {
     const onKey = (e: KeyboardEvent): void => {
       const typing = e.target instanceof HTMLInputElement
       if ((e.altKey && e.key === 'ArrowLeft') || (e.key === 'Escape' && !typing)) back()
+      // Ctrl+, (Cmd+, on a Mac) opens Settings, as in most apps.
+      else if ((e.ctrlKey || e.metaKey) && e.key === ',') {
+        e.preventDefault()
+        if (useApp.getState().status?.hasKey) useApp.getState().go({ name: 'settings' })
+      }
     }
     window.addEventListener('mouseup', onMouse)
     window.addEventListener('keydown', onKey)
@@ -91,6 +98,8 @@ export default function App(): React.JSX.Element {
           {view.name === 'soon' && <WatchSoonSheet />}
           {view.name === 'clearout' && <ClearOutSheet />}
           {view.name === 'services' && <ServicesSheet />}
+          {view.name === 'repair' && <RepairSheet />}
+          {view.name === 'year' && <YearSheet key={view.year ?? 'now'} year={view.year} />}
           {view.name === 'list' && <ListSheet key={view.id} id={view.id} />}
           {view.name === 'title' && <TitleSheet key={`${view.type}:${view.id}`} type={view.type} id={view.id} />}
           <Dock />

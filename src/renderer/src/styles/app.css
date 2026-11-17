@@ -523,3 +523,47 @@ button.list-seen.undo:hover { background: var(--glass-hover); }
 .service-facts dd { margin: 0; text-align: right; color: var(--text); }
 .service-queue { list-style: none; margin: 0; padding: 10px 0 0; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; font-size: var(--text-sm); }
 .stalled-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 16px; font-size: var(--text-sm); color: var(--text-muted); }
+
+/* Your phone as a remote (Phase 23) */
+.remote-pair { display: flex; gap: 20px; align-items: flex-start; margin-top: 16px; flex-wrap: wrap; }
+.remote-pair > div { flex: 1; min-width: 240px; }
+.remote-qr { width: 180px; height: 180px; border-radius: var(--radius-sm); background: #fff; padding: 6px; }
+
+/* Repair old dates (Phase 24) */
+.repair-list { display: flex; flex-direction: column; gap: 12px; max-width: 860px; margin-top: 12px; }
+.repair-batch { margin: 0; }
+.repair-batch h2 { margin-bottom: 8px; }
+
+/* Your year in Eclipse (Phase 25) */
+.year .segmented { margin-bottom: 20px; }
+.year-big { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 14px; max-width: 1100px; }
+.year-big div { padding: 18px 20px; border-radius: var(--radius); background: var(--glass-soft); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
+.year-big strong { font: 800 36px/1.05 var(--font-display); letter-spacing: -0.02em; background: var(--accent-gradient); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.year-big span { color: var(--text-muted); font-size: var(--text-sm); }
+.year-months { max-width: 1100px; }
+.year-bars { display: grid; grid-template-columns: repeat(12, 1fr); gap: 8px; height: 180px; align-items: end; }
+.year-bar { position: relative; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; }
+.year-bar-fill { width: 100%; max-width: 44px; border-radius: 4px 4px 0 0; background: var(--glass-hover); }
+.year-bar.peak .year-bar-fill { background: var(--accent-gradient); }
+.year-bar-value { font-size: var(--text-xs); color: var(--text-faint); white-space: nowrap; }
+.year-bar.peak .year-bar-value { color: var(--text); font-weight: 600; }
+.year-bar-label { font-size: var(--text-xs); color: var(--text-muted); }
+.year-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; max-width: 1100px; }
+.year-grid .card { margin: 0; }
+.year-grid h2 { display: flex; align-items: center; gap: 8px; }
+.year-top { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; max-width: 1100px; }
+.year-top-item { position: relative; display: flex; flex-direction: column; gap: 6px; text-align: left; border: 0; background: none; padding: 0; cursor: pointer; color: inherit; font: inherit; }
+.year-top-poster { border-radius: var(--radius-sm); overflow: hidden; aspect-ratio: 2 / 3; box-shadow: var(--shadow); }
+.year-top-name { font-weight: 700; color: var(--text-strong); }
+.year-rank { position: absolute; top: 8px; left: 8px; z-index: 1; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; background: var(--accent-gradient); color: var(--on-accent); }
+
+/* Group B: noticing what you watch, moments and Play next */
+.card-sub { margin: 18px 0 4px; font-size: var(--text-sm); font-weight: 650; color: var(--text-strong); }
+.card kbd { font-family: var(--font-ui); font-size: 11px; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; color: var(--text); }
+.sees { margin-top: 16px; padding: 12px 14px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--glass-soft); display: flex; flex-direction: column; gap: 6px; }
+.sees-list { margin: 0; padding-left: 18px; font-size: var(--text-xs); line-height: 1.5; color: var(--text); overflow-wrap: anywhere; }
+.moments { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
+.moment { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 8px 12px; border-radius: var(--radius-sm); background: var(--glass-soft); border: 1px solid var(--line); font-size: var(--text-sm); }
+.moment-at { font-variant-numeric: tabular-nums; color: var(--text-muted); white-space: nowrap; }
+.moment input { width: 100%; background: transparent; border: none; color: var(--text); font: inherit; outline: none; }
+.moment input::placeholder { color: var(--text-faint); }

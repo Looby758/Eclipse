@@ -1,4 +1,4 @@
-import { Check, Hourglass, Sparkles, Tv, Users } from 'lucide-react'
+import { Check, Eye, Hourglass, Play, Sparkles, Tv, Users, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { localDate, nextEpisodeFor, preferencesOf, watchesWith } from '@core/library'
 import { comebacks, daysAfter, stalledShows, type ComebackShow } from '@core/nudges'
@@ -9,6 +9,7 @@ import { episodeKey, type Episode, type LibraryEntry } from '@core/types'
 import { useApp } from '../store/app'
 import { useDetailsMany } from '../lib/availability'
 import { useServiceHistory } from '../lib/services'
+import { useNoticing } from '../lib/noticing'
 
 const itemOf = (e: LibraryEntry): { key: LibraryEntry['key']; type: LibraryEntry['type']; id: number; title: LibraryEntry['title'] } => ({ key: e.key, type: e.type, id: e.id, title: e.title })
 
@@ -232,10 +233,85 @@ function Comebacks(): React.JSX.Element | null {
   )
 }
 
+/** Home in December (and the first week of January): your year in Eclipse is ready. */
+function YearNote(): React.JSX.Element | null {
+  const go = useApp((s) => s.go)
+  const today = localDate(new Date())
+  const month = Number(today.slice(5, 7))
+  const year = month === 12 ? Number(today.slice(0, 4)) : month === 1 && Number(today.slice(8)) <= 7 ? Number(today.slice(0, 4)) - 1 : null
+  if (!year) return null
+  return (
+    <section className="note" aria-label="Your year in Eclipse">
+      <div className="note-kicker">
+        <Sparkles size={14} /> Your {year} in Eclipse
+      </div>
+      <div className="note-line">Your hours, busiest month, longest binge and most-watched director and actor of the year.</div>
+      <div className="row">
+        <button className="chip" onClick={() => go({ name: 'year', year })}>
+          See your year
+        </button>
+      </div>
+    </section>
+  )
+}
+
+/** Home: "Did you watch these?", from browser history and what was playing (never ticked without a yes). */
+function Noticed(): React.JSX.Element | null {
+  const [status, setStatus] = useNoticing()
+  const { go, setLibrary } = useApp.getState()
+  const library = useApp((s) => s.library)
+  if (!status) return null
+  const list = status.suggestions.slice(-6).reverse()
+  const line = status.playing.line
+  if (!list.length && !line) return null
+  return (
+    <section className="note" aria-label="Did you watch these?">
+      {line && (
+        <div className="note-line">
+          <Play size={13} /> Playing now: <strong>{line}</strong>
+        </div>
+      )}
+      {list.length > 0 && (
+        <>
+          <div className="note-kicker">
+            <Eye size={14} /> Did you watch {list.length === 1 ? 'this' : 'these'}?
+          </div>
+          {list.map((s) => {
+            const e = library.entries[s.key]
+            return (
+              <div key={s.id} className="note-line">
+                <button className="note-open" onClick={() => e && go({ name: 'title', type: e.type, id: e.id })}>
+                  <strong>{s.name}</strong> {label(s.season, s.episode)}
+                </button>
+                <span className="muted">
+                  {' '}
+                  {s.service ? `on ${s.service}, ` : ''}
+                  {formatShortDay(s.day)}
+                  {s.sure ? '' : ' (Eclipse guessed the episode)'}
+                </span>
+                <div className="row" style={{ marginTop: 6 }}>
+                  <button className="chip" onClick={async () => setLibrary(await window.api.acceptSuggestion(s.id))}>
+                    <Check size={14} /> Tick it
+                  </button>
+                  <button className="chip clear" onClick={async () => setStatus(await window.api.dismissSuggestion(s.id))}>
+                    <X size={14} /> Not this
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </>
+      )}
+    </section>
+  )
+}
+
 /** The small cards above On this day. */
 export default function HomeNotes(): React.JSX.Element {
   return (
     <>
+      <Noticed />
+      <YearNote />
       <Together />
       <Comebacks />
       <ServicesNote />
