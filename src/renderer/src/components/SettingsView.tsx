@@ -2,6 +2,7 @@ import { FolderOpen } from 'lucide-react'
 import { useState } from 'react'
 import { applyThemeMode, savedThemeMode, type ThemeMode } from '../lib/themeMode'
 import { useApp } from '../store/app'
+import { useHomeStyle } from '../lib/homeStyle'
 import KeyForm from './KeyForm'
 import Sheet from './Sheet'
 import Credits from './Credits'
@@ -21,6 +22,7 @@ export default function SettingsView(): React.JSX.Element {
   const { setStatus, setLibrary } = useApp.getState()
   const [mode, setMode] = useState<ThemeMode>(savedThemeMode())
   const [cleared, setCleared] = useState(false)
+  const home = useHomeStyle()
 
   return (
     <Sheet className="settings">
@@ -43,6 +45,16 @@ export default function SettingsView(): React.JSX.Element {
               {m === 'system' ? 'Match system' : m === 'dark' ? 'Dark' : 'Light'}
             </button>
           ))}
+        </div>
+        <h3 className="card-sub">Home</h3>
+        <p className="muted small">Spotlight puts tonight’s pick inside the Tonight dial. Classic is the Home from before, with the suggestion on the left and the cards on the right.</p>
+        <div className="segmented">
+          <button className={home.style === 'spotlight' ? 'on' : ''} onClick={() => home.set('spotlight')}>
+            Spotlight
+          </button>
+          <button className={home.style === 'classic' ? 'on' : ''} onClick={() => home.set('classic')}>
+            Classic (legacy)
+          </button>
         </div>
       </section>
 

@@ -6,6 +6,10 @@
  * and sheets that slide up for pages. Sleek and futuristic, cool colours only (no browns, oranges
  * or dark greens), with dark and light modes.
  * Dark is the default; light applies when the system is light, or when picked in Settings.
+ *
+ * Home can be "Spotlight" (Phase 34, the default) or the classic Drift home, picked in Settings.
+ * With Spotlight, every page is "Frosted glass" (Phase 34b): see-through sheets and cards over the
+ * drifting posters, with white (dark mode) or ink (light mode) for whatever is switched on.
  */
 
 :root {
@@ -21,6 +25,41 @@
   --veil-home: linear-gradient(90deg, rgba(4, 3, 9, 0.96) 0%, rgba(4, 3, 9, 0.82) 38%, rgba(4, 3, 9, 0.25) 75%, rgba(4, 3, 9, 0.55) 100%);
   --veil-page: rgba(4, 3, 9, 0.72);
   --wall-speed: 70s;
+
+  /* Spotlight Home (Phase 34): flat drifting rows, a pool of shadow in the middle, and the Tonight dial */
+  --row-speed: 90s;
+  --row-tile-w: 132px;
+  --row-tile-h: 198px;
+  --row-gap: 14px;
+  --spot-pool: rgba(8, 9, 20, 0.92);
+  --spot-veil: rgba(8, 9, 20, 0.3);
+  --spot-shade: rgba(12, 13, 26, 0.75);
+  --spot-glass: rgba(16, 17, 34, 0.62);
+  --spot-pri: #ffffff;
+  --spot-on-pri: #121428;
+  --spot-hi: #8fe3ff;
+  --spot-hi-2: #b4a2ff;
+
+  /* Frosted glass (Spotlight's pages) */
+  --frost-veil: rgba(8, 9, 20, 0.28);
+  --frost-sheet: rgba(14, 15, 34, 0.45);
+  --frost-blur: blur(36px) saturate(1.5);
+  --frost-pane: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+  --frost-pane-hover: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08));
+  --frost-float: rgba(255, 255, 255, 0.12);
+  --frost-line: rgba(255, 255, 255, 0.18);
+  --frost-rim: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  --frost-on-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  --dial-size: 440px;
+  --dial-poster-w: 168px;
+  --text-spotlight: 38px;
+
+  /* The logo, "Play eclipse" in Halo blue: crescent from deep to ice blue on a navy tile */
+  --logo-tile-1: #151a3d;
+  --logo-tile-2: #0b0d1f;
+  --logo-crescent-1: #3f5bff;
+  --logo-crescent-2: #8fe3ff;
+  --logo-play: #ffffff;
 
   /* Text */
   --text-strong: #ffffff;
@@ -108,6 +147,22 @@
     --status-watched: #0f9c80;
     --status-stopped: #d43a74;
     --shadow: 0 24px 70px rgba(40, 30, 120, 0.18);
+    --spot-pool: rgba(244, 245, 255, 0.94);
+    --spot-veil: rgba(238, 240, 251, 0.3);
+    --spot-shade: rgba(238, 240, 251, 0.35);
+    --spot-glass: rgba(255, 255, 255, 0.7);
+    --spot-pri: #13162c;
+    --spot-on-pri: #ffffff;
+    --spot-hi: #2f6bff;
+    --spot-hi-2: #7a4dff;
+  --frost-veil: rgba(238, 240, 251, 0.3);
+  --frost-sheet: rgba(255, 255, 255, 0.5);
+  --frost-pane: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.4));
+  --frost-pane-hover: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.55));
+  --frost-float: rgba(255, 255, 255, 0.6);
+  --frost-line: rgba(40, 30, 120, 0.14);
+  --frost-rim: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --frost-on-shadow: 0 4px 14px rgba(40, 30, 120, 0.2);
     color-scheme: light;
   }
 }
@@ -140,5 +195,21 @@
   --status-watched: #0f9c80;
   --status-stopped: #d43a74;
   --shadow: 0 24px 70px rgba(40, 30, 120, 0.18);
+  --spot-pool: rgba(244, 245, 255, 0.94);
+  --spot-veil: rgba(238, 240, 251, 0.3);
+  --spot-shade: rgba(238, 240, 251, 0.35);
+  --spot-glass: rgba(255, 255, 255, 0.7);
+  --spot-pri: #13162c;
+  --spot-on-pri: #ffffff;
+  --spot-hi: #2f6bff;
+  --spot-hi-2: #7a4dff;
+  --frost-veil: rgba(238, 240, 251, 0.3);
+  --frost-sheet: rgba(255, 255, 255, 0.5);
+  --frost-pane: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.4));
+  --frost-pane-hover: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.55));
+  --frost-float: rgba(255, 255, 255, 0.6);
+  --frost-line: rgba(40, 30, 120, 0.14);
+  --frost-rim: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --frost-on-shadow: 0 4px 14px rgba(40, 30, 120, 0.2);
   color-scheme: light;
 }
