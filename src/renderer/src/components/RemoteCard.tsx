@@ -16,7 +16,11 @@ export default function RemoteCard(): React.JSX.Element {
 
   useEffect(() => {
     if (!status?.url) return setQr('')
-    QRCode.toDataURL(status.url, { margin: 1, width: 360, color: { dark: '#040309', light: '#ffffff' } }).then(setQr, () => setQr(''))
+    // Drawn as SVG, not on a canvas: reading a canvas back made opening Settings wait on the graphics chip.
+    QRCode.toString(status.url, { type: 'svg', margin: 1, width: 360, color: { dark: '#040309', light: '#ffffff' } }).then(
+      (svg) => setQr(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`),
+      () => setQr('')
+    )
   }, [status?.url])
 
   return (
