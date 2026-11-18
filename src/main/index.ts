@@ -249,6 +249,7 @@ function setupIpc(): void {
   )
   ipcMain.handle('lists:open', (_e, id: string, refresh?: boolean) => attempt(() => tmdb.openList(id, getLibrary(), refresh)))
   ipcMain.handle('tmdb:knownFrom', (_e, type: 'movie' | 'tv', id: number) => attempt(() => tmdb.knownFromFor(type, id, getLibrary())))
+  ipcMain.handle('tmdb:universe', (_e, type: 'movie' | 'tv', id: number) => attempt(() => tmdb.universeFor(type, id, getLibrary())))
   ipcMain.handle('tmdb:detailsMany', (_e, keys: string[]) => tmdb.detailsMany(keys))
   ipcMain.handle('tmdb:services', () => attempt(() => tmdb.services(region())))
   ipcMain.handle('tmdb:trending', () => attempt(() => tmdb.trending()))

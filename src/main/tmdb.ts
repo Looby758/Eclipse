@@ -8,7 +8,8 @@ import { releaseOrder, sourceOf, findList, refOf } from '@core/lists'
 import type { Library, Trait } from '@core/types'
 import { parseTitleKey } from '@core/types'
 import { followed, seasonsToCheck, upcomingReleases, type ReleaseEvent } from '@core/calendar'
-import { localDate, preferencesOf } from '@core/library'
+import { activeEntry, localDate, preferencesOf } from '@core/library'
+import { franchisesOf, sameUniverse, universeName, universeStrip, type UniverseItem, type UniverseTitle } from '@core/universe'
 import { knownFrom, type KnownFrom } from '@core/knownfrom'
 import { catchUps, type CatchUp } from '@core/catchup'
 import { weekStart } from '@core/time'
@@ -104,7 +105,7 @@ export async function searchPeople(query: string): Promise<Fetched<PersonResult[
 }
 
 export async function details(type: MediaType, id: number, refresh = false): Promise<Fetched<TitleDetails>> {
-  const r = await cached(fileCache, `details3:${type}:${id}`, CACHE_TTL.details, () => tmdb().details(type, id), {
+  const r = await cached(fileCache, `details4:${type}:${id}`, CACHE_TTL.details, () => tmdb().details(type, id), {
     force: refresh,
     shouldServeStale: serveStaleUnlessKeyProblem
   })
@@ -435,4 +436,31 @@ export async function catchUpList(library: Library, now = new Date()): Promise<C
   const upcoming = Object.values(collections).flatMap((c) => c.parts.filter((p) => !p.date || p.date >= lo).map((p) => p.key))
   Object.assign(details, await detailsMany(upcoming.filter((k) => !details[k])))
   return catchUps({ library, details, collections, now, evenings: prefs, region: prefs.region, skipDays: prefs.catchUpSkipDays, aheadDays: 42 }).filter((c) => c.upcoming.date > today)
+}
+
+/**
+ * The same universe (the Spotlight title page's strip): other titles in your library that belong
+ * with this one, by watch-order guide, name, film series or franchise keyword. Only your library is
+ * looked at, so a spin-off you haven't added is never given away.
+ */
+export async function universeFor(type: MediaType, id: number, library: Library): Promise<{ name: string; items: UniverseItem[] }> {
+  const current = (await details(type, id)).data
+  const name = universeName(current)
+  const self: UniverseTitle = { key: current.key, name: current.name, collectionId: current.collection?.id ?? null, keywords: current.keywords }
+  const others = Object.values(library.entries).filter((e) => e.key !== current.key)
+  // Guides and names need nothing from TMDB.
+  const related = new Set(others.filter((e) => sameUniverse(self, { key: e.key, name: e.title.name })).map((e) => e.key))
+  // Film series and franchise keywords do: look at the rest of the library only when this title has one.
+  const rest = others.filter((e) => !related.has(e.key) && (franchisesOf(current.keywords).length > 0 || (current.collection && e.type === 'movie')))
+  if (rest.length) {
+    const found = await detailsMany(rest.map((e) => e.key))
+    for (const e of rest) {
+      const d = found[e.key]
+      if (d && sameUniverse(self, { key: d.key, name: d.name, collectionId: d.collection?.id ?? null, keywords: d.keywords })) related.add(e.key)
+    }
+  }
+  if (!related.size) return { name, items: [] }
+  const all = await detailsMany([...related])
+  const entries = Object.fromEntries(Object.values(library.entries).map((e) => [e.key, activeEntry(e)!]))
+  return { name, items: universeStrip(current, Object.values(all), entries, localDate(new Date())) }
 }

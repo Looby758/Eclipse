@@ -77,6 +77,10 @@ export interface TitleDetails {
   trailer?: string | null
   /** Films: release dates by country ("GB"): the first in cinemas, and the first of any kind. Missing in old saved copies. */
   releases?: Record<string, { cinema: string | null; any: string }>
+  /** The title's own logo artwork (English or no text), for the Spotlight title page. Missing in old saved copies. */
+  logoPath?: string | null
+  /** TMDB's keywords, lower case (finds franchises like Star Wars for "the same universe"). Missing in old saved copies. */
+  keywords?: string[]
 }
 
 export type WatchStatus = 'want' | 'watching' | 'watched' | 'stopped'

@@ -5,7 +5,7 @@ import { sessionLabel } from '../lib/together'
 import { formatRuntime, plural } from '@core/format'
 import { clock, episodeMinutes, fitTonight, startBy, tonight } from '@core/time'
 import { episodeKey, type LibraryEntry, type TitleDetails } from '@core/types'
-import { useApp, type View } from '../store/app'
+import { currentView, useApp, type View } from '../store/app'
 import { itemOf } from '../lib/item'
 import Poster from './Poster'
 import TonightDial from './TonightDial'
@@ -22,13 +22,14 @@ const NAV: { view: View['name']; label: string; icon: typeof Moon }[] = [
   { view: 'lists', label: 'Lists', icon: ListChecks }
 ]
 
-/** Spotlight's navigation: small glass pills in the top right. */
-function Pills(): React.JSX.Element {
+/** Spotlight's navigation: small glass pills in the top right (Home and the Spotlight title page). */
+export function Pills(): React.JSX.Element {
   const go = useApp((s) => s.go)
+  const here = useApp((s) => currentView(s).name)
   return (
     <nav className="spot-pills" aria-label="Main">
       {NAV.map(({ view, label, icon: Icon }) => (
-        <button key={view} className={`spot-pill ${view === 'home' ? 'on' : ''}`} onClick={() => go({ name: view } as View)}>
+        <button key={view} className={`spot-pill ${view === here || (view === 'lists' && here === 'list') ? 'on' : ''}`} onClick={() => go({ name: view } as View)}>
           <Icon size={17} /> {label}
         </button>
       ))}

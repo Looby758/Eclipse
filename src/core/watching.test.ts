@@ -14,6 +14,7 @@ import {
   momentsOf,
   parseEpisode,
   playTarget,
+  watchChoices,
   recognise,
   serviceOf,
   showPagesFromVisits,
@@ -338,5 +339,37 @@ describe('moments', () => {
     expect(normalizeLibrary(JSON.parse(JSON.stringify(l))).entries['tv:1'].moments).toHaveLength(2)
     l = editMoment(l, 'tv:1', 1, null)
     expect(l.entries['tv:1'].moments).toHaveLength(1)
+  })
+
+  it('starts afresh when you watch on a different service', () => {
+    let l = learnLinks(lib, 'tv:1', 'https://www.disneyplus.com/browse/entity-andor')
+    l = learnLinks(l, 'tv:1', 'https://www.nowtv.com/watch/playback/vod/123')
+    expect(l.entries['tv:1'].links).toEqual({ service: 'NOW', last: 'https://www.nowtv.com/watch/playback/vod/123' })
+  })
+
+  it('lists every service to watch on, where you watch first, then yours', () => {
+    const l = learnLinks(lib, 'tv:1', 'https://www.disneyplus.com/browse/entity-andor')
+    const providers = {
+      region: 'GB',
+      link: 'https://www.themoviedb.org/tv/1/watch?locale=GB',
+      stream: [
+        { id: 1, name: 'Netflix', logoPath: '/n.png' },
+        { id: 337, name: 'Disney Plus', logoPath: '/d.png' },
+        { id: 39, name: 'Now TV', logoPath: '/now.png' },
+        { id: 591, name: 'Now TV Cinema', logoPath: '/nc.png' }
+      ],
+      free: [],
+      rent: [],
+      buy: []
+    }
+    const c = watchChoices(l.entries['tv:1'], providers, [39])
+    expect(c.map((x) => [x.label, x.yours, x.learnt])).toEqual([
+      ['Continue on Disney+', true, true],
+      ['Watch on NOW', true, false],
+      ['Watch on Netflix', false, false]
+    ])
+    expect(c[0]).toMatchObject({ url: 'https://www.disneyplus.com/browse/entity-andor', logoPath: '/d.png' })
+    expect(c[1].url).toBe(providers.link)
+    expect(watchChoices(undefined, null, [])).toEqual([])
   })
 })

@@ -227,3 +227,29 @@ describe('traits for recommendations that learn', () => {
     ])
   })
 })
+
+describe('logo and keywords for the Spotlight title page', () => {
+  it('picks the best-voted English logo, then one with no text, and skips SVGs', async () => {
+    const { pickLogo } = await import('./tmdb')
+    expect(
+      pickLogo({
+        logos: [
+          { file_path: '/de.png', iso_639_1: 'de', vote_average: 9 },
+          { file_path: '/en-low.png', iso_639_1: 'en', vote_average: 2 },
+          { file_path: '/en.svg', iso_639_1: 'en', vote_average: 10 },
+          { file_path: '/en-high.png', iso_639_1: 'en', vote_average: 5 }
+        ]
+      })
+    ).toBe('/en-high.png')
+    expect(pickLogo({ logos: [{ file_path: '/none.png', iso_639_1: null }, { file_path: '/fr.png', iso_639_1: 'fr' }] })).toBe('/none.png')
+    expect(pickLogo({ logos: [{ file_path: '/fr.png', iso_639_1: 'fr' }] })).toBeNull()
+    expect(pickLogo(undefined)).toBeNull()
+  })
+
+  it('keeps the logo and lower-case keywords on the details', () => {
+    const d = parseDetails('tv', { id: 1402, name: 'The Walking Dead', keywords: { results: [{ id: 1, name: 'Zombie' }] }, images: { logos: [{ file_path: '/twd.png', iso_639_1: 'en' }] } })
+    expect(d.logoPath).toBe('/twd.png')
+    expect(d.keywords).toEqual(['zombie'])
+    expect(parseDetails('movie', { id: 1, title: 'Old copy' }).logoPath).toBeNull()
+  })
+})

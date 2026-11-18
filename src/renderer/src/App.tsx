@@ -17,6 +17,7 @@ import YearSheet from './components/YearSheet'
 import LibrarySheet from './components/LibrarySheet'
 import SearchSheet from './components/SearchSheet'
 import TitleSheet from './components/TitleSheet'
+import SpotlightTitle from './components/SpotlightTitle'
 import SettingsView from './components/SettingsView'
 import WatchSoonSheet from './components/WatchSoonSheet'
 import ListsSheet from './components/ListsSheet'
@@ -127,8 +128,13 @@ export default function App(): React.JSX.Element {
           {view.name === 'repair' && <RepairSheet />}
           {view.name === 'year' && <YearSheet key={view.year ?? 'now'} year={view.year} />}
           {view.name === 'list' && <ListSheet key={view.id} id={view.id} />}
-          {view.name === 'title' && <TitleSheet key={`${view.type}:${view.id}`} type={view.type} id={view.id} />}
-          <Dock tucked={spot} />
+          {view.name === 'title' &&
+            (homeStyle === 'spotlight' ? (
+              <SpotlightTitle key={`${view.type}:${view.id}`} type={view.type} id={view.id} />
+            ) : (
+              <TitleSheet key={`${view.type}:${view.id}`} type={view.type} id={view.id} />
+            ))}
+          <Dock tucked={spot || (view.name === 'title' && homeStyle === 'spotlight')} />
           <UndoBar />
           <StartAsk />
           <PhoneAsk />
