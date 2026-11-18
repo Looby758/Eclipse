@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { franchisesOf, stripWindow, namesRelated, sameUniverse, showCount, universeName, universeStrip } from './universe'
+import { franchisesOf, sameFamily, stripWindow, namesRelated, sameUniverse, showCount, universeName, universeStrip } from './universe'
 import type { LibraryEntry, TitleDetails } from './types'
 
 const show = (id: number, name: string, date: string, seasons: [number, number][], extra: Partial<TitleDetails> = {}): TitleDetails => ({
@@ -98,5 +98,24 @@ describe('a big universe along the bottom', () => {
     expect(stripWindow(items(52, 20)).map((x) => x.i)).toEqual([18, 19, 20, 21, 22])
     expect(stripWindow(items(52, 0)).map((x) => x.i)).toEqual([0, 1, 2, 3, 4])
     expect(stripWindow(items(52, 51)).map((x) => x.i)).toEqual([47, 48, 49, 50, 51])
+  })
+})
+
+describe('family first in a big universe', () => {
+  const film = (id: number, name: string, collection: number | null = null) => ({ key: `movie:${id}` as const, name, collection: collection ? { id: collection, name: '' } : null })
+  it('groups film series, names and small guide sections, not whole sagas', () => {
+    expect(sameFamily(film(24428, 'The Avengers', 86311), film(99861, 'Avengers: Age of Ultron', 86311))).toBe(true)
+    expect(sameFamily(film(1771, 'Captain America: The First Avenger'), film(100402, 'Captain America: The Winter Soldier'))).toBe(true)
+    expect(sameFamily(film(1726, 'Iron Man'), film(68721, 'Iron Man 3'))).toBe(true)
+    expect(sameFamily(film(1726, 'Iron Man'), film(10195, 'Thor'))).toBe(false)
+    // Daredevil and The Defenders share the guide's Defenders section.
+    expect(sameFamily({ key: 'tv:61889', name: 'Marvel’s Daredevil', collection: null }, { key: 'tv:62285', name: 'Marvel’s The Defenders', collection: null })).toBe(true)
+  })
+
+  it('shows the family around this title, topped up with the nearest others', () => {
+    const items = Array.from({ length: 30 }, (_, i) => ({ i, current: i === 10, family: [2, 10, 25].includes(i) }))
+    expect(stripWindow(items).map((x) => x.i)).toEqual([2, 9, 10, 11, 25])
+    const lots = Array.from({ length: 30 }, (_, i) => ({ i, current: i === 10, family: i % 2 === 0 }))
+    expect(stripWindow(lots).map((x) => x.i)).toEqual([6, 8, 10, 12, 14])
   })
 })

@@ -104,6 +104,8 @@ export interface UniverseItem {
   posterPath: string | null
   /** The page you're on. */
   current: boolean
+  /** Its closest family within the universe (the other Avengers films, the Defenders shows), shown first along the bottom. */
+  family?: boolean
   /** "Next: S3 E4", "Not started", "Watched", "Want to watch". */
   line: string
   /** Episodes seen and out so far (films: 1 of 1 once watched). */
@@ -143,12 +145,39 @@ export function universeItem(d: TitleDetails, entry: LibraryEntry | undefined, t
   return { ...base, line, seen, total }
 }
 
+/** Watch-order sections small enough to be a family (The Defenders), unlike a whole saga. */
+const FAMILY_SECTION_MAX = 15
+
+function smallSections(key: string): Set<string> {
+  const out = new Set<string>()
+  for (const g of guidesWith(key)) {
+    for (const section of g.sections ?? []) {
+      const members = new Set(g.entries.filter((e) => e.sections?.includes(section)).map((e) => `${e.type}:${e.id}`))
+      if (members.has(key) && members.size <= FAMILY_SECTION_MAX) out.add(`${g.id}/${section}`)
+    }
+  }
+  return out
+}
+
+/**
+ * The closest family inside a universe: the same film series (the Avengers films, the Iron Man
+ * films), names that go together (Captain America: …, Spider-Man: …), or a small group in the
+ * watch-order guide (The Defenders).
+ */
+export function sameFamily(a: Pick<TitleDetails, 'key' | 'name' | 'collection'>, b: Pick<TitleDetails, 'key' | 'name' | 'collection'>): boolean {
+  if (a.key === b.key) return false
+  if (a.collection && a.collection.id === b.collection?.id) return true
+  if (namesRelated(a.name, b.name)) return true
+  const sa = smallSections(a.key)
+  return [...smallSections(b.key)].some((s) => sa.has(s))
+}
+
 /** The strip: this title and the related ones, in the order they came out. Empty when nothing's related. */
 export function universeStrip(current: TitleDetails, related: TitleDetails[], entries: Record<string, LibraryEntry>, today: string): UniverseItem[] {
   if (!related.length) return []
   const all = [current, ...related.filter((r) => r.key !== current.key && entries[r.key])]
   return all
-    .map((d) => universeItem(d, entries[d.key], today, d.key === current.key))
+    .map((d) => ({ ...universeItem(d, entries[d.key], today, d.key === current.key), family: d.key === current.key || sameFamily(current, d) }))
     .sort((a, b) => (a.date ?? '9999').localeCompare(b.date ?? '9999') || a.name.localeCompare(b.name))
 }
 
@@ -156,10 +185,19 @@ export function universeStrip(current: TitleDetails, related: TitleDetails[], en
 export const STRIP_MAX = 6
 
 /** The cards to show: all of them when they fit, else this one and its neighbours in release order (leaving room for "See all"). */
-export function stripWindow<T extends { current: boolean }>(items: T[], max = STRIP_MAX): T[] {
+export function stripWindow<T extends { current: boolean; family?: boolean }>(items: T[], max = STRIP_MAX): T[] {
   if (items.length <= max) return items
   const room = max - 1
+  const near = (list: T[]): T[] => {
+    const at = Math.max(0, list.findIndex((u) => u.current))
+    const start = Math.min(Math.max(0, at - Math.floor((room - 1) / 2)), list.length - room)
+    return list.slice(Math.max(0, start), Math.max(0, start) + room)
+  }
+  // Its family first (the other Avengers films), then whatever came out nearest to it.
+  const family = items.filter((u) => u.current || u.family)
+  if (family.length >= room) return near(family)
   const at = Math.max(0, items.findIndex((u) => u.current))
-  const start = Math.min(Math.max(0, at - Math.floor((room - 1) / 2)), items.length - room)
-  return items.slice(start, start + room)
+  const rest = items.map((u, i) => ({ u, d: Math.abs(i - at) })).filter(({ u }) => !family.includes(u)).sort((a, b) => a.d - b.d)
+  const picked = new Set([...family, ...rest.slice(0, room - family.length).map((x) => x.u)])
+  return items.filter((u) => picked.has(u))
 }
