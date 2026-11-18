@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { activeEntry, companions, currentRewatch, emptyLibrary, endWatchWith, normalizeLibrary, setEpisodes, startRewatch, startWatchWith, setStatus, tickWith, watchCount, watchesWith } from './library'
+import { activeEntry, nextEpisodeFor, companions, currentRewatch, emptyLibrary, endWatchWith, normalizeLibrary, setEpisodes, startRewatch, startWatchWith, setStatus, tickWith, watchCount, watchesWith } from './library'
 
 const twd = { key: 'tv:1402' as const, type: 'tv' as const, id: 1402, title: { name: 'The Walking Dead', year: 2010, posterPath: null } }
 const at = (d: string): Date => new Date(`${d}T20:00:00`)
@@ -96,5 +96,14 @@ describe('arranging a time to watch together', () => {
     expect(sessionsStartingSoon(lib, new Date(2026, 10, 20, 20, 30))).toEqual([])
     expect(planWatchWith(lib, 'tv:9', 0, { at: 'soon' })).toBe(lib)
     expect(planWatchWith(lib, 'tv:9', 0, null).entries['tv:9'].rewatches![0].planned).toBeUndefined()
+  })
+})
+
+describe('dipping into a long-running show', () => {
+  it('carries on from the episode you ticked, not season 1', () => {
+    const fg = { key: 'tv:1434' as const, type: 'tv' as const, id: 1434, title: { name: 'Family Guy', year: 1999, posterPath: null } }
+    const seasons = Array.from({ length: 24 }, (_, i) => ({ number: i + 1, episodeCount: 20 }))
+    const lib = setEpisodes(emptyLibrary(), fg, ['S24E1'], true, at('2026-11-18'))
+    expect(nextEpisodeFor(lib.entries[fg.key], seasons)).toEqual({ season: 24, episode: 2 })
   })
 })

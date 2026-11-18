@@ -1,6 +1,6 @@
 import type { Library, LibraryEntry, TitleDetails } from './types'
 import { episodeKey, parseEpisodeKey } from './types'
-import { activeEntry } from './library'
+import { activeEntry, currentRewatch, sessionIsOn, setEpisodes, tickWith, watchesWith } from './library'
 import { remainingEpisodes } from './watchsoon'
 
 /**
@@ -67,10 +67,10 @@ const norm = (s: string): string =>
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
 
-/** "S2 E4", "S2:E4", "s02e04", "Season 2 Episode 4", "Series 2, Episode 4" (iPlayer), "2x04". */
+/** "S2 E4", "S2:E4", "s02e04", "S2 Ep4", "Season 2 Episode 4", "Series 2, Episode 4" (iPlayer), "2x04". */
 export function parseEpisode(text: string): { season: number; episode: number } | null {
   const patterns = [
-    /\bS(\d{1,2})\s*[:.\- ]?\s*E(\d{1,3})\b/i,
+    /\bS(\d{1,2})\s*[:.\- ]?\s*E(?:p\.?\s*)?(\d{1,3})\b/i,
     /\b(?:Season|Series)\s*(\d{1,2})\s*[,:\-]?\s*(?:Episode|Ep\.?)\s*(\d{1,3})\b/i,
     /\b(\d{1,2})x(\d{1,3})\b/
   ]
@@ -83,17 +83,19 @@ export function parseEpisode(text: string): { season: number; episode: number } 
 
 /**
  * The show in your library a title is about: the longest show name that appears in it as whole
- * words. Very short names (under 4 letters) must be the whole title, so "It" doesn't match everything.
+ * words. Very short names (under 4 letters) must be the whole title, or one whole part of it
+ * ("Ted · S1 E4"), so "It" doesn't match everything.
  */
 export function matchTitle(text: string, library: Library, types: ('tv' | 'movie')[] = ['tv']): LibraryEntry | null {
   const t = ` ${norm(text)} `
+  const parts = new Set(text.split(' · ').map((p) => norm(cleanTitle(p))))
   let best: LibraryEntry | null = null
   let bestLen = 0
   for (const e of Object.values(library.entries)) {
     if (!types.includes(e.type)) continue
     const n = norm(e.title.name)
     if (!n) continue
-    const hit = n.length < 4 ? t.trim() === n : t.includes(` ${n} `)
+    const hit = n.length < 4 ? t.trim() === n || parts.has(n) : t.includes(` ${n} `)
     if (hit && n.length > bestLen) {
       best = e
       bestLen = n.length
@@ -128,47 +130,104 @@ export interface Suggestion {
   url: string | null
   /** The episode was named in the title, rather than guessed as the next one. */
   sure: boolean
+  /**
+   * Where it can be ticked: a watch with someone ("Sam"), or your own progress (null), leaving out
+   * the ones that already have it. Missing on suggestions saved before watches with someone counted.
+   */
+  targets?: TickTarget[]
+}
+
+/** One place an episode can be ticked: a watch with someone, or your own progress (with: null). */
+export interface TickTarget {
+  with: string | null
 }
 
 const ticked = (e: LibraryEntry | undefined, k: string): boolean => !!e?.episodes?.[k]
 
 /**
- * From browser visits to streaming players: one suggestion per show, per day, per distinct player
- * address (each a separate episode), named episodes as they are, the rest as the next ones you
- * haven't ticked. Already-ticked and dismissed ones are left out.
+ * Your own progress is in play when there's no watch with someone, or you're properly watching it
+ * yourself too: your own rewatch, or Watching with ticks of your own. A show you've seen and are
+ * now rewatching with Sam is Sam's watch only.
  */
-export function suggestFromVisits(visits: Visit[], library: Library, details: Record<string, TitleDetails>, dismissed: Set<string>, today: string): Suggestion[] {
+function ownInPlay(raw: LibraryEntry): boolean {
+  if (!watchesWith(raw).length || currentRewatch(raw)) return true
+  return raw.status === 'watching' && Object.keys(raw.episodes ?? {}).length > 0
+}
+
+const lastTick = (episodes: Record<string, string> | undefined): string => Object.values(episodes ?? {}).reduce((a, d) => (d > a && d !== 'seen' ? d : a), '')
+
+/** Where an episode could still be ticked: each watch with someone without it, then your own. */
+export function tickTargets(raw: LibraryEntry, k: string): TickTarget[] {
+  const out: TickTarget[] = watchesWith(raw)
+    .filter(({ watch }) => !watch.episodes?.[k])
+    .map(({ watch }) => ({ with: watch.with }))
+  if (ownInPlay(raw) && !ticked(activeEntry(raw), k)) out.push({ with: null })
+  return out
+}
+
+/**
+ * Whose progress to guess the next episode from, when the title doesn't name it: a watch with
+ * someone whose arranged time is now, then your own progress, then the watch with someone you
+ * ticked most recently.
+ */
+export function guessFrom(raw: LibraryEntry, at: Date): LibraryEntry {
+  const watches = watchesWith(raw)
+  const view = (w: (typeof watches)[number]): LibraryEntry => ({ ...raw, status: 'watching', episodes: w.watch.episodes ?? {} })
+  const on = watches.find((w) => sessionIsOn(w.watch, at))
+  if (on) return view(on)
+  if (!watches.length || ownInPlay(raw)) return activeEntry(raw)!
+  const latest = [...watches].sort((a, b) => (lastTick(b.watch.episodes) || b.watch.startedOn).localeCompare(lastTick(a.watch.episodes) || a.watch.startedOn))[0]
+  return view(latest)
+}
+
+/**
+ * A saved suggestion as it stands now: where it can still be ticked, or null when nowhere. Guessed
+ * episodes (saved by earlier versions) are dropped: Eclipse only asks about episodes it was told.
+ */
+export function refreshSuggestion(s: Suggestion, library: Library): Suggestion | null {
+  const raw = library.entries[s.key]
+  if (!raw || !s.sure) return null
+  const targets = tickTargets(raw, episodeKey(s.season, s.episode))
+  return targets.length ? { ...s, targets } : null
+}
+
+/**
+ * Ticks a suggestion on the day it was watched: on the watch with the person named, or your own
+ * progress with null. With nothing named, the first place it can go.
+ */
+export function tickSuggestion(library: Library, s: Suggestion, who?: string | null): Library {
+  const now = refreshSuggestion(s, library)
+  if (!now) return library
+  const target = who === undefined ? now.targets![0] : now.targets!.find((t) => (t.with ?? '').toLowerCase() === (who ?? '').toLowerCase())
+  if (!target) return library
+  const e = library.entries[s.key]
+  const k = episodeKey(s.season, s.episode)
+  const when = new Date(`${s.day}T21:00:00`)
+  if (target.with === null) return setEpisodes(library, { key: e.key, type: e.type, id: e.id, title: e.title }, [k], true, when)
+  const w = watchesWith(e).find((x) => x.watch.with === target.with)
+  return w ? tickWith(library, e.key, w.index, [k], true, when) : library
+}
+
+/**
+ * From browser visits to streaming players: one suggestion per episode the page title names, on
+ * the day it was played. Titles that don't name the episode (Disney+, NOW) are left to the Chrome
+ * extension, which reads it from the player: guessing "the next one" from history ticked the wrong
+ * episodes. Already-ticked and dismissed ones are left out.
+ */
+export function suggestFromVisits(visits: Visit[], library: Library, dismissed: Set<string>): Suggestion[] {
   const out: Suggestion[] = []
-  const planned = new Map<string, Set<string>>()
-  const seenPlays = new Set<string>()
-  const sorted = [...visits].sort((a, b) => a.at - b.at)
-  for (const v of sorted) {
+  for (const v of [...visits].sort((a, b) => a.at - b.at)) {
     const svc = serviceOf(v.url)
     if (!svc?.playing) continue
     const clean = cleanTitle(v.title)
     const raw = library.entries[matchTitle(clean, library)?.key ?? '']
-    if (!raw) continue
-    const e = activeEntry(raw)!
-    // The same player address visited again (a reload, coming back to it) is one episode.
-    const playId = `${e.key}|${v.url.split('?')[0]}`
-    if (seenPlays.has(playId)) continue
-    seenPlays.add(playId)
-    const plan = planned.get(e.key) ?? new Set<string>()
-    planned.set(e.key, plan)
-    const named = parseEpisode(clean)
-    let ep: { season: number; episode: number } | null = named
-    if (!ep) {
-      const d = details[e.key]
-      if (!d) continue
-      const rest = remainingEpisodes(d, e, today).filter((x) => !plan.has(episodeKey(x.season, x.episode)))
-      ep = rest[0] ?? null
-    }
-    if (!ep) continue
+    const ep = raw ? parseEpisode(clean) : null
+    if (!raw || !ep) continue
     const k = episodeKey(ep.season, ep.episode)
-    plan.add(k)
-    const id = `${e.key}@${k}`
-    if (ticked(e, k) || dismissed.has(id) || out.some((s) => s.id === id)) continue
-    out.push({ id, key: e.key, name: e.title.name, season: ep.season, episode: ep.episode, day: v.day, source: 'history', service: svc.service.name, url: v.url, sure: !!named })
+    const id = `${raw.key}@${k}`
+    const targets = tickTargets(raw, k)
+    if (!targets.length || dismissed.has(id) || out.some((s) => s.id === id)) continue
+    out.push({ id, key: raw.key, name: raw.title.name, season: ep.season, episode: ep.episode, day: v.day, source: 'history', service: svc.service.name, url: v.url, sure: true, targets })
   }
   return out
 }
@@ -203,12 +262,64 @@ export interface Recognised {
   playing: boolean
 }
 
+/** What the Eclipse extension for Chrome sends while a player is open (see extension/). */
+export interface ExtensionReport {
+  url: string
+  /** What the page says is playing, best first: the player's own title lines, the media session (what Chrome shows in its media controls), the tab title. */
+  texts: string[]
+  position: number | null
+  duration: number | null
+  paused: boolean
+  ended?: boolean
+}
+
+/**
+ * Checks and tidies a report from the extension. Only streaming sites count; text is trimmed and
+ * capped so a strange page can't flood Eclipse.
+ */
+export function fromExtension(raw: unknown): NowPlaying | null {
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as Partial<ExtensionReport>
+  if (typeof r.url !== 'string' || !/^https:\/\//.test(r.url)) return null
+  const svc = serviceOf(r.url)
+  if (!svc) return null
+  const seen = new Set<string>()
+  const texts: string[] = []
+  for (const t of Array.isArray(r.texts) ? r.texts : []) {
+    if (typeof t !== 'string') continue
+    const clean = t.replace(/\s+/g, ' ').trim().slice(0, 200)
+    if (clean && !seen.has(clean.toLowerCase())) {
+      seen.add(clean.toLowerCase())
+      texts.push(clean)
+    }
+    if (texts.length >= 12) break
+  }
+  if (!texts.length) return null
+  const num = (n: unknown): number | null => (typeof n === 'number' && Number.isFinite(n) && n >= 0 ? n : null)
+  const duration = num(r.duration)
+  const position = num(r.position)
+  return {
+    app: `Chrome extension (${svc.service.name})`,
+    title: texts.join(' · '),
+    status: r.ended ? 'stopped' : r.paused ? 'paused' : 'playing',
+    position: position != null && duration != null ? Math.min(position, duration) : position,
+    duration: duration && duration > 0 ? duration : null,
+    url: r.url
+  }
+}
+
 /** Works out which of your shows (or films) is playing, and which episode. */
-export function recognise(np: NowPlaying, library: Library, details: Record<string, TitleDetails>, today: string): Recognised | null {
-  const text = [np.title, np.artist, np.album].filter(Boolean).map((s) => cleanTitle(s!)).join(' · ')
+export function recognise(np: NowPlaying, library: Library, details: Record<string, TitleDetails>, today: string, now: Date = new Date()): Recognised | null {
+  // Each part cleaned on its own: a site's ending (" - NOW") would otherwise take the rest with it.
+  const text = [np.title, np.artist, np.album]
+    .filter(Boolean)
+    .flatMap((s) => s!.split(' · '))
+    .map((s) => cleanTitle(s))
+    .filter(Boolean)
+    .join(' · ')
   const hit = matchTitle(text, library, ['tv', 'movie'])
   if (!hit) return null
-  const e = activeEntry(hit)!
+  const e = guessFrom(hit, now)
   const svc = np.url ? serviceOf(np.url)?.service.name : SERVICES.find((s) => new RegExp(s.id, 'i').test(np.app))?.name
   let ep = e.type === 'tv' ? parseEpisode(text) : null
   const sure = !!ep
@@ -227,30 +338,76 @@ export function recognise(np: NowPlaying, library: Library, details: Record<stri
   }
 }
 
+// ---- Something playing that isn't in your library ----
+
+export interface UnknownShow {
+  /** The show's name as the player gave it: "Family Guy". */
+  name: string
+  season: number
+  episode: number
+  service: string | null
+}
+
+/**
+ * A show the player names, with the episode, that isn't in your library: from the Chrome extension
+ * (or anything else that gives a streaming address), so it's really a player and not a page you're
+ * browsing. The name is the first line that isn't the episode ("Family Guy", then "S24:E1 ...").
+ */
+export function unknownShow(np: NowPlaying, library: Library): UnknownShow | null {
+  if (!np.url) return null
+  const svc = serviceOf(np.url)
+  if (!svc) return null
+  const parts = np.title.split(' · ').map((t) => cleanTitle(t))
+  const ep = parseEpisode(parts.join(' · '))
+  if (!ep || matchTitle(parts.join(' · '), library, ['tv', 'movie'])) return null
+  const name = parts.find((t) => !parseEpisode(t) && t.length >= 2 && t.length <= 80 && !SERVICES.some((x) => x.name.toLowerCase() === t.toLowerCase()))
+  return name ? { name, season: ep.season, episode: ep.episode, service: svc.service.name } : null
+}
+
+/** The TMDB show that a name from a player means: the most popular one with exactly that name, else the top result. */
+export function pickShow<T extends { type: string; name: string; popularity: number }>(name: string, results: T[]): T | null {
+  const shows = results.filter((r) => r.type === 'tv')
+  const exact = shows.filter((r) => norm(r.name) === norm(name)).sort((a, b) => b.popularity - a.popularity)
+  return exact[0] ?? shows[0] ?? null
+}
+
 /** "Andor S2 E4, 31 minutes in" */
 export function playingLine(r: Recognised): string {
-  const ep = r.season ? ` S${r.season} E${r.episode}` : ''
-  const mins = r.position != null ? `, ${Math.floor(r.position / 60)} minutes in` : ''
+  // Only an episode the player named: a guess ("the next one") would be shown as fact.
+  const ep = r.season && r.sure ? ` S${r.season} E${r.episode}` : ''
+  const m = r.position != null ? Math.floor(r.position / 60) : null
+  const mins = m != null ? `, ${m} minute${m === 1 ? '' : 's'} in` : ''
   return `${r.name}${ep}${mins}`
 }
 
 /**
  * Follows playback between checks and says when something finished: it reached the last 5% (or
- * its last 3 minutes), or it was past 80% when it stopped or switched to something else.
+ * its last 3 minutes) while you watched, or it was already there when it stopped or moved on (the
+ * credits, then the next episode). Stopping anywhere earlier doesn't count: you haven't finished it.
  */
 export function finished(prev: Recognised | null, now: Recognised | null): Recognised | null {
   if (!prev || prev.duration == null || prev.position == null || prev.duration < 300) return null
   const same = !!now && now.key === prev.key && now.season === prev.season && now.episode === prev.episode && (now.position ?? 0) >= (prev.position ?? 0) - 30
   const nearEnd = (r: Recognised): boolean => r.duration != null && r.position != null && (r.position >= r.duration * 0.95 || r.duration - r.position <= 180)
   if (same) return !nearEnd(prev) && nearEnd(now!) ? now : null
-  // Stopped or moved on: it counts if you'd got most of the way (repeat reports are dropped by id).
-  return prev.position >= prev.duration * 0.8 ? prev : null
+  // Stopped or moved on: it counts only from the credits (repeat reports are dropped by id).
+  return nearEnd(prev) ? prev : null
 }
 
-/** A suggestion from the player, for the day it actually played (after midnight still counts as that evening when late). */
-export function suggestionFromPlaying(r: Recognised, day: string): Suggestion | null {
-  if (r.type !== 'tv' || !r.season || !r.episode) return null
-  return { id: `${r.key}@${episodeKey(r.season, r.episode)}`, key: r.key, name: r.name, season: r.season, episode: r.episode, day, source: 'playing', service: r.service, url: null, sure: r.sure }
+/**
+ * A suggestion from the player, for the day it actually played (after midnight still counts as that
+ * evening when late). Null when it's a film, the player didn't say which episode, or it's already
+ * ticked everywhere it could go.
+ */
+export function suggestionFromPlaying(r: Recognised, day: string, library: Library): Suggestion | null {
+  if (r.type !== 'tv' || !r.season || !r.episode || !r.sure) return null
+  const s: Suggestion = { id: `${r.key}@${episodeKey(r.season, r.episode)}`, key: r.key, name: r.name, season: r.season, episode: r.episode, day, source: 'playing', service: r.service, url: null, sure: r.sure }
+  return refreshSuggestion(s, library)
+}
+
+/** "with Sam" when a suggestion can only go on one watch with someone; "" otherwise. */
+export function suggestionWith(s: Suggestion): string {
+  return s.targets?.length === 1 && s.targets[0].with ? `with ${s.targets[0].with}` : ''
 }
 
 // ---- Bedtime guard (Phase 29) ----
