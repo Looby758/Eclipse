@@ -8,6 +8,7 @@ import {
   finished,
   followPlayback,
   learnLinks,
+  mergeSuggestions,
   matchTitle,
   momentsOf,
   parseEpisode,
@@ -275,6 +276,17 @@ describe('what’s playing', () => {
     // Not from earlier on.
     expect(finished(np('Andor S2 E4', 2300), np('Andor S2 E4', 2400))).toBeNull()
     expect(finished(np('Andor S2 E4', 2300), np('Andor S2 E5', 5))).toBeNull()
+  })
+
+  it('asks about a finished episode that an earlier version only guessed', () => {
+    const done = suggestionFromPlaying(np('Andor S2 E4', 2650)!, today, lib)!
+    // An old guess from browser history, saved with the same id but never shown any more.
+    const guess = { ...done, source: 'history' as const, sure: false }
+    expect(mergeSuggestions([guess], [done], []).fresh).toEqual([done])
+    expect(mergeSuggestions([guess], [done], []).suggestions).toEqual([done])
+    // Already asked, or said no to: not again.
+    expect(mergeSuggestions([done], [done], []).fresh).toEqual([])
+    expect(mergeSuggestions([], [done], [done.id]).fresh).toEqual([])
   })
 
   it('keeps following the named episode while the next one loads', () => {

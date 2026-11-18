@@ -209,6 +209,18 @@ export function tickSuggestion(library: Library, s: Suggestion, who?: string | n
 }
 
 /**
+ * Adds new suggestions to the saved ones, leaving out any already saved or said no to. A guess
+ * saved by an earlier version (never shown any more) doesn't count as already asked: it's replaced,
+ * or the episode it guessed would never be asked about again.
+ */
+export function mergeSuggestions(saved: Suggestion[], found: Suggestion[], dismissed: string[]): { suggestions: Suggestion[]; fresh: Suggestion[] } {
+  const kept = saved.filter((x) => x.sure)
+  const known = new Set([...kept.map((x) => x.id), ...dismissed])
+  const fresh = found.filter((x, i) => !known.has(x.id) && found.findIndex((y) => y.id === x.id) === i)
+  return { suggestions: [...kept, ...fresh], fresh }
+}
+
+/**
  * From browser visits to streaming players: one suggestion per episode the page title names, on
  * the day it was played. Titles that don't name the episode (Disney+, NOW) are left to the Chrome
  * extension, which reads it from the player: guessing "the next one" from history ticked the wrong

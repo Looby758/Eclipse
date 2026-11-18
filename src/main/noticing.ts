@@ -12,6 +12,7 @@ import {
   followPlayback,
   formatAt,
   learnLinks,
+  mergeSuggestions,
   playingLine,
   recognise,
   refreshSuggestion,
@@ -100,12 +101,11 @@ function pending(lib: Library = getLibrary()): Suggestion[] {
   return suggestions.filter((s) => !no.has(s.id)).flatMap((s) => refreshSuggestion(s, lib) ?? [])
 }
 
-function addSuggestions(found: Suggestion[]): number {
+function addSuggestions(found: Suggestion[]): Suggestion[] {
   const s = load()
-  const known = new Set([...s.suggestions.map((x) => x.id), ...s.dismissed])
-  const fresh = found.filter((x) => !known.has(x.id))
-  if (fresh.length) store({ ...s, suggestions: [...s.suggestions, ...fresh] })
-  return fresh.length
+  const merged = mergeSuggestions(s.suggestions, found, s.dismissed)
+  if (merged.suggestions.length !== s.suggestions.length) store({ ...s, suggestions: merged.suggestions })
+  return merged.fresh
 }
 
 function notify(title: string, body: string, onClick?: () => void): void {
@@ -145,7 +145,7 @@ export async function scanHistory(): Promise<void> {
   const result = await streamingVisits(since)
   const lib = getLibrary()
   const found = suggestFromVisits(result.visits, lib, new Set(load().dismissed))
-  const fresh = addSuggestions(found)
+  const fresh = addSuggestions(found).length
   // Learn where each show is watched, for "Play next".
   let next = getLibrary()
   for (const p of showPagesFromVisits(result.visits, next)) next = learnLinks(next, p.key, p.url)
@@ -202,8 +202,9 @@ async function onPlaying(): Promise<void> {
   if (done) {
     const s = suggestionFromPlaying(done, eveningDay(new Date()), getLibrary())
     // No notification: it waits on Home for when you're back in Eclipse.
-    if (s) addSuggestions([s])
-    else log('[playing] not asked: a film, no episode named, or already ticked')
+    if (!s) log('[playing] not asked: a film, no episode named, or already ticked')
+    else if (addSuggestions([s]).length) log(`[playing] asking about ${s.name} S${s.season}E${s.episode} on Home`)
+    else log(`[playing] not asked again: ${s.name} S${s.season}E${s.episode} was already asked about, or you said no to it`)
   }
   // Phase 31: on a Mac, the tab's address teaches where the show is watched.
   if (now?.n.url && next) {
