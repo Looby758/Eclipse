@@ -14,6 +14,7 @@ import { useApp } from '../store/app'
 import { useDetailsMany } from '../lib/availability'
 import { useServiceHistory } from '../lib/services'
 import { useNoticing } from '../lib/noticing'
+import { suggestionWith } from '@core/watching'
 
 const itemOf = (e: LibraryEntry): { key: LibraryEntry['key']; type: LibraryEntry['type']; id: number; title: LibraryEntry['title'] } => ({ key: e.key, type: e.type, id: e.id, title: e.title })
 
@@ -383,10 +384,15 @@ function Noticed(): React.JSX.Element | null {
           </div>
           {list.map((s) => {
             const e = library.entries[s.key]
+            // One place to tick it: say who with ("with Sam"). Several (two people, or Sam and your
+            // own progress): a button for each, so you choose.
+            const targets = s.targets ?? [{ with: null }]
+            const who = suggestionWith(s)
             return (
               <div key={s.id} className="note-line">
                 <button className="note-open" onClick={() => e && go({ name: 'title', type: e.type, id: e.id })}>
                   <strong>{s.name}</strong> {label(s.season, s.episode)}
+                  {who ? ` ${who}` : ''}
                 </button>
                 <span className="muted">
                   {' '}
@@ -395,9 +401,17 @@ function Noticed(): React.JSX.Element | null {
                   {s.sure ? '' : ' (Eclipse guessed the episode)'}
                 </span>
                 <div className="row" style={{ marginTop: 6 }}>
-                  <button className="chip" onClick={async () => setLibrary(await window.api.acceptSuggestion(s.id))}>
-                    <Check size={14} /> Tick it
-                  </button>
+                  {targets.length === 1 ? (
+                    <button className="chip" onClick={async () => setLibrary(await window.api.acceptSuggestion(s.id, targets[0].with))}>
+                      <Check size={14} /> Tick it
+                    </button>
+                  ) : (
+                    targets.map((t) => (
+                      <button key={t.with ?? ''} className="chip" onClick={async () => setLibrary(await window.api.acceptSuggestion(s.id, t.with))}>
+                        <Check size={14} /> {t.with ? `With ${t.with}` : 'On my own'}
+                      </button>
+                    ))
+                  )}
                   <button className="chip clear" onClick={async () => setStatus(await window.api.dismissSuggestion(s.id))}>
                     <X size={14} /> Not this
                   </button>

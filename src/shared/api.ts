@@ -247,8 +247,11 @@ export interface EclipseApi {
   setNoticing(patch: Partial<NoticingSettings>): Promise<NoticingStatus>
   /** Reads browser history now instead of waiting for the next half-hourly check. */
   scanHistory(): Promise<NoticingStatus>
-  /** Ticks a suggestion on the day it was watched. */
-  acceptSuggestion(id: string): Promise<Library>
+  /**
+   * Ticks a suggestion on the day it was watched: on the watch with `who`, or your own progress
+   * with null (the first of its targets when left out).
+   */
+  acceptSuggestion(id: string, who?: string | null): Promise<Library>
   dismissSuggestion(id: string): Promise<NoticingStatus>
   onNoticingChanged(callback: () => void): () => void
   /** Changes a saved moment's note (empty clears it), or deletes the moment with null. */

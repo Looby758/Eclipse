@@ -31,6 +31,8 @@ export interface Settings {
   bedtimeGuard?: boolean
   /** Browser history has been read up to here (milliseconds). */
   historySince?: number
+  /** History has been looked back over once for episodes watched with someone (they used to be skipped). */
+  historyWithRescan?: boolean
   /** Phase 38: open Eclipse quietly in the tray when the computer starts (only ever turned on by you). */
   startAtLogin?: boolean
   /** Phase 38: you've been asked once whether to start with the computer. */

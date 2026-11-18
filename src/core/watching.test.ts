@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { emptyLibrary, normalizeLibrary } from './library'
+import { emptyLibrary, normalizeLibrary, planWatchWith, setEpisodes, setStatus, startRewatch, startWatchWith, tickWith, watchesWith } from './library'
 import {
   addMoment,
   bedtimeWarning,
@@ -15,6 +15,11 @@ import {
   serviceOf,
   showPagesFromVisits,
   suggestFromVisits,
+  refreshSuggestion,
+  suggestionFromPlaying,
+  suggestionWith,
+  tickSuggestion,
+  tickTargets,
   type Recognised
 } from './watching'
 import type { Library, LibraryEntry, TitleDetails } from './types'
@@ -104,6 +109,86 @@ describe('suggestions from browser history', () => {
     expect(playTarget(lib.entries['tv:1'])).toBeNull()
     expect(normalizeLibrary(JSON.parse(JSON.stringify(l))).entries['tv:1'].links?.show).toBe('https://www.disneyplus.com/browse/entity-andor')
     expect(normalizeLibrary({ entries: { 'tv:1': { ...l.entries['tv:1'], links: { show: 'javascript:alert(1)' } } } }).entries['tv:1'].links).toBeUndefined()
+  })
+})
+
+describe('watching with someone', () => {
+  const twd = { key: 'tv:2' as const, type: 'tv' as const, id: 2, title: { name: 'The Walking Dead', year: 2010, posterPath: null } }
+  const at = (d: string, t = '20:00'): Date => new Date(`${d}T${t}:00`)
+  const v = (url: string, title: string, day: string, time = '22:00') => ({ url, title, day, at: at(day, time).getTime() })
+  const whole = ['S1E1', 'S1E2', 'S1E3', 'S1E4', 'S1E5', 'S1E6']
+  // Seen it all years ago, now rewatching with Sam (three in).
+  const seen = (): Library => {
+    let l = setEpisodes(setStatus(emptyLibrary(), twd, 'watched', at('2015-01-01')), twd, whole, true, at('2015-01-01'))
+    l = startWatchWith(l, twd, 'Sam', at('2026-11-01'))
+    return tickWith(l, twd.key, watchesWith(l.entries[twd.key])[0].index, ['S1E1', 'S1E2', 'S1E3'], true, at('2026-11-02'))
+  }
+  const sam = (l: Library) => l.entries[twd.key].rewatches!.find((r) => r.with === 'Sam')!
+
+  it('asks to tick episodes you saw the first time on the watch with them', () => {
+    const l = seen()
+    const visits = [v('https://www.nowtv.com/gb/watch/playback/1', 'The Walking Dead - NOW', '2026-11-10'), v('https://www.nowtv.com/gb/watch/playback/2', 'The Walking Dead S1 E6 - NOW', '2026-11-10', '23:00')]
+    const s = suggestFromVisits(visits, l, details, new Set(), today)
+    expect(s.map((x) => [x.id, x.sure, x.targets])).toEqual([
+      ['tv:2@S1E4', false, [{ with: 'Sam' }]],
+      ['tv:2@S1E6', true, [{ with: 'Sam' }]]
+    ])
+    expect(suggestionWith(s[0])).toBe('with Sam')
+    // Yes ticks Sam's watch, on the day it was watched, and leaves the first watch alone.
+    const after = tickSuggestion(l, s[0])
+    expect(sam(after).episodes?.S1E4).toBe('2026-11-10')
+    expect(after.entries[twd.key].episodes).toEqual(l.entries[twd.key].episodes)
+    expect(refreshSuggestion(s[0], after)).toBeNull()
+    expect(refreshSuggestion(s[1], after)?.targets).toEqual([{ with: 'Sam' }])
+  })
+
+  it('lets you choose when it could be your own progress too', () => {
+    let l = setEpisodes(emptyLibrary(), twd, ['S1E1', 'S1E2'], true, at('2026-10-01'))
+    l = startWatchWith(l, twd, 'Sam', at('2026-11-01'))
+    const [s] = suggestFromVisits([v('https://www.nowtv.com/gb/watch/playback/1', 'The Walking Dead S1 E3 - NOW', '2026-11-10')], l, details, new Set(), today)
+    expect(s.targets).toEqual([{ with: 'Sam' }, { with: null }])
+    expect(suggestionWith(s)).toBe('')
+    const mine = tickSuggestion(l, s, null)
+    expect(mine.entries[twd.key].episodes?.S1E3).toBe('2026-11-10')
+    expect(sam(mine).episodes).toBeUndefined()
+    // Still waiting for Sam's watch.
+    expect(refreshSuggestion(s, mine)?.targets).toEqual([{ with: 'Sam' }])
+    const theirs = tickSuggestion(l, s, 'sam')
+    expect(sam(theirs).episodes).toEqual({ S1E3: '2026-11-10' })
+    expect(theirs.entries[twd.key].episodes?.S1E3).toBeUndefined()
+    // Your own rewatch counts as your own progress.
+    const re = startWatchWith(startRewatch(setStatus(emptyLibrary(), twd, 'watched', at('2015-01-01')), twd, at('2026-11-01')), twd, 'Sam', at('2026-11-01'))
+    expect(tickTargets(re.entries[twd.key], 'S1E1')).toEqual([{ with: 'Sam' }, { with: null }])
+  })
+
+  it('offers each person, guessing from the one whose arranged time it is', () => {
+    let l = startWatchWith(seen(), twd, 'Mum', at('2026-11-01'))
+    l = planWatchWith(l, twd.key, watchesWith(l.entries[twd.key]).find((x) => x.watch.with === 'Mum')!.index, { at: '2026-11-10T21:00' })
+    const [s] = suggestFromVisits([v('https://www.nowtv.com/gb/watch/playback/1', 'The Walking Dead - NOW', '2026-11-10', '21:30')], l, details, new Set(), today)
+    // Mum's watch is on: her next one, which both of you still need.
+    expect(s.id).toBe('tv:2@S1E1')
+    expect(s.targets).toEqual([{ with: 'Mum' }])
+    // Another evening: Sam's next (ticked most recently), which either of them could have.
+    const [o] = suggestFromVisits([v('https://www.nowtv.com/gb/watch/playback/1', 'The Walking Dead - NOW', '2026-11-12')], l, details, new Set(), today)
+    expect(o.id).toBe('tv:2@S1E4')
+    expect(o.targets).toEqual([{ with: 'Sam' }, { with: 'Mum' }])
+  })
+
+  it('follows the watch with someone in the player too', () => {
+    const l = seen()
+    const r = recognise({ app: 'chrome.exe', title: 'The Walking Dead', status: 'playing', position: 2600, duration: 2700 }, l, details, today, at('2026-11-10', '22:00'))
+    expect(r).toMatchObject({ key: 'tv:2', season: 1, episode: 4, sure: false })
+    expect(suggestionFromPlaying(r!, '2026-11-10', l)?.targets).toEqual([{ with: 'Sam' }])
+    expect(suggestionFromPlaying({ ...r!, episode: 2 }, '2026-11-10', l)).toBeNull()
+  })
+
+  it('keeps working for shows you only watch yourself, and old saved suggestions', () => {
+    expect(tickTargets(lib.entries['tv:1'], 'S1E3')).toEqual([{ with: null }])
+    expect(tickTargets(lib.entries['tv:1'], 'S1E2')).toEqual([])
+    const old = { id: 'tv:1@S1E3', key: 'tv:1', name: 'Andor', season: 1, episode: 3, day: '2026-11-10', source: 'history' as const, service: null, url: null, sure: true }
+    expect(refreshSuggestion(old, lib)?.targets).toEqual([{ with: null }])
+    expect(tickSuggestion(lib, old).entries['tv:1'].episodes?.S1E3).toBe('2026-11-10')
+    expect(tickSuggestion(lib, old, 'Sam')).toBe(lib)
   })
 })
 

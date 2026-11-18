@@ -314,7 +314,7 @@ function setupIpc(): void {
     await scanHistory().catch(() => undefined)
     return noticingStatus()
   })
-  ipcMain.handle('noticing:accept', (_e, id: string) => acceptSuggestion(String(id)))
+  ipcMain.handle('noticing:accept', (_e, id: string, who?: string | null) => acceptSuggestion(String(id), typeof who === 'string' || who === null ? who : undefined))
   ipcMain.handle('noticing:dismiss', (_e, id: string) => {
     dismissSuggestion(String(id))
     return noticingStatus()

@@ -1,6 +1,6 @@
 import type { Library, LibraryEntry, TitleDetails } from './types'
 import { episodeKey, parseEpisodeKey } from './types'
-import { activeEntry } from './library'
+import { activeEntry, currentRewatch, sessionIsOn, setEpisodes, tickWith, watchesWith } from './library'
 import { remainingEpisodes } from './watchsoon'
 
 /**
@@ -128,9 +128,80 @@ export interface Suggestion {
   url: string | null
   /** The episode was named in the title, rather than guessed as the next one. */
   sure: boolean
+  /**
+   * Where it can be ticked: a watch with someone ("Sam"), or your own progress (null), leaving out
+   * the ones that already have it. Missing on suggestions saved before watches with someone counted.
+   */
+  targets?: TickTarget[]
+}
+
+/** One place an episode can be ticked: a watch with someone, or your own progress (with: null). */
+export interface TickTarget {
+  with: string | null
 }
 
 const ticked = (e: LibraryEntry | undefined, k: string): boolean => !!e?.episodes?.[k]
+
+/**
+ * Your own progress is in play when there's no watch with someone, or you're properly watching it
+ * yourself too: your own rewatch, or Watching with ticks of your own. A show you've seen and are
+ * now rewatching with Sam is Sam's watch only.
+ */
+function ownInPlay(raw: LibraryEntry): boolean {
+  if (!watchesWith(raw).length || currentRewatch(raw)) return true
+  return raw.status === 'watching' && Object.keys(raw.episodes ?? {}).length > 0
+}
+
+/** Where an episode could still be ticked: each watch with someone without it, then your own. */
+export function tickTargets(raw: LibraryEntry, k: string): TickTarget[] {
+  const out: TickTarget[] = watchesWith(raw)
+    .filter(({ watch }) => !watch.episodes?.[k])
+    .map(({ watch }) => ({ with: watch.with }))
+  if (ownInPlay(raw) && !ticked(activeEntry(raw), k)) out.push({ with: null })
+  return out
+}
+
+const lastTick = (episodes: Record<string, string> | undefined): string => Object.values(episodes ?? {}).reduce((a, d) => (d > a && d !== 'seen' ? d : a), '')
+
+/**
+ * Whose progress to guess the next episode from, when the title doesn't name it: a watch with
+ * someone whose arranged time is now, then your own progress, then the watch with someone you
+ * ticked most recently.
+ */
+export function guessFrom(raw: LibraryEntry, at: Date): LibraryEntry {
+  const watches = watchesWith(raw)
+  const view = (w: (typeof watches)[number]): LibraryEntry => ({ ...raw, status: 'watching', episodes: w.watch.episodes ?? {} })
+  const on = watches.find((w) => sessionIsOn(w.watch, at))
+  if (on) return view(on)
+  if (!watches.length || ownInPlay(raw)) return activeEntry(raw)!
+  const latest = [...watches].sort((a, b) => (lastTick(b.watch.episodes) || b.watch.startedOn).localeCompare(lastTick(a.watch.episodes) || a.watch.startedOn))[0]
+  return view(latest)
+}
+
+/** A saved suggestion as it stands now: where it can still be ticked, or null when nowhere. */
+export function refreshSuggestion(s: Suggestion, library: Library): Suggestion | null {
+  const raw = library.entries[s.key]
+  if (!raw) return null
+  const targets = tickTargets(raw, episodeKey(s.season, s.episode))
+  return targets.length ? { ...s, targets } : null
+}
+
+/**
+ * Ticks a suggestion on the day it was watched: on the watch with the person named, or your own
+ * progress with null. With nothing named, the first place it can go.
+ */
+export function tickSuggestion(library: Library, s: Suggestion, who?: string | null): Library {
+  const now = refreshSuggestion(s, library)
+  if (!now) return library
+  const target = who === undefined ? now.targets![0] : now.targets!.find((t) => (t.with ?? '').toLowerCase() === (who ?? '').toLowerCase())
+  if (!target) return library
+  const e = library.entries[s.key]
+  const k = episodeKey(s.season, s.episode)
+  const when = new Date(`${s.day}T21:00:00`)
+  if (target.with === null) return setEpisodes(library, { key: e.key, type: e.type, id: e.id, title: e.title }, [k], true, when)
+  const w = watchesWith(e).find((x) => x.watch.with === target.with)
+  return w ? tickWith(library, e.key, w.index, [k], true, when) : library
+}
 
 /**
  * From browser visits to streaming players: one suggestion per show, per day, per distinct player
@@ -148,7 +219,7 @@ export function suggestFromVisits(visits: Visit[], library: Library, details: Re
     const clean = cleanTitle(v.title)
     const raw = library.entries[matchTitle(clean, library)?.key ?? '']
     if (!raw) continue
-    const e = activeEntry(raw)!
+    const e = guessFrom(raw, new Date(v.at))
     // The same player address visited again (a reload, coming back to it) is one episode.
     const playId = `${e.key}|${v.url.split('?')[0]}`
     if (seenPlays.has(playId)) continue
@@ -167,8 +238,9 @@ export function suggestFromVisits(visits: Visit[], library: Library, details: Re
     const k = episodeKey(ep.season, ep.episode)
     plan.add(k)
     const id = `${e.key}@${k}`
-    if (ticked(e, k) || dismissed.has(id) || out.some((s) => s.id === id)) continue
-    out.push({ id, key: e.key, name: e.title.name, season: ep.season, episode: ep.episode, day: v.day, source: 'history', service: svc.service.name, url: v.url, sure: !!named })
+    const targets = tickTargets(raw, k)
+    if (!targets.length || dismissed.has(id) || out.some((s) => s.id === id)) continue
+    out.push({ id, key: e.key, name: e.title.name, season: ep.season, episode: ep.episode, day: v.day, source: 'history', service: svc.service.name, url: v.url, sure: !!named, targets })
   }
   return out
 }
@@ -204,11 +276,11 @@ export interface Recognised {
 }
 
 /** Works out which of your shows (or films) is playing, and which episode. */
-export function recognise(np: NowPlaying, library: Library, details: Record<string, TitleDetails>, today: string): Recognised | null {
+export function recognise(np: NowPlaying, library: Library, details: Record<string, TitleDetails>, today: string, now: Date = new Date()): Recognised | null {
   const text = [np.title, np.artist, np.album].filter(Boolean).map((s) => cleanTitle(s!)).join(' · ')
   const hit = matchTitle(text, library, ['tv', 'movie'])
   if (!hit) return null
-  const e = activeEntry(hit)!
+  const e = guessFrom(hit, now)
   const svc = np.url ? serviceOf(np.url)?.service.name : SERVICES.find((s) => new RegExp(s.id, 'i').test(np.app))?.name
   let ep = e.type === 'tv' ? parseEpisode(text) : null
   const sure = !!ep
@@ -247,10 +319,19 @@ export function finished(prev: Recognised | null, now: Recognised | null): Recog
   return prev.position >= prev.duration * 0.8 ? prev : null
 }
 
-/** A suggestion from the player, for the day it actually played (after midnight still counts as that evening when late). */
-export function suggestionFromPlaying(r: Recognised, day: string): Suggestion | null {
+/**
+ * A suggestion from the player, for the day it actually played (after midnight still counts as that
+ * evening when late). Null when it's a film, or already ticked everywhere it could go.
+ */
+export function suggestionFromPlaying(r: Recognised, day: string, library: Library): Suggestion | null {
   if (r.type !== 'tv' || !r.season || !r.episode) return null
-  return { id: `${r.key}@${episodeKey(r.season, r.episode)}`, key: r.key, name: r.name, season: r.season, episode: r.episode, day, source: 'playing', service: r.service, url: null, sure: r.sure }
+  const s: Suggestion = { id: `${r.key}@${episodeKey(r.season, r.episode)}`, key: r.key, name: r.name, season: r.season, episode: r.episode, day, source: 'playing', service: r.service, url: null, sure: r.sure }
+  return refreshSuggestion(s, library)
+}
+
+/** "with Sam" when a suggestion can only go on one watch with someone; "" otherwise. */
+export function suggestionWith(s: Suggestion): string {
+  return s.targets?.length === 1 && s.targets[0].with ? `with ${s.targets[0].with}` : ''
 }
 
 // ---- Bedtime guard (Phase 29) ----

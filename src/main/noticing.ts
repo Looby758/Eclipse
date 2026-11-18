@@ -2,7 +2,7 @@ import { report as reportHealth } from './health'
 import { app, globalShortcut, Notification } from 'electron'
 import { existsSync, readFileSync, renameSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { localDate, preferencesOf, setEpisodes } from '@core/library'
+import { localDate, preferencesOf } from '@core/library'
 import { bedtimeTonight, tonightStart } from '@core/time'
 import { episodeKey, type Library, type TitleDetails } from '@core/types'
 import {
@@ -13,9 +13,12 @@ import {
   learnLinks,
   playingLine,
   recognise,
+  refreshSuggestion,
   showPagesFromVisits,
   suggestFromVisits,
   suggestionFromPlaying,
+  suggestionWith,
+  tickSuggestion,
   type NowPlaying,
   type Recognised,
   type Suggestion
@@ -73,11 +76,14 @@ export function settings(): NoticingSettings {
   return { history: !!s.noticeHistory, playing: !!s.noticePlaying, bedtime: !!s.bedtimeGuard }
 }
 
-/** Suggestions still worth asking about: not ticked since, not said no to. */
+/**
+ * Suggestions still worth asking about: not said no to, and still unticked somewhere it could go
+ * (your own progress, or a watch with someone), with those places listed.
+ */
 function pending(lib: Library = getLibrary()): Suggestion[] {
   const { suggestions, dismissed } = load()
   const no = new Set(dismissed)
-  return suggestions.filter((s) => !no.has(s.id) && !lib.entries[s.key]?.episodes?.[episodeKey(s.season, s.episode)] && !!lib.entries[s.key])
+  return suggestions.filter((s) => !no.has(s.id)).flatMap((s) => refreshSuggestion(s, lib) ?? [])
 }
 
 function addSuggestions(found: Suggestion[]): number {
@@ -98,8 +104,9 @@ function notify(title: string, body: string, onClick?: () => void): void {
 async function showDetails(lib: Library): Promise<Record<string, TitleDetails>> {
   if (Date.now() - detailsAt < 30 * 60_000 && Object.keys(details).length) return details
   if (!tmdb.hasKey()) return details
+  // Shows you're watching, want to, or are watching again (on your own or with someone).
   const keys = Object.values(lib.entries)
-    .filter((e) => e.type === 'tv' && (e.status === 'watching' || e.status === 'want'))
+    .filter((e) => e.type === 'tv' && (e.status === 'watching' || e.status === 'want' || (e.rewatches ?? []).some((r) => !r.finishedOn)))
     .map((e) => e.key as string)
   details = { ...details, ...(await tmdb.detailsMany(keys)) }
   detailsAt = Date.now()
@@ -120,7 +127,10 @@ const trySave = (lib: Library): boolean => {
 export async function scanHistory(): Promise<void> {
   if (!settings().history) return
   const s = loadSettings()
-  const since = s.historySince ?? Date.now() - 14 * 86_400_000
+  // Once: look back over the last two weeks again, for episodes watched with someone that earlier
+  // versions passed over because you'd ticked them on your own first watch.
+  const lookBack = Date.now() - 14 * 86_400_000
+  const since = s.historyWithRescan ? (s.historySince ?? lookBack) : Math.min(s.historySince ?? lookBack, lookBack)
   const result = await streamingVisits(since)
   const lib = getLibrary()
   const found = suggestFromVisits(result.visits, lib, await showDetails(lib), new Set(load().dismissed), localDate(new Date()))
@@ -130,14 +140,18 @@ export async function scanHistory(): Promise<void> {
   for (const p of showPagesFromVisits(result.visits, next)) next = learnLinks(next, p.key, p.url)
   if (next !== getLibrary() && trySave(next)) hooks.libraryChanged()
   const latest = Math.max(since, ...result.visits.map((v) => v.at))
-  saveSettings({ historySince: latest + 1 })
+  saveSettings({ historySince: latest + 1, historyWithRescan: true })
   lastScan = { at: Date.now(), browsers: result.browsers, errors: result.errors, visits: result.visits.length }
   const plural = (n: number, w: string): string => `${n} ${w}${n === 1 ? '' : 's'}`
   if (!result.browsers.length && result.errors.length) reportHealth('history', false, `Couldn't read browser history: ${result.errors.join('; ')}`)
   else if (!result.browsers.length) reportHealth('history', false, 'No Chrome, Edge or Opera history found on this computer')
   else reportHealth('history', true, `Checked ${result.browsers.join(', ')}, found ${plural(fresh, 'episode')}${result.errors.length ? ` (${result.errors.join('; ')})` : ''}`)
   hooks.changed()
-  if (fresh) notify('Eclipse', fresh === 1 ? `Did you watch ${found.find((x) => x)?.name}? Tick it in Eclipse.` : `${fresh} things you watched are waiting to be ticked.`, hooks.show)
+  if (fresh) {
+    const one = found.find((x) => x)
+    const who = one ? suggestionWith(one) : ''
+    notify('Eclipse', fresh === 1 ? `Did you watch ${one?.name}${who ? ` ${who}` : ''}? Tick it in Eclipse.` : `${fresh} things you watched are waiting to be ticked.`, hooks.show)
+  }
 }
 
 // ---- Phase 28 and 29: what's playing ----
@@ -156,12 +170,13 @@ async function onPlaying(): Promise<void> {
   const today = localDate(new Date())
   // Prefer a media session that's playing, then any media session, then browser windows.
   const order = (n: NowPlaying): number => (n.position != null && n.status === 'playing' ? 0 : n.position != null ? 1 : 2)
-  const now = [...report.items].sort((a, b) => order(a) - order(b)).map((n) => ({ n, r: recognise(n, lib, d, today) })).find((x) => x.r)
+  const now = [...report.items].sort((a, b) => order(a) - order(b)).map((n) => ({ n, r: recognise(n, lib, d, today, new Date()) })).find((x) => x.r)
   const next = now?.r ?? null
   const done = finished(current, next)
   if (done) {
-    const s = suggestionFromPlaying(done, eveningDay(new Date()))
-    if (s && addSuggestions([s])) notify('Finished it?', `${playingLine({ ...done, position: null })}: open Eclipse to tick it.`, hooks.show)
+    const s = suggestionFromPlaying(done, eveningDay(new Date()), getLibrary())
+    const who = s ? suggestionWith(s) : ''
+    if (s && addSuggestions([s])) notify('Finished it?', `${playingLine({ ...done, position: null })}${who ? ` ${who}` : ''}: open Eclipse to tick it.`, hooks.show)
   }
   // Phase 31: on a Mac, the tab's address teaches where the show is watched.
   if (now?.n.url && next) {
@@ -253,14 +268,17 @@ export function noticingStatus(): NoticingStatus {
   }
 }
 
-/** Ticks a suggestion on the day it was watched, and remembers where it was played. */
-export function acceptSuggestion(id: string): Library {
+/**
+ * Ticks a suggestion on the day it was watched, on the watch with `who` (or your own progress with
+ * null; the first place it can go when not given), and remembers where it was played.
+ */
+export function acceptSuggestion(id: string, who?: string | null): Library {
   const s = pending().find((x) => x.id === id)
   let lib = getLibrary()
   if (!s) return lib
-  const e = lib.entries[s.key]
-  if (!e) return lib
-  lib = setEpisodes(lib, { key: e.key, type: e.type, id: e.id, title: e.title }, [episodeKey(s.season, s.episode)], true, new Date(`${s.day}T21:00:00`))
+  const ticked = tickSuggestion(lib, s, who)
+  if (ticked === lib) return lib
+  lib = ticked
   if (s.url) lib = learnLinks(lib, s.key, s.url)
   const out = saveLibrary(lib)
   hooks.changed()

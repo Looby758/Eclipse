@@ -70,7 +70,7 @@ const api: EclipseApi = {
   noticingStatus: () => ipcRenderer.invoke('noticing:status'),
   setNoticing: (patch) => ipcRenderer.invoke('noticing:set', patch),
   scanHistory: () => ipcRenderer.invoke('noticing:scan'),
-  acceptSuggestion: (id) => ipcRenderer.invoke('noticing:accept', id),
+  acceptSuggestion: (id, who) => ipcRenderer.invoke('noticing:accept', id, who),
   dismissSuggestion: (id) => ipcRenderer.invoke('noticing:dismiss', id),
   onNoticingChanged: (callback) => {
     const handler = (): void => callback()
