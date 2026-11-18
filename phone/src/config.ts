@@ -8,11 +8,11 @@
  */
 export const GOOGLE = {
   /** APIs & Services → Credentials → "Eclipse phone" (Web application) → Client ID. Ends in .apps.googleusercontent.com */
-  clientId: '',
+  clientId: '1094168109504-eh2htq1aicgt2v5cug5b7396hlac7kpq.apps.googleusercontent.com',
   /** APIs & Services → Credentials → the browser key for the Picker. Starts with AIza */
-  apiKey: '',
+  apiKey: 'AIzaSyBtMBbC38t9R_6zaeXYppsa6OYbjD4pCEY',
   /** The project number (Cloud overview / dashboard). Only digits. Lets the file picker give the page access to what you pick. */
-  projectNumber: ''
+  projectNumber: '1094168109504'
 }
 
 export const isConfigured = (): boolean => !!(GOOGLE.clientId && GOOGLE.apiKey && GOOGLE.projectNumber)
