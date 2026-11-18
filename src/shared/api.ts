@@ -7,7 +7,7 @@ import type { YearReview } from '@core/year'
 import type { CatchUp } from '@core/catchup'
 import type { WeekSoFar } from '@core/week'
 import type { Recommendation } from '@core/recommend'
-import type { NowPlaying, Recognised, Suggestion } from '@core/watching'
+import type { NowPlaying, Recognised, Suggestion, UnknownShow } from '@core/watching'
 import type { CollectionDetails, Credits, ListSource, PersonDetails, TitleRef, TmdbListDetails } from '@core/types'
 import type { Library, MediaType, PlannedTime, Preferences, Provider, SearchResult, SeasonDetails, TitleDetails, TitleKey, TitleSnapshot, WatchProviders, WatchStatus } from '@core/types'
 
@@ -100,6 +100,10 @@ export interface NoticingStatus {
   suggestions: Suggestion[]
   /** The bookmark shortcut, as shown on this computer. */
   momentKey: string
+  /** The Chrome extension: when it last reported, anything stopping it, and where its files are. */
+  extension: { lastAt: number | null; error: string | null; folder: string }
+  /** A show playing that isn't in your library ("Watching Family Guy? Add it"), and the TMDB show it most likely is. */
+  unknown: (UnknownShow & { match: SearchResult | null }) | null
 }
 
 /** Phase 36: a change the "Done · Undo" bar can put back. */
@@ -247,9 +251,16 @@ export interface EclipseApi {
   setNoticing(patch: Partial<NoticingSettings>): Promise<NoticingStatus>
   /** Reads browser history now instead of waiting for the next half-hourly check. */
   scanHistory(): Promise<NoticingStatus>
-  /** Ticks a suggestion on the day it was watched. */
-  acceptSuggestion(id: string): Promise<Library>
+  /**
+   * Ticks a suggestion on the day it was watched: on the watch with `who`, or your own progress
+   * with null (the first of its targets when left out).
+   */
+  acceptSuggestion(id: string, who?: string | null): Promise<Library>
   dismissSuggestion(id: string): Promise<NoticingStatus>
+  /** "Not mine": stops asking to add a show that's playing. */
+  notMine(name: string): Promise<NoticingStatus>
+  /** Opens the Chrome extension's folder, to load it in Chrome. */
+  showExtensionFolder(): Promise<void>
   onNoticingChanged(callback: () => void): () => void
   /** Changes a saved moment's note (empty clears it), or deletes the moment with null. */
   editMoment(key: TitleKey, index: number, note: string | null): Promise<Library>

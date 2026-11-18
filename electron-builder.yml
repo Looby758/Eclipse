@@ -12,6 +12,10 @@ files:
   - build/tray.png
   - build/trayTemplate.png
   - build/trayTemplate@2x.png
+# The Eclipse extension for Chrome, so Settings can open its folder to load it in Chrome.
+extraResources:
+  - from: extension
+    to: extension
 win:
   target:
     - target: nsis

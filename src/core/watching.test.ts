@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { emptyLibrary, normalizeLibrary } from './library'
+import { emptyLibrary, normalizeLibrary, planWatchWith, setEpisodes, setStatus, startRewatch, startWatchWith, tickWith, watchesWith } from './library'
 import {
   addMoment,
   bedtimeWarning,
@@ -15,6 +15,15 @@ import {
   serviceOf,
   showPagesFromVisits,
   suggestFromVisits,
+  fromExtension,
+  pickShow,
+  playingLine,
+  unknownShow,
+  refreshSuggestion,
+  suggestionFromPlaying,
+  suggestionWith,
+  tickSuggestion,
+  tickTargets,
   type Recognised
 } from './watching'
 import type { Library, LibraryEntry, TitleDetails } from './types'
@@ -61,6 +70,9 @@ describe('recognising services, shows and episodes', () => {
     expect(parseEpisode('Series 2, Episode 4')).toEqual({ season: 2, episode: 4 })
     expect(parseEpisode('Season 2: Episode 10')).toEqual({ season: 2, episode: 10 })
     expect(parseEpisode('2x04')).toEqual({ season: 2, episode: 4 })
+    expect(parseEpisode('S5:E3 Strangers')).toEqual({ season: 5, episode: 3 })
+    expect(parseEpisode('S5 Ep3')).toEqual({ season: 5, episode: 3 })
+    expect(parseEpisode('Season 1, Ep. 3 Pilot')).toEqual({ season: 1, episode: 3 })
     expect(parseEpisode('Andor')).toBeNull()
   })
 
@@ -70,6 +82,8 @@ describe('recognising services, shows and episodes', () => {
     expect(matchTitle('Young Sheldon', lib)).toBeNull()
     expect(matchTitle('Your Honor', lib)).toBeNull()
     expect(matchTitle('You', lib)?.key).toBe('tv:4')
+    expect(matchTitle('You - NOW · S1 E4 · Pilot', lib)?.key).toBe('tv:4')
+    expect(matchTitle('Thank You · S1 E4', lib)).toBeNull()
     expect(matchTitle('Dune', lib)).toBeNull()
     expect(matchTitle('Dune', lib, ['movie'])?.key).toBe('movie:5')
   })
@@ -77,22 +91,19 @@ describe('recognising services, shows and episodes', () => {
 
 describe('suggestions from browser history', () => {
   const v = (url: string, title: string, day: string, at: number) => ({ url, title, day, at })
-  it('suggests the next episodes, one per distinct player address, and named ones as named', () => {
+  it('suggests only episodes the title names, once each, and never guesses', () => {
     const visits = [
       v('https://www.disneyplus.com/play/aaa', 'Andor | Disney+', '2026-11-10', 1),
-      v('https://www.disneyplus.com/play/aaa?t=1', 'Andor | Disney+', '2026-11-10', 2),
       v('https://www.disneyplus.com/play/bbb', 'Andor | Disney+', '2026-11-10', 3),
-      v('https://www.disneyplus.com/browse/x', 'Andor | Disney+', '2026-11-10', 4),
       v('https://www.nowtv.com/gb/watch/playback/1', 'The Walking Dead S1 E5 - NOW', '2026-11-11', 5),
-      v('https://www.netflix.com/watch/9', 'Netflix', '2026-11-11', 6)
+      v('https://www.nowtv.com/gb/watch/playback/2', 'The Walking Dead S1 E5 - NOW', '2026-11-11', 6),
+      v('https://www.netflix.com/watch/9', 'Andor S1 E2 - Netflix', '2026-11-11', 7),
+      v('https://www.netflix.com/watch/9', 'Netflix', '2026-11-11', 8)
     ]
-    const s = suggestFromVisits(visits, lib, details, new Set(), today)
-    expect(s.map((x) => [x.id, x.day, x.sure, x.service])).toEqual([
-      ['tv:1@S1E3', '2026-11-10', false, 'Disney+'],
-      ['tv:1@S2E1', '2026-11-10', false, 'Disney+'],
-      ['tv:2@S1E5', '2026-11-11', true, 'NOW']
-    ])
-    expect(suggestFromVisits(visits, lib, details, new Set(['tv:1@S1E3']), today).map((x) => x.id)).toEqual(['tv:1@S2E1', 'tv:2@S1E5'])
+    const s = suggestFromVisits(visits, lib, new Set())
+    // Andor's player pages don't say which episode, and S1 E2 is ticked already.
+    expect(s.map((x) => [x.id, x.day, x.sure, x.service])).toEqual([['tv:2@S1E5', '2026-11-11', true, 'NOW']])
+    expect(suggestFromVisits(visits, lib, new Set(['tv:2@S1E5']))).toEqual([])
   })
 
   it('learns where you watch a show, for Play next', () => {
@@ -107,6 +118,129 @@ describe('suggestions from browser history', () => {
   })
 })
 
+describe('watching with someone', () => {
+  const twd = { key: 'tv:2' as const, type: 'tv' as const, id: 2, title: { name: 'The Walking Dead', year: 2010, posterPath: null } }
+  const at = (d: string, t = '20:00'): Date => new Date(`${d}T${t}:00`)
+  const v = (url: string, title: string, day: string, time = '22:00') => ({ url, title, day, at: at(day, time).getTime() })
+  const whole = ['S1E1', 'S1E2', 'S1E3', 'S1E4', 'S1E5', 'S1E6']
+  // Seen it all years ago, now rewatching with Sam (three in).
+  const seen = (): Library => {
+    let l = setEpisodes(setStatus(emptyLibrary(), twd, 'watched', at('2015-01-01')), twd, whole, true, at('2015-01-01'))
+    l = startWatchWith(l, twd, 'Sam', at('2026-11-01'))
+    return tickWith(l, twd.key, watchesWith(l.entries[twd.key])[0].index, ['S1E1', 'S1E2', 'S1E3'], true, at('2026-11-02'))
+  }
+  const sam = (l: Library) => l.entries[twd.key].rewatches!.find((r) => r.with === 'Sam')!
+
+  it('asks to tick episodes you saw the first time on the watch with them', () => {
+    const l = seen()
+    const visits = [v('https://www.nowtv.com/gb/watch/playback/1', 'The Walking Dead S1 E4 - NOW', '2026-11-10'), v('https://www.nowtv.com/gb/watch/playback/2', 'The Walking Dead S1 E6 - NOW', '2026-11-10', '23:00')]
+    const s = suggestFromVisits(visits, l, new Set())
+    expect(s.map((x) => [x.id, x.targets])).toEqual([
+      ['tv:2@S1E4', [{ with: 'Sam' }]],
+      ['tv:2@S1E6', [{ with: 'Sam' }]]
+    ])
+    expect(suggestionWith(s[0])).toBe('with Sam')
+    // Yes ticks Sam's watch, on the day it was watched, and leaves the first watch alone.
+    const after = tickSuggestion(l, s[0])
+    expect(sam(after).episodes?.S1E4).toBe('2026-11-10')
+    expect(after.entries[twd.key].episodes).toEqual(l.entries[twd.key].episodes)
+    expect(refreshSuggestion(s[0], after)).toBeNull()
+    expect(refreshSuggestion(s[1], after)?.targets).toEqual([{ with: 'Sam' }])
+  })
+
+  it('lets you choose when it could be your own progress too', () => {
+    let l = setEpisodes(emptyLibrary(), twd, ['S1E1', 'S1E2'], true, at('2026-10-01'))
+    l = startWatchWith(l, twd, 'Sam', at('2026-11-01'))
+    const [s] = suggestFromVisits([v('https://www.nowtv.com/gb/watch/playback/1', 'The Walking Dead S1 E3 - NOW', '2026-11-10')], l, new Set())
+    expect(s.targets).toEqual([{ with: 'Sam' }, { with: null }])
+    expect(suggestionWith(s)).toBe('')
+    const mine = tickSuggestion(l, s, null)
+    expect(mine.entries[twd.key].episodes?.S1E3).toBe('2026-11-10')
+    expect(sam(mine).episodes).toBeUndefined()
+    // Still waiting for Sam's watch.
+    expect(refreshSuggestion(s, mine)?.targets).toEqual([{ with: 'Sam' }])
+    const theirs = tickSuggestion(l, s, 'sam')
+    expect(sam(theirs).episodes).toEqual({ S1E3: '2026-11-10' })
+    expect(theirs.entries[twd.key].episodes?.S1E3).toBeUndefined()
+    // Your own rewatch counts as your own progress.
+    const re = startWatchWith(startRewatch(setStatus(emptyLibrary(), twd, 'watched', at('2015-01-01')), twd, at('2026-11-01')), twd, 'Sam', at('2026-11-01'))
+    expect(tickTargets(re.entries[twd.key], 'S1E1')).toEqual([{ with: 'Sam' }, { with: null }])
+  })
+
+  it('offers each person who still needs it', () => {
+    const l = startWatchWith(seen(), twd, 'Mum', at('2026-11-01'))
+    const [s] = suggestFromVisits([v('https://www.nowtv.com/gb/watch/playback/1', 'The Walking Dead S1 E2 - NOW', '2026-11-10')], l, new Set())
+    expect(s.targets).toEqual([{ with: 'Mum' }])
+    const [o] = suggestFromVisits([v('https://www.nowtv.com/gb/watch/playback/1', 'The Walking Dead S1 E4 - NOW', '2026-11-12')], l, new Set())
+    expect(o.targets).toEqual([{ with: 'Sam' }, { with: 'Mum' }])
+  })
+
+  it('guesses which episode is playing from the watch whose arranged time it is, but only asks about named ones', () => {
+    let l = startWatchWith(seen(), twd, 'Mum', at('2026-11-01'))
+    l = planWatchWith(l, twd.key, watchesWith(l.entries[twd.key]).find((x) => x.watch.with === 'Mum')!.index, { at: '2026-11-10T21:00' })
+    const play = (when: Date, title = 'The Walking Dead') => recognise({ app: 'chrome.exe', title, status: 'playing', position: 2600, duration: 2700 }, l, details, today, when)
+    // Mum's evening: her next one. Another evening: Sam's (ticked most recently).
+    expect(play(at('2026-11-10', '21:30'))).toMatchObject({ season: 1, episode: 1, sure: false })
+    expect(play(at('2026-11-12', '21:30'))).toMatchObject({ season: 1, episode: 4, sure: false })
+    // A guess shows as playing, but finishing it doesn't ask to tick anything.
+    expect(suggestionFromPlaying(play(at('2026-11-12'))!, '2026-11-12', l)).toBeNull()
+    const named = play(at('2026-11-12'), 'The Walking Dead S1 E4')!
+    expect(suggestionFromPlaying(named, '2026-11-12', l)?.targets).toEqual([{ with: 'Sam' }, { with: 'Mum' }])
+    expect(suggestionFromPlaying({ ...named, episode: 2 }, '2026-11-12', l)?.targets).toEqual([{ with: 'Mum' }])
+    // Guesses saved by earlier versions are dropped.
+    const guess = { id: 'tv:2@S1E4', key: 'tv:2', name: 'The Walking Dead', season: 1, episode: 4, day: '2026-11-10', source: 'history' as const, service: 'NOW', url: null, sure: false }
+    expect(refreshSuggestion(guess, l)).toBeNull()
+  })
+
+  it('keeps working for shows you only watch yourself, and old saved suggestions', () => {
+    expect(tickTargets(lib.entries['tv:1'], 'S1E3')).toEqual([{ with: null }])
+    expect(tickTargets(lib.entries['tv:1'], 'S1E2')).toEqual([])
+    const old = { id: 'tv:1@S1E3', key: 'tv:1', name: 'Andor', season: 1, episode: 3, day: '2026-11-10', source: 'history' as const, service: null, url: null, sure: true }
+    expect(refreshSuggestion(old, lib)?.targets).toEqual([{ with: null }])
+    expect(tickSuggestion(lib, old).entries['tv:1'].episodes?.S1E3).toBe('2026-11-10')
+    expect(tickSuggestion(lib, old, 'Sam')).toBe(lib)
+  })
+})
+
+describe('the Chrome extension', () => {
+  const report = (over: object = {}) => ({ url: 'https://www.disneyplus.com/en-gb/play/abc', texts: ['The Walking Dead', 'S5:E3 Four Walls and a Roof', 'Disney+'], position: 2650, duration: 2700, paused: false, ...over })
+
+  it('reads the exact episode from the player', () => {
+    const np = fromExtension(report())!
+    expect(np).toMatchObject({ app: 'Chrome extension (Disney+)', status: 'playing', position: 2650, duration: 2700 })
+    expect(recognise(np, lib, details, today)).toMatchObject({ key: 'tv:2', season: 5, episode: 3, sure: true, service: 'Disney+' })
+    // NOW, with a short name: "You - NOW" then "S1 E4".
+    expect(recognise(fromExtension(report({ url: 'https://www.nowtv.com/gb/watch/playback/vod/1', texts: ['You - NOW', 'S1 E4'] }))!, lib, details, today)).toMatchObject({ key: 'tv:4', season: 1, episode: 4, sure: true, service: 'NOW' })
+    expect(fromExtension(report({ paused: true }))?.status).toBe('paused')
+    expect(fromExtension(report({ ended: true }))?.status).toBe('stopped')
+  })
+
+  it('notices a show you’re watching that isn’t in your library', () => {
+    const fg = fromExtension(report({ texts: ['Family Guy', 'S24:E1 The Edible Arrangement', 'Family Guy | Disney+'] }))!
+    expect(recognise(fg, lib, details, today)).toBeNull()
+    expect(unknownShow(fg, lib)).toEqual({ name: 'Family Guy', season: 24, episode: 1, service: 'Disney+' })
+    // In your library, no episode named, or not from a player address: nothing to ask.
+    expect(unknownShow(fromExtension(report())!, lib)).toBeNull()
+    expect(unknownShow(fromExtension(report({ texts: ['Family Guy', 'Disney+'] }))!, lib)).toBeNull()
+    expect(unknownShow({ app: 'chrome.exe', title: 'Family Guy S24 E1' }, lib)).toBeNull()
+    const r = (name: string, popularity: number, type = 'tv') => ({ type, name, popularity })
+    expect(pickShow('Family Guy', [r('Family Guy Funny Moments', 90), r('Family Guy', 50), r('Family Guy', 80, 'movie'), r('Family guy', 70)])).toEqual(r('Family guy', 70))
+    expect(pickShow('Fam Guy', [r('Family Guy', 50)])).toEqual(r('Family Guy', 50))
+    expect(pickShow('Family Guy', [])).toBeNull()
+  })
+
+  it('only takes tidy reports from streaming sites', () => {
+    expect(fromExtension(null)).toBeNull()
+    expect(fromExtension(report({ url: 'https://example.com/play/1' }))).toBeNull()
+    expect(fromExtension(report({ url: 'http://www.disneyplus.com/play/1' }))).toBeNull()
+    expect(fromExtension(report({ texts: [] }))).toBeNull()
+    const np = fromExtension(report({ texts: ['  Andor ', 'andor', 3, 'x'.repeat(500), ...Array(20).fill(0).map((_, i) => `t${i}`)], position: -1, duration: 'long' }))!
+    expect(np.title.split(' · ').slice(0, 2)).toEqual(['Andor', 'x'.repeat(200)])
+    expect(np.title.split(' · ')).toHaveLength(12)
+    expect([np.position, np.duration]).toEqual([null, null])
+  })
+})
+
 describe('what’s playing', () => {
   const np = (title: string, position: number, duration = 2700) => recognise({ app: 'chrome.exe', title, status: 'playing', position, duration }, lib, details, today)
 
@@ -116,11 +250,19 @@ describe('what’s playing', () => {
     expect(np('Some advert', 10)).toBeNull()
   })
 
+  it('shows only an episode the player named', () => {
+    expect(playingLine(np('Andor S2 E4', 1860)!)).toBe('Andor S2 E4, 31 minutes in')
+    expect(playingLine(np('Andor', 60)!)).toBe('Andor, 1 minute in')
+  })
+
   it('says when an episode finished', () => {
     const a = np('Andor S2 E4', 2000) as Recognised
     expect(finished(a, np('Andor S2 E4', 2300))).toBeNull()
     expect(finished(np('Andor S2 E4', 2300), np('Andor S2 E4', 2600))?.episode).toBe(4)
-    expect(finished(np('Andor S2 E4', 2300), np('Andor S2 E5', 10))?.episode).toBe(4)
+    // Moving on counts only from the credits: stopping part-way (here 85% in) isn't finishing.
+    expect(finished(np('Andor S2 E4', 2300), np('Andor S2 E5', 10))).toBeNull()
+    expect(finished(np('Andor S2 E4', 2300), null)).toBeNull()
+    expect(finished(np('Andor S2 E4', 2600), np('Andor S2 E5', 10))?.episode).toBe(4)
     expect(finished(np('Andor S2 E4', 600), null)).toBeNull()
   })
 
