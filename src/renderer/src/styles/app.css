@@ -579,6 +579,7 @@ button.list-seen.undo:hover { background: var(--glass-hover); }
 .wall.rows .wall-tile.lifted { position: relative; z-index: 1; transform: scale(1.14); filter: brightness(1.18) saturate(1.15); box-shadow: var(--row-tile-lift-shadow); }
 .wall-torch { position: absolute; inset: 0; pointer-events: none; opacity: 0; mix-blend-mode: soft-light; background: radial-gradient(circle var(--torch-size) at var(--px, -999px) var(--py, -999px), var(--torch), transparent); transition: opacity 0.6s var(--ease); }
 .wall.rows.lit .wall-torch { opacity: 1; }
+:root.wall-pointing .app.spot, :root.wall-pointing .app.spot .spotlight { cursor: pointer; }
 @keyframes row-left { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 @keyframes row-right { from { transform: translateX(-50%); } to { transform: translateX(0); } }
 @media (prefers-reduced-motion: reduce) { .wall-row { animation: none; } }
