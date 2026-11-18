@@ -37,9 +37,12 @@ jobs:
           if [ "$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft 2>/dev/null)" = "true" ]; then
             gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA"
           fi
+          # Plain-language notes from release-notes/<tag>.md when there are some, otherwise GitHub's list.
+          NOTES="release-notes/$TAG.md"
+          if [ -f "$NOTES" ]; then set -- --notes-file "$NOTES"; else set -- --generate-notes; fi
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 ||
             gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --target "$GITHUB_SHA" \
-              --title "Eclipse ${TAG#v}" --generate-notes
+              --title "Eclipse ${TAG#v}" "$@"
 
   build:
     name: Build (${{ matrix.name }})
