@@ -25,6 +25,7 @@ import SpotlightHome from './components/SpotlightHome'
 import Logo from './components/Logo'
 import UndoBar from './components/UndoBar'
 import StartAsk from './components/StartAsk'
+import PhoneAsk from './components/PhoneAsk'
 import { useHomeStyle } from './lib/homeStyle'
 import { handleArrows, isTyping } from './lib/keys'
 import { useStartAsk } from './lib/startAsk'
@@ -130,6 +131,7 @@ export default function App(): React.JSX.Element {
           <Dock tucked={spot} />
           <UndoBar />
           <StartAsk />
+          <PhoneAsk />
         </>
       )}
     </div>

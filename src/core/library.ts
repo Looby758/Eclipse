@@ -359,9 +359,14 @@ export function normalizeLibrary(raw: unknown): Library {
   const rawCatch = raw && typeof raw === 'object' ? (raw as { catchUpDismissed?: unknown }).catchUpDismissed : undefined
   const rawHidden = raw && typeof raw === 'object' ? (raw as { recsHidden?: unknown }).recsHidden : undefined
   const rawTaste = raw && typeof raw === 'object' ? (raw as { recsTaste?: unknown }).recsTaste : undefined
+  const rawApplied = raw && typeof raw === 'object' ? (raw as { phoneApplied?: unknown }).phoneApplied : undefined
   const finish = (): Library => {
     const taste = normalizeTaste(rawTaste)
     if (taste) lib.recsTaste = taste
+    if (Array.isArray(rawApplied)) {
+      const ids = [...new Set(rawApplied.filter((x): x is string => typeof x === 'string' && !!x))].slice(-1000)
+      if (ids.length) lib.phoneApplied = ids
+    }
     if (Array.isArray(rawHidden)) {
       const hidden = [...new Set(rawHidden.filter((x): x is string => typeof x === 'string' && /^(movie|tv):\d+$/.test(x)))]
       if (hidden.length) lib.recsHidden = hidden.slice(-500)

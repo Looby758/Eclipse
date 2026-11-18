@@ -12,6 +12,8 @@
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
+    "dev:phone": "vite --config phone/vite.config.ts",
+    "build:phone": "vite build --config phone/vite.config.ts",
     "build:win": "npm run typecheck && npm test && electron-vite build && electron-builder --win --publish never",
     "build:mac": "npm run typecheck && npm test && electron-vite build && electron-builder --mac --publish never"
   },

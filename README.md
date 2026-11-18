@@ -57,6 +57,10 @@ Each computer needs the key pasted once.
 6. **Filters:** in Library or Search, pick **On my services**, **Rent or buy only** or **Not streaming anywhere**. The first time it checks every title, which takes a few seconds.
 7. **Home:** the suggestion shows the next episode and a button to tick it.
 
+## Phase 45: Eclipse on your phone
+
+A small page you save to your iPhone home screen that reads your library from Google Drive, anywhere. One-time setup (Google Cloud, GitHub Pages and the phone) is in [phone/README.md](phone/README.md). Changes from the phone are added to your library the next time Eclipse opens on your computer; if something clashes, Eclipse asks which to keep.
+
 ## Phases 36 to 42: what to try
 
 No new packages, so just pull and `npm run dev`.
@@ -85,7 +89,7 @@ No new packages, so just pull and `npm run dev`.
 ## Phase 34: what to try
 
 1. **Spotlight Home:** open Eclipse. Home is now the Tonight dial with your pick inside it. Try **Tick it**, **Something else**, and clicking the poster.
-2. **Waiting for you** (the column on the right) holds the Home cards, always open. It hides itself, and the dial moves back to the middle, when nothing is waiting.
+2. **The Home column** (on the right, with no title) holds the Home cards, always open. It hides itself, and the dial moves back to the middle, when nothing is waiting.
 3. **Classic Home:** Settings → *Appearance* → *Home* → **Classic (legacy)** for the Home from before. Switch back with **Spotlight**.
 4. **New logo:** in the corner of the app, and (once you build an installer) as the app icon and the tray icon.
 5. **Frosted glass:** open Settings, Library or any title. The page is now see-through glass over the drifting posters, and anything switched on is a white pill. Try Dark and Light. Pick **Classic (legacy)** Home to get the old flat look back.

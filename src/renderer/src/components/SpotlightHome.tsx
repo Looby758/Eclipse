@@ -43,14 +43,13 @@ function Pills(): React.JSX.Element {
 }
 
 /**
- * "Waiting for you": the Home cards in a column on the right, always open, so whatever needs you
+ * The Home column: the Home cards in a column on the right, always open and untitled, so whatever needs you
  * (did you watch this, add this show, watching together) is there when you come back. The column
  * hides itself when every card is empty, and the dial moves back to the middle (see app.css).
  */
-function Waiting(): React.JSX.Element {
+function HomeColumn(): React.JSX.Element {
   return (
-    <aside className="spot-waiting" aria-label="Waiting for you">
-      <h2 className="spot-waiting-head">Waiting for you</h2>
+    <aside className="spot-waiting" aria-label="Home items">
       <HomeNotes />
       <OnThisDay />
     </aside>
@@ -183,7 +182,7 @@ export default function SpotlightHome(): React.JSX.Element {
         </div>
       </div>
 
-      <Waiting />
+      <HomeColumn />
     </div>
   )
 }

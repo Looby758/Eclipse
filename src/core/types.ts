@@ -247,6 +247,8 @@ export interface Library {
   recsHidden?: string[]
   /** What recommendations have learnt from your Interested and Not for me answers (phase 43). */
   recsTaste?: Taste
+  /** Eclipse on your phone (Phase 45): ids of the phone's changes already folded in (the phone then tidies them away). */
+  phoneApplied?: string[]
 }
 
 /**

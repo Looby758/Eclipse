@@ -80,6 +80,13 @@ const api: EclipseApi = {
     return () => ipcRenderer.removeListener('noticing:changed', handler)
   },
   editMoment: (key, index, note) => ipcRenderer.invoke('moments:edit', key, index, note),
+  phoneAsks: () => ipcRenderer.invoke('phone:asks'),
+  resolvePhoneAsk: (id, choice) => ipcRenderer.invoke('phone:resolve', id, choice),
+  onPhoneAsks: (callback) => {
+    const handler = (_e: unknown, asks: Parameters<typeof callback>[0]): void => callback(asks)
+    ipcRenderer.on('phone:asks', handler)
+    return () => ipcRenderer.removeListener('phone:asks', handler)
+  },
   remoteStatus: () => ipcRenderer.invoke('remote:status'),
   setRemote: (on) => ipcRenderer.invoke('remote:set', on),
   newRemoteCode: () => ipcRenderer.invoke('remote:newCode'),
