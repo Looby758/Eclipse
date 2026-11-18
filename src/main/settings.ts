@@ -35,6 +35,9 @@ export interface Settings {
   startAtLogin?: boolean
   /** Phase 38: you've been asked once whether to start with the computer. */
   startAsked?: boolean
+  /** Phase 44: show what's playing as your Discord status (this computer only), and the Discord application it shows under. */
+  discordOn?: boolean
+  discordAppId?: string
 }
 
 const defaults: Settings = { dataFolder: null }

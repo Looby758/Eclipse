@@ -21,6 +21,7 @@ import RemoteCard from "./RemoteCard";
 import HistoryCard from "./HistoryCard";
 import TrayCard from "./TrayCard";
 import NoticingCard from "./NoticingCard";
+import DiscordCard from "./DiscordCard";
 import StartupCard from "./StartupCard";
 import BackupsCard from "./BackupsCard";
 import HealthCard from "./HealthCard";
@@ -114,6 +115,8 @@ export default function SettingsView(): React.JSX.Element {
         <EveningsCard />
 
         <NoticingCard />
+
+        <DiscordCard />
 
         <RemoteCard />
 

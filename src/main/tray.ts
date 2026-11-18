@@ -4,6 +4,8 @@ import { formatHours } from '@core/time'
 import { trayMenuOf } from '@core/remote'
 import { loadSettings, saveSettings } from './settings'
 import { state, tickEpisode } from './remote'
+import { discordStatus } from './discord'
+import { changeDiscord } from './noticing'
 
 /**
  * Phase 26: Eclipse in the Mac menu bar or the Windows tray. The next episode of each show you're
@@ -57,10 +59,27 @@ async function rebuild(): Promise<void> {
   } catch {
     items = [{ label: 'Choose a data folder in Eclipse first', enabled: false }]
   }
+  // Phase 44: quick to switch off when you'd rather friends didn't see.
+  const discord = discordStatus()
+  const discordItems: MenuItemConstructorOptions[] = discord.appId
+    ? [
+        {
+          label: discord.on && discord.showing ? `Discord status: ${discord.showing}` : 'Show what I’m watching on Discord',
+          type: 'checkbox',
+          checked: discord.on,
+          click: () => {
+            changeDiscord({ on: !discord.on })
+            void rebuild()
+          }
+        }
+      ]
+    : []
   tray.setContextMenu(
     Menu.buildFromTemplate([
       ...items,
       { type: 'separator' },
+      ...discordItems,
+      ...(discordItems.length ? [{ type: 'separator' } as MenuItemConstructorOptions] : []),
       { label: 'Open Eclipse', click: () => hooks.show() },
       { label: IS_MAC ? 'Quit Eclipse' : 'Quit Eclipse (and close the tray icon)', click: () => app.quit() }
     ])

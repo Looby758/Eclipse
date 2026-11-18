@@ -138,6 +138,18 @@ export interface JobState {
   detail: string
 }
 
+/** Phase 44: your Discord status while you watch. */
+export interface DiscordStatus {
+  on: boolean
+  /** The Discord application it shows under ("" until you've pasted one in). */
+  appId: string
+  /** needs-id: no application ID yet. not-running: the Discord app isn't open (or hasn't been needed yet). */
+  state: 'off' | 'needs-id' | 'not-running' | 'connecting' | 'connected' | 'error'
+  error: string | null
+  /** What your status says right now ("The Walking Dead · S9 E4"), or null when it's clear. */
+  showing: string | null
+}
+
 export const GITHUB_REPO = 'Looby758/Eclipse'
 
 export interface EclipseApi {
@@ -246,6 +258,11 @@ export interface EclipseApi {
   /** Eclipse in the menu bar / tray (Phase 26), and whether closing the window keeps it running there. */
   trayOn(): Promise<boolean>
   setTray(on: boolean): Promise<boolean>
+
+  /** Phase 44: the Discord status while you watch. */
+  discordStatus(): Promise<DiscordStatus>
+  setDiscord(patch: { on?: boolean; appId?: string }): Promise<DiscordStatus>
+  onDiscordChanged(callback: (status: DiscordStatus) => void): () => void
 
   noticingStatus(): Promise<NoticingStatus>
   setNoticing(patch: Partial<NoticingSettings>): Promise<NoticingStatus>

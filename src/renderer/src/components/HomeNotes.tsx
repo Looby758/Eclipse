@@ -1,4 +1,4 @@
-import { Check, Eye, History, Hourglass, Play, Sparkles, Tv, Users, X } from 'lucide-react'
+import { Check, Eye, EyeOff, History, Hourglass, Play, Sparkles, Tv, Users, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { localDate, nextEpisodeFor, nextSession, preferencesOf, sessionIsOn, watchesWith } from '@core/library'
 import { sessionLabel } from '../lib/together'
@@ -14,6 +14,7 @@ import { useApp } from '../store/app'
 import { useDetailsMany } from '../lib/availability'
 import { useServiceHistory } from '../lib/services'
 import { useNoticing } from '../lib/noticing'
+import { useDiscord } from '../lib/discord'
 import { suggestionWith } from '@core/watching'
 
 const itemOf = (e: LibraryEntry): { key: LibraryEntry['key']; type: LibraryEntry['type']; id: number; title: LibraryEntry['title'] } => ({ key: e.key, type: e.type, id: e.id, title: e.title })
@@ -404,6 +405,7 @@ function Noticed(): React.JSX.Element | null {
       {line && (
         <div className="note-line">
           <Play size={13} /> Playing now: <strong>{line}</strong>
+          <DiscordToggle />
         </div>
       )}
       {list.length > 0 && (
@@ -451,6 +453,24 @@ function Noticed(): React.JSX.Element | null {
         </>
       )}
     </section>
+  )
+}
+
+/**
+ * Phase 44: next to "Playing now", whether Discord shows it, with one click to hide it from friends
+ * (or show it). Only once the Discord status has been set up in Settings.
+ */
+function DiscordToggle(): React.JSX.Element | null {
+  const [status, set] = useDiscord()
+  if (!status?.appId) return null
+  return (
+    <div className="row" style={{ marginTop: 6 }}>
+      <button className={`chip${status.on ? ' on' : ''}`} aria-pressed={status.on} onClick={() => void set({ on: !status.on })} title={status.on ? 'Friends on Discord can see what you’re watching. Click to hide it.' : 'Click to show friends on Discord what you’re watching.'}>
+        {status.on ? <Eye size={14} /> : <EyeOff size={14} />} {status.on ? 'Showing on Discord' : 'Hidden from Discord'}
+      </button>
+      {status.on && status.state === 'not-running' && <span className="muted small">Discord isn’t open on this computer.</span>}
+      {status.on && status.state === 'error' && <span className="error small">{status.error}</span>}
+    </div>
   )
 }
 
