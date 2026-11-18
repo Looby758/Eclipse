@@ -7,7 +7,7 @@ import type { YearReview } from '@core/year'
 import type { CatchUp } from '@core/catchup'
 import type { WeekSoFar } from '@core/week'
 import type { Recommendation } from '@core/recommend'
-import type { NowPlaying, Recognised, Suggestion } from '@core/watching'
+import type { NowPlaying, Recognised, Suggestion, UnknownShow } from '@core/watching'
 import type { CollectionDetails, Credits, ListSource, PersonDetails, TitleRef, TmdbListDetails } from '@core/types'
 import type { Library, MediaType, PlannedTime, Preferences, Provider, SearchResult, SeasonDetails, TitleDetails, TitleKey, TitleSnapshot, WatchProviders, WatchStatus } from '@core/types'
 
@@ -102,6 +102,8 @@ export interface NoticingStatus {
   momentKey: string
   /** The Chrome extension: when it last reported, anything stopping it, and where its files are. */
   extension: { lastAt: number | null; error: string | null; folder: string }
+  /** A show playing that isn't in your library ("Watching Family Guy? Add it"), and the TMDB show it most likely is. */
+  unknown: (UnknownShow & { match: SearchResult | null }) | null
 }
 
 /** Phase 36: a change the "Done · Undo" bar can put back. */
@@ -255,6 +257,8 @@ export interface EclipseApi {
    */
   acceptSuggestion(id: string, who?: string | null): Promise<Library>
   dismissSuggestion(id: string): Promise<NoticingStatus>
+  /** "Not mine": stops asking to add a show that's playing. */
+  notMine(name: string): Promise<NoticingStatus>
   /** Opens the Chrome extension's folder, to load it in Chrome. */
   showExtensionFolder(): Promise<void>
   onNoticingChanged(callback: () => void): () => void

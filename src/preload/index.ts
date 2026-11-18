@@ -73,6 +73,7 @@ const api: EclipseApi = {
   acceptSuggestion: (id, who) => ipcRenderer.invoke('noticing:accept', id, who),
   dismissSuggestion: (id) => ipcRenderer.invoke('noticing:dismiss', id),
   showExtensionFolder: () => ipcRenderer.invoke('noticing:extensionFolder'),
+  notMine: (name) => ipcRenderer.invoke('noticing:notMine', name),
   onNoticingChanged: (callback) => {
     const handler = (): void => callback()
     ipcRenderer.on('noticing:changed', handler)

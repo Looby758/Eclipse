@@ -4,7 +4,7 @@ import { existsSync, readFileSync, renameSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { localDate, preferencesOf } from '@core/library'
 import { bedtimeTonight, tonightStart } from '@core/time'
-import { episodeKey, type Library, type TitleDetails } from '@core/types'
+import { episodeKey, type Library, type SearchResult, type TitleDetails } from '@core/types'
 import {
   addMoment,
   bedtimeWarning,
@@ -19,6 +19,9 @@ import {
   suggestionFromPlaying,
   suggestionWith,
   tickSuggestion,
+  pickShow,
+  unknownShow,
+  type UnknownShow,
   type NowPlaying,
   type Recognised,
   type Suggestion
@@ -43,6 +46,8 @@ const file = (): string => join(app.getPath('userData'), 'noticing.json')
 interface Saved {
   suggestions: Suggestion[]
   dismissed: string[]
+  /** Shows you said aren't yours to track ("Not mine"), by lower-case name. */
+  notMine?: string[]
 }
 
 let saved: Saved | null = null
@@ -53,12 +58,16 @@ let details: Record<string, TitleDetails> = {}
 let detailsAt = 0
 let hooks = { changed: () => undefined as void, show: () => undefined as void, libraryChanged: () => undefined as void }
 let scanTimer: NodeJS.Timeout | null = null
+/** Something playing that isn't in your library, and the TMDB show it most likely is. */
+let unknown: { show: UnknownShow; match: SearchResult | null; at: number } | null = null
+let lookingUp = ''
 
 function load(): Saved {
   if (saved) return saved
   try {
     const raw = existsSync(file()) ? JSON.parse(readFileSync(file(), 'utf8')) : {}
-    saved = { suggestions: Array.isArray(raw.suggestions) ? raw.suggestions : [], dismissed: Array.isArray(raw.dismissed) ? raw.dismissed.filter((x: unknown) => typeof x === 'string') : [] }
+    const strings = (x: unknown): string[] => (Array.isArray(x) ? x.filter((y: unknown): y is string => typeof y === 'string') : [])
+    saved = { suggestions: Array.isArray(raw.suggestions) ? raw.suggestions : [], dismissed: strings(raw.dismissed), notMine: strings(raw.notMine) }
   } catch {
     saved = { suggestions: [], dismissed: [] }
   }
@@ -66,7 +75,7 @@ function load(): Saved {
 }
 
 function store(next: Saved): void {
-  saved = { suggestions: next.suggestions.slice(-200), dismissed: next.dismissed.slice(-3000) }
+  saved = { suggestions: next.suggestions.slice(-200), dismissed: next.dismissed.slice(-3000), notMine: (next.notMine ?? []).slice(-500) }
   writeFileSync(`${file()}.tmp`, JSON.stringify(saved), 'utf8')
   renameSync(`${file()}.tmp`, file())
   hooks.changed()
@@ -170,6 +179,11 @@ async function onPlaying(): Promise<void> {
   const order = (n: NowPlaying): number => (n.position != null && n.status === 'playing' ? 0 : n.position != null ? 1 : 2)
   const now = [...report.items].sort((a, b) => order(a) - order(b)).map((n) => ({ n, r: recognise(n, lib, d, today, new Date()) })).find((x) => x.r)
   const next = now?.r ?? null
+  if (!next) void noticeUnknown(report.items, lib)
+  if (unknown && ((unknown.match && lib.entries[unknown.match.key]) || Date.now() - unknown.at > 12 * 3_600_000)) {
+    unknown = null
+    hooks.changed()
+  }
   const done = finished(current, next)
   if (done) {
     const s = suggestionFromPlaying(done, eveningDay(new Date()), getLibrary())
@@ -193,6 +207,34 @@ async function onPlaying(): Promise<void> {
   const changed = JSON.stringify(next) !== JSON.stringify(current)
   current = next
   if (changed) hooks.changed()
+}
+
+/** Something's playing that isn't in your library: find which show it is, and ask once whether to add it. */
+async function noticeUnknown(items: NowPlaying[], lib: Library): Promise<void> {
+  const no = new Set(load().notMine ?? [])
+  const show = items.map((n) => unknownShow(n, lib)).find((u) => u && !no.has(u.name.toLowerCase()))
+  if (!show || show.name === unknown?.show.name || show.name === lookingUp) return
+  lookingUp = show.name
+  let match: SearchResult | null = null
+  try {
+    if (tmdb.hasKey()) match = pickShow(show.name, (await tmdb.search(show.name)).data)
+  } catch {
+    // No TMDB right now: still ask, by name.
+  } finally {
+    lookingUp = ''
+  }
+  if (match && lib.entries[match.key]) return
+  unknown = { show, match, at: Date.now() }
+  hooks.changed()
+  notify(`Watching ${match?.name ?? show.name}?`, 'It isn’t in Eclipse yet: add it to keep track of what you’ve seen.', hooks.show)
+}
+
+/** "Not mine": don't ask about this show again. */
+export function notMine(name: string): NoticingStatus {
+  const s = load()
+  store({ ...s, notMine: [...(s.notMine ?? []), name.toLowerCase()] })
+  if (unknown?.show.name.toLowerCase() === name.toLowerCase()) unknown = null
+  return noticingStatus()
 }
 
 /** The evening it counts as: after midnight but before 5am is still last night. */
@@ -265,6 +307,7 @@ export function noticingStatus(): NoticingStatus {
     playing: { raw: report.items, error: report.error, recognised: current, line: current ? playingLine(current) : null },
     suggestions: pending(),
     extension: extensionLink(),
+    unknown: unknown ? { ...unknown.show, match: unknown.match } : null,
     momentKey: process.platform === 'darwin' ? '⌘⌥B' : 'Ctrl+Alt+B'
   }
 }

@@ -330,6 +330,39 @@ export function recognise(np: NowPlaying, library: Library, details: Record<stri
   }
 }
 
+// ---- Something playing that isn't in your library ----
+
+export interface UnknownShow {
+  /** The show's name as the player gave it: "Family Guy". */
+  name: string
+  season: number
+  episode: number
+  service: string | null
+}
+
+/**
+ * A show the player names, with the episode, that isn't in your library: from the Chrome extension
+ * (or anything else that gives a streaming address), so it's really a player and not a page you're
+ * browsing. The name is the first line that isn't the episode ("Family Guy", then "S24:E1 ...").
+ */
+export function unknownShow(np: NowPlaying, library: Library): UnknownShow | null {
+  if (!np.url) return null
+  const svc = serviceOf(np.url)
+  if (!svc) return null
+  const parts = np.title.split(' · ').map((t) => cleanTitle(t))
+  const ep = parseEpisode(parts.join(' · '))
+  if (!ep || matchTitle(parts.join(' · '), library, ['tv', 'movie'])) return null
+  const name = parts.find((t) => !parseEpisode(t) && t.length >= 2 && t.length <= 80 && !SERVICES.some((x) => x.name.toLowerCase() === t.toLowerCase()))
+  return name ? { name, season: ep.season, episode: ep.episode, service: svc.service.name } : null
+}
+
+/** The TMDB show that a name from a player means: the most popular one with exactly that name, else the top result. */
+export function pickShow<T extends { type: string; name: string; popularity: number }>(name: string, results: T[]): T | null {
+  const shows = results.filter((r) => r.type === 'tv')
+  const exact = shows.filter((r) => norm(r.name) === norm(name)).sort((a, b) => b.popularity - a.popularity)
+  return exact[0] ?? shows[0] ?? null
+}
+
 /** "Andor S2 E4, 31 minutes in" */
 export function playingLine(r: Recognised): string {
   const ep = r.season ? ` S${r.season} E${r.episode}` : ''

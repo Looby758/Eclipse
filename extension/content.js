@@ -13,9 +13,10 @@
       return null
     }
   }
+  const report = () => (read() || {}).report || null
 
   setInterval(() => {
-    const r = read()
+    const r = report()
     if (!r) return
     const state = `${r.paused}|${r.ended}`
     const changed = state !== lastState
@@ -31,7 +32,16 @@
 
   // The popup asks what this page can see.
   chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
-    if (msg && msg.type === 'what') reply({ report: read(), videos: document.querySelectorAll('video').length })
+    if (msg && msg.type === 'what') {
+      // Every frame of the tab is asked and the first answer wins: a frame with the player answers
+      // straight away, the page itself a moment later, other frames not at all.
+      const d = read()
+      const answer = () => reply({ report: d ? d.report : null, seen: d ? d.seen : null, roots: d ? d.roots : 0, running: !!d })
+      if (d && d.report) answer()
+      else if (window === window.top) setTimeout(answer, 400)
+      else return false
+      return true
+    }
     return false
   })
 })()

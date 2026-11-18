@@ -21,12 +21,16 @@ chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
         : 'Not a streaming page the extension reads.'
       return
     }
+    if (!r.running) {
+      $('page').textContent = 'This page can’t be read yet: reload it.'
+      return
+    }
     if (!r.report) {
-      $('page').textContent = 'On this page: no player found yet (it can take a few seconds after it starts).'
+      $('page').textContent = `On this page: no player found yet. Seen: ${r.seen && r.seen.length ? r.seen.join(', ') : 'no videos'} (${r.roots} hidden parts).`
       return
     }
     const p = r.report
-    $('page').textContent = `On this page: ${p.texts.slice(0, 3).join(' · ') || 'no title found'} · ${clock(p.position)} of ${clock(p.duration)}${p.paused ? ' · paused' : ''}`
+    $('page').textContent = `On this page: ${p.texts.slice(0, 3).join(' · ') || 'no title found'}${p.position != null ? ` · ${clock(p.position)}` : ''}${p.duration != null ? ` of ${clock(p.duration)}` : ''}${p.paused ? ' · paused' : ''}`
   })
 })
 

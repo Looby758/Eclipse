@@ -15,6 +15,33 @@
     roots.push(root)
     return root
   }
+  // Every video or audio element the page starts playing or gives a stream to, wherever it lives
+  // (a player can be built outside the page and only some of it shown).
+  const media = new Set()
+  const remember = (el) => {
+    try {
+      if (el instanceof HTMLVideoElement) media.add(el)
+    } catch {
+      // Not a media element.
+    }
+  }
+  const play = HTMLMediaElement.prototype.play
+  HTMLMediaElement.prototype.play = function (...args) {
+    remember(this)
+    return play.apply(this, args)
+  }
+  const srcDesc = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'src')
+  if (srcDesc && srcDesc.set) {
+    Object.defineProperty(HTMLMediaElement.prototype, 'src', {
+      ...srcDesc,
+      set(v) {
+        remember(this)
+        srcDesc.set.call(this, v)
+      }
+    })
+  }
+  for (const ev of ['play', 'playing', 'loadedmetadata', 'timeupdate']) document.addEventListener(ev, (e) => remember(e.target), true)
+
   // Plus open ones made before this started (when added to a tab that was already open).
   const openRoots = () => {
     const found = new Set(roots)
@@ -62,10 +89,18 @@
     return false
   }
 
-  function video() {
-    return all('video')
-      .filter((v) => v.readyState > 0 && Number.isFinite(v.duration) && v.duration > 120)
-      .sort((a, b) => b.duration - a.duration)[0] || null
+  /** Every video the page has, in the page or tucked away, and which one is the programme. */
+  function videos() {
+    const list = new Set([...all('video'), ...media])
+    for (const v of list) if (!v.isConnected && v.paused) list.delete(v)
+    return [...list]
+  }
+  function video(list) {
+    const ready = list.filter((v) => v.readyState > 0)
+    // A programme: over two minutes long. Streams that don't say how long they are: the biggest one playing.
+    const long = ready.filter((v) => Number.isFinite(v.duration) && v.duration > 120).sort((a, b) => b.duration - a.duration)[0]
+    if (long) return long
+    return ready.filter((v) => !v.paused && v.videoWidth > 0).sort((a, b) => b.videoWidth * b.videoHeight - a.videoWidth * a.videoHeight)[0] || null
   }
 
   function texts() {
@@ -97,9 +132,13 @@
   function write() {
     try {
       known = openRoots()
-      const v = video()
-      const state = v ? { url: location.href, texts: texts(), position: v.currentTime, duration: v.duration, paused: v.paused, ended: v.ended } : null
-      document.documentElement.dataset.eclipse = state ? JSON.stringify(state) : ''
+      const list = videos()
+      const v = video(list)
+      const finite = (n) => (Number.isFinite(n) ? n : null)
+      const report = v ? { url: location.href, texts: texts(), position: finite(v.currentTime), duration: finite(v.duration), paused: v.paused, ended: v.ended } : null
+      // What it looked at, for the popup when nothing's found.
+      const seen = list.map((x) => `${x.readyState}/${Number.isFinite(x.duration) ? Math.round(x.duration) : String(x.duration)}/${x.paused ? 'paused' : 'playing'}`)
+      document.documentElement.dataset.eclipse = JSON.stringify({ report, seen, roots: known.length })
     } catch {
       // Try again next time.
     }

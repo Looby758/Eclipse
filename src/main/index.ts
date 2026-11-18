@@ -21,7 +21,7 @@ import { keysWatchedIn, yearInReview } from '@core/year'
 import { repairBatch, type Batch, type RepairChoice } from '@core/repair'
 import { refreshTray, setTray, setupTray, trayOn } from './tray'
 import { startTogetherReminders } from './together'
-import { acceptSuggestion, dismissSuggestion, noticingStatus, scanHistory, setNoticing, setupNoticing, stopNoticing } from './noticing'
+import { acceptSuggestion, dismissSuggestion, notMine, noticingStatus, scanHistory, setNoticing, setupNoticing, stopNoticing } from './noticing'
 import { showExtensionFolder } from './extension'
 import { editMoment } from '@core/watching'
 import { CATCH_UP_ID, dismissCatchUp } from '@core/catchup'
@@ -317,6 +317,7 @@ function setupIpc(): void {
   })
   ipcMain.handle('noticing:accept', (_e, id: string, who?: string | null) => acceptSuggestion(String(id), typeof who === 'string' || who === null ? who : undefined))
   ipcMain.handle('noticing:extensionFolder', () => showExtensionFolder())
+  ipcMain.handle('noticing:notMine', (_e, name: string) => notMine(String(name).slice(0, 80)))
   ipcMain.handle('noticing:dismiss', (_e, id: string) => {
     dismissSuggestion(String(id))
     return noticingStatus()

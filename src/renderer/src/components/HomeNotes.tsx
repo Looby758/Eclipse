@@ -369,9 +369,38 @@ function Noticed(): React.JSX.Element | null {
   if (!status) return null
   const list = status.suggestions.slice(-6).reverse()
   const line = status.playing.line
-  if (!list.length && !line) return null
+  const unknown = status.unknown
+  if (!list.length && !line && !unknown) return null
   return (
     <section className="note" aria-label="Did you watch these?">
+      {unknown && (
+        <div className="note-line">
+          <Play size={13} /> Watching <strong>{unknown.match?.name ?? unknown.name}</strong>
+          {unknown.match?.year ? ` (${unknown.match.year})` : ''} {label(unknown.season, unknown.episode)}
+          <span className="muted">{unknown.service ? ` on ${unknown.service}` : ''}? It isn’t in your library yet.</span>
+          <div className="row" style={{ marginTop: 6 }}>
+            {unknown.match ? (
+              <button
+                className="chip"
+                onClick={async () => {
+                  const m = unknown.match!
+                  setLibrary(await window.api.setStatus({ key: m.key, type: m.type, id: m.id, title: { name: m.name, year: m.year, posterPath: m.posterPath } }, 'watching'))
+                  setStatus(await window.api.noticingStatus())
+                }}
+              >
+                <Check size={14} /> Add it
+              </button>
+            ) : (
+              <button className="chip" onClick={() => go({ name: 'search' })}>
+                <Check size={14} /> Find it
+              </button>
+            )}
+            <button className="chip clear" onClick={async () => setStatus(await window.api.notMine(unknown.name))}>
+              <X size={14} /> Not mine
+            </button>
+          </div>
+        </div>
+      )}
       {line && (
         <div className="note-line">
           <Play size={13} /> Playing now: <strong>{line}</strong>

@@ -13,16 +13,18 @@ chrome.runtime.onInstalled.addListener(async () => {
   const matches = chrome.runtime.getManifest().content_scripts[0].matches
   for (const tab of await chrome.tabs.query({ url: matches })) {
     try {
-      await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['page.js'], world: 'MAIN' })
-      await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] })
+      await chrome.scripting.executeScript({ target: { tabId: tab.id, allFrames: true }, files: ['page.js'], world: 'MAIN' })
+      await chrome.scripting.executeScript({ target: { tabId: tab.id, allFrames: true }, files: ['content.js'] })
     } catch {
       // A tab Chrome won't let extensions into: it picks it up when reloaded.
     }
   }
 })
 
-chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
+chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   if (msg && msg.type === 'playing') {
+    // The player can be in a frame inside the page: Eclipse wants the page's own address.
+    if (sender.tab && sender.tab.url) msg.report.url = sender.tab.url
     post('/playing', msg.report)
       .then((ok) => chrome.storage.local.set({ last: { at: Date.now(), ok, texts: msg.report.texts, url: msg.report.url } }))
       .catch(() => chrome.storage.local.set({ last: { at: Date.now(), ok: false, texts: msg.report.texts, url: msg.report.url, unreachable: true } }))

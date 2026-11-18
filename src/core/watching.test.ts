@@ -16,6 +16,8 @@ import {
   showPagesFromVisits,
   suggestFromVisits,
   fromExtension,
+  pickShow,
+  unknownShow,
   refreshSuggestion,
   suggestionFromPlaying,
   suggestionWith,
@@ -206,6 +208,20 @@ describe('the Chrome extension', () => {
     expect(recognise(np, lib, details, today)).toMatchObject({ key: 'tv:2', season: 5, episode: 3, sure: true, service: 'Disney+' })
     expect(fromExtension(report({ paused: true }))?.status).toBe('paused')
     expect(fromExtension(report({ ended: true }))?.status).toBe('stopped')
+  })
+
+  it('notices a show you’re watching that isn’t in your library', () => {
+    const fg = fromExtension(report({ texts: ['Family Guy', 'S24:E1 The Edible Arrangement', 'Family Guy | Disney+'] }))!
+    expect(recognise(fg, lib, details, today)).toBeNull()
+    expect(unknownShow(fg, lib)).toEqual({ name: 'Family Guy', season: 24, episode: 1, service: 'Disney+' })
+    // In your library, no episode named, or not from a player address: nothing to ask.
+    expect(unknownShow(fromExtension(report())!, lib)).toBeNull()
+    expect(unknownShow(fromExtension(report({ texts: ['Family Guy', 'Disney+'] }))!, lib)).toBeNull()
+    expect(unknownShow({ app: 'chrome.exe', title: 'Family Guy S24 E1' }, lib)).toBeNull()
+    const r = (name: string, popularity: number, type = 'tv') => ({ type, name, popularity })
+    expect(pickShow('Family Guy', [r('Family Guy Funny Moments', 90), r('Family Guy', 50), r('Family Guy', 80, 'movie'), r('Family guy', 70)])).toEqual(r('Family guy', 70))
+    expect(pickShow('Fam Guy', [r('Family Guy', 50)])).toEqual(r('Family Guy', 50))
+    expect(pickShow('Family Guy', [])).toBeNull()
   })
 
   it('only takes tidy reports from streaming sites', () => {
