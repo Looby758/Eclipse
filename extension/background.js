@@ -7,6 +7,20 @@ async function post(path, body) {
   return res.ok
 }
 
+// Streaming tabs that were already open when the extension was installed or updated don't have it
+// yet: add it to them, so you don't have to reload the page.
+chrome.runtime.onInstalled.addListener(async () => {
+  const matches = chrome.runtime.getManifest().content_scripts[0].matches
+  for (const tab of await chrome.tabs.query({ url: matches })) {
+    try {
+      await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['page.js'], world: 'MAIN' })
+      await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] })
+    } catch {
+      // A tab Chrome won't let extensions into: it picks it up when reloaded.
+    }
+  }
+})
+
 chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
   if (msg && msg.type === 'playing') {
     post('/playing', msg.report)
@@ -16,7 +30,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
   }
   if (msg && msg.type === 'check') {
     fetch(`${ECLIPSE}/hello`, { method: 'GET' })
-      .then((r) => r.json().then((j) => reply({ ok: r.ok && !!j.ok, version: j.version })))
+      .then((r) => r.json().then((j) => reply({ ok: r.ok && !!j.ok })))
       .catch(() => reply({ ok: false }))
     return true
   }

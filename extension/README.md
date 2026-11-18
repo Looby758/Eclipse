@@ -15,8 +15,9 @@ can't tell Eclipse which episode you watched. This extension reads it from the p
 
 ## How it reads the episode
 
-- `content.js` checks each service's player title lines first (see `SITES`), then what the page
-  tells Chrome's media controls (`page.js` copies `navigator.mediaSession`), then the tab title,
+- `page.js` (running in the page, including inside the player components Disney+ hides in shadow
+  roots) checks each service's player title lines first (see `SITES`), then what the page
+  tells Chrome's media controls (`navigator.mediaSession`), then the tab title,
   and only then other title-ish text in the player that names an episode (skipping "Up next" rows).
 - When a service changes its player and the episode stops showing up, add the new selector to
-  `SITES` in `content.js` and reload the extension.
+  `SITES` in `page.js` and reload the extension.
