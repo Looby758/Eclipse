@@ -47,7 +47,7 @@ async function check(): Promise<UpdateStatus> {
   try {
     const result = await autoUpdater.checkForUpdates()
     result?.downloadPromise?.catch(() => undefined)
-    report('updates', true, result?.updateInfo?.version && result.updateInfo.version !== app.getVersion() ? `Version ${result.updateInfo.version} is available` : 'Up to date')
+    report('updates', true, result?.isUpdateAvailable ? `Version ${result.updateInfo.version} is available` : 'Up to date')
   } catch (err) {
     set({ state: 'error', error: friendly(err) })
     report('updates', false, friendly(err))
@@ -68,10 +68,16 @@ export async function setupUpdater(): Promise<void> {
     return
   }
   try {
-    autoUpdater = (await import('electron-updater')).autoUpdater
-  } catch {
+    // electron-updater is a CommonJS package whose autoUpdater is a getter, which a dynamic import
+    // doesn't see as a named export: it's only on the default export (this broke update checks in 1.0.0).
+    const mod = (await import('electron-updater')) as unknown as { autoUpdater?: AppUpdater; default?: { autoUpdater?: AppUpdater } }
+    const found = mod.autoUpdater ?? mod.default?.autoUpdater
+    if (!found) throw new Error('The update checker could not be loaded.')
+    autoUpdater = found
+  } catch (err) {
     supported = false
     status = { ...status, reason: 'The update checker is missing from this copy.' }
+    report('updates', false, `The update checker couldn't start: ${friendly(err)}`)
     return
   }
   status = { ...status, state: 'none' }
