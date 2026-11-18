@@ -99,12 +99,14 @@ export default function NoticingCard(): React.JSX.Element {
 
       {s?.playing && (
         <>
-          <h3 className="card-sub">The exact episode, from Chrome</h3>
+          <h3 className="card-sub">The exact episode, from your browser</h3>
           <p className="muted small">
             Disney+ and NOW don’t put the episode in the page title, so on their own Eclipse can only see that something’s playing. The Eclipse extension for Chrome reads the episode from the player itself (“S5:E3”) and passes it to Eclipse, on this computer only.
           </p>
           <ol className="muted small" style={{ paddingLeft: 18, margin: '6px 0' }}>
-            <li>In Chrome, go to <code>chrome://extensions</code> and switch on Developer mode (top right).</li>
+            <li>
+              In Chrome, Edge or Opera GX, go to <code>chrome://extensions</code> (<code>edge://extensions</code>, <code>opera://extensions</code>) and switch on Developer mode.
+            </li>
             <li>Press Load unpacked and choose the folder that opens with the button below.</li>
             <li>Play an episode: it shows up under “What Eclipse sees right now” within 10 seconds.</li>
           </ol>

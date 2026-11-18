@@ -8,7 +8,8 @@ can't tell Eclipse which episode you watched. This extension reads it from the p
 ## Install
 
 1. In Eclipse, switch on Settings → Noticing what you watch → What's playing.
-2. In Chrome, open `chrome://extensions` and switch on Developer mode.
+2. In Chrome, Edge or Opera GX, open `chrome://extensions` (`edge://extensions`, `opera://extensions`)
+   and switch on Developer mode.
 3. Press **Load unpacked** and choose this folder (Settings → Show the extension folder opens it).
 4. Play an episode. Within 10 seconds it shows under "What Eclipse sees right now", and the
    extension's popup says what it last sent.
