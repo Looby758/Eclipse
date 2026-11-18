@@ -395,6 +395,15 @@ You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls
 
 - Evenings (17 Nov 2026): you picked a schedule per day, more than one slot a day, just-for-tonight changes, gaps and wind-down, and a weekly budget. Added as candidate phase 35. Not wanted: date ranges for holidays, and Google Calendar.
 
+**Phase 43: Recommendations that learn from my no's (built, waiting for you to try it)**
+
+- **One at a time:** Search → *Recommended for you* → **One at a time** opens a full-screen round of up to 25 picks (Both, Films or Shows), each with its trailer, and **Interested** (adds it to Want to watch), **Not for me** and **Skip**. Keys: → or I interested, ← or N not for me, S skip. *More about it* opens the title's page. **Another round** at the end fetches fresh picks that take your answers into account.
+- **Where the picks come from:** TMDB's "recommended" lists for what you've watched or are watching (rated highly and watched lately counting most, as before), now with TMDB's "similar" lists added at a bit over half the weight.
+- **How it learns:** each answer looks at the pick's creators (a film's directors and writers), network (a film's first two studios), main cast (top 6) and TMDB keywords. *Not for me* lowers all of them and *Interested* raises them. Creators move the most, then cast, then network, and keywords the least (and together they can only count for so much), so saying no to a grim monster-hunting show pushes down other shows by the same people far more than every show with demons in it. Nothing is guessed up front; it starts general and sharpens as you answer.
+- **Every pick says why:** "Because of The Walking Dead and Shadowhunters", plus "you were interested in others with Jensen Ackles" once it has learnt something. A pick that shares people with your no's says so, and sits further down.
+- **The ✕ on Search's grid** is the same *Not for me* and teaches it too. The poster wall uses the same picks.
+- **Saved in the library:** your no's (`recsHidden`, as before) and the learnt weights (`recsTaste`, the strongest 800) are in `library.json`, so both computers agree. Undo works on an answer. Free, local, no AI.
+
 **Phases 36 to 42: Safety and everyday comfort (built, waiting for you to try them)**
 
 - Phase 36, **undo and a check before removing**: the ✕ beside the statuses asks first when a title has history ("Remove Breaking Bad? This forgets 62 watched episodes and 1 rewatch.") with *Keep it* and *Remove*. After a status change, ticking or unticking episodes (including *Watched up to here* and whole seasons), removing a rewatch or a watch with someone, removing a list, a date repair or a restore, a "Done · Undo" bar shows for seven seconds; **Undo** or Ctrl+Z puts the library back. If something else changed it in the meantime (e.g. the other computer), it says so instead of undoing. Undo is kept in memory only.

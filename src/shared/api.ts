@@ -230,10 +230,10 @@ export interface EclipseApi {
   /** Your year in Eclipse: hours, busiest month, most-watched director and actor, longest binge. */
   yearReview(year: number): Promise<Result<YearReview>>
 
-  /** Recommendations for Search, from what you've watched and are watching. */
+  /** Recommendations for Search and the poster wall, from what you've watched and your answers so far. */
   recommendations(): Promise<Result<Recommendation[]>>
-  /** "Not for me": never recommend it again. */
-  hideRecommendation(key: string): Promise<Library>
+  /** Interested (adds it to Want to watch) or Not for me (never recommend it again); both teach it. */
+  answerRecommendation(item: Item, answer: 'yes' | 'no'): Promise<Library>
 
   /** The weekly budget: how much of this week you've watched and have left (null with no budget). */
   weekBudget(): Promise<Result<WeekSoFar | null>>

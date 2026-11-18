@@ -501,6 +501,7 @@ button.list-seen.undo:hover { background: var(--glass-hover); }
 .clearout-trailer iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .clearout-overview { max-width: 640px; line-height: 1.6; color: var(--text-muted); }
 .clearout-actions { display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+.pick-why { color: var(--text-strong); font-weight: 600; }
 .dropped ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-width: 760px; }
 .dropped li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 10px; background: var(--glass-soft); font-size: var(--text-sm); }
 

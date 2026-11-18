@@ -1,3 +1,4 @@
+import type { Trait } from './types'
 import type { CollectionDetails, Credits, Episode, MediaType, NextEpisode, PersonDetails, PersonRef, Provider, SearchResult, Season, SeasonDetails, TitleDetails, TitleRef, TmdbListDetails, WatchProviders } from './types'
 import { titleKey } from './types'
 
@@ -71,6 +72,10 @@ export interface Tmdb {
   list(id: number): Promise<TmdbListDetails>
   /** TMDB's "if you liked this" titles for a film or show. */
   recommendations(type: MediaType, id: number): Promise<SearchResult[]>
+  /** TMDB's "similar" titles (same keywords and genres), a second source of candidates. */
+  similar(type: MediaType, id: number): Promise<SearchResult[]>
+  /** What recommendations learn from: its creators, network, main cast and keywords. */
+  traits(type: MediaType, id: number): Promise<Trait[]>
 }
 
 export function createTmdb({ key, fetch, language = 'en-GB' }: TmdbOptions): Tmdb {
@@ -114,6 +119,17 @@ export function createTmdb({ key, fetch, language = 'en-GB' }: TmdbOptions): Tmd
       const body = await get<{ results?: RawSearchItem[] }>(`/${type}/${id}/recommendations`, { language, page: '1' })
       // Recommendations usually say what they are; when one doesn't, it's the same kind as the title.
       return parseSearch((body.results ?? []).map((r) => ({ ...r, media_type: r.media_type ?? type })))
+    },
+
+    async similar(type, id) {
+      const body = await get<{ results?: RawSearchItem[] }>(`/${type}/${id}/similar`, { language, page: '1' })
+      return parseSearch((body.results ?? []).map((r) => ({ ...r, media_type: r.media_type ?? type })))
+    },
+
+    async traits(type, id) {
+      const credits = type === 'tv' ? 'aggregate_credits' : 'credits'
+      const raw = await get<RawTraits>(`/${type}/${id}`, { language, append_to_response: `keywords,${credits}` })
+      return parseTraits(type, raw)
     },
 
     async season(tvId, n) {
@@ -421,6 +437,39 @@ export function refFromRaw(raw: RawTitleCredit, fallback?: MediaType): TitleRef 
   if (!type || !raw.id) return null
   const date = (type === 'movie' ? raw.release_date : raw.first_air_date) || null
   return { key: titleKey(type, raw.id), type, id: raw.id, name: (type === 'movie' ? raw.title : raw.name) ?? 'Untitled', year: yearOf(date), posterPath: raw.poster_path ?? null, date }
+}
+
+interface RawTraits {
+  created_by?: { id: number; name: string }[]
+  networks?: { id: number; name: string }[]
+  production_companies?: { id: number; name: string }[]
+  keywords?: { keywords?: { id: number; name: string }[]; results?: { id: number; name: string }[] }
+  credits?: RawCredits
+  aggregate_credits?: RawCredits
+}
+
+/** Writing and directing jobs that say who a film is by. */
+const MAKERS = new Set(['Director', 'Screenplay', 'Writer', 'Creator'])
+
+/**
+ * The traits recommendations learn from (phase 43): a show's creators and network, or a film's
+ * directors and writers and its first studios; the main cast (top 6); and TMDB's keywords (up to 25).
+ */
+export function parseTraits(type: MediaType, raw: RawTraits): Trait[] {
+  const out: Trait[] = []
+  const add = (kind: string, id: number | undefined, name: string | undefined): void => {
+    if (typeof id === 'number' && name && !out.some((t) => t.id === `${kind}:${id}`)) out.push({ id: `${kind}:${id}`, name })
+  }
+  const credits = (type === 'tv' ? raw.aggregate_credits : raw.credits) ?? raw.credits ?? raw.aggregate_credits
+  if (type === 'tv') for (const c of raw.created_by ?? []) add('creator', c.id, c.name)
+  for (const c of credits?.crew ?? []) {
+    const jobs = c.jobs ? c.jobs.map((j) => j.job) : [c.job]
+    if (type === 'movie' && jobs.some((j) => j && MAKERS.has(j))) add('creator', c.id, c.name)
+  }
+  for (const n of type === 'tv' ? (raw.networks ?? []).slice(0, 2) : (raw.production_companies ?? []).slice(0, 2)) add('network', n.id, n.name)
+  for (const c of parseCredits(credits ?? {}).cast.slice(0, 6)) add('cast', c.id, c.name)
+  for (const k of (raw.keywords?.keywords ?? raw.keywords?.results ?? []).slice(0, 25)) add('keyword', k.id, k.name)
+  return out
 }
 
 interface RawCredits {
