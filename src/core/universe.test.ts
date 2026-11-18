@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { franchisesOf, namesRelated, sameUniverse, showCount, universeName, universeStrip } from './universe'
+import { franchisesOf, stripWindow, namesRelated, sameUniverse, showCount, universeName, universeStrip } from './universe'
 import type { LibraryEntry, TitleDetails } from './types'
 
 const show = (id: number, name: string, date: string, seasons: [number, number][], extra: Partial<TitleDetails> = {}): TitleDetails => ({
@@ -88,5 +88,15 @@ describe('counts and the strip', () => {
     expect(strip[0]).toMatchObject({ current: true, seen: 1, total: 19, line: 'Next: S1 E2 · 1 of 19' })
     expect(strip[1]).toMatchObject({ current: false, line: 'Not started · 0 of 6' })
     expect(universeStrip(twd, [], entries, '2026-01-01')).toEqual([])
+  })
+})
+
+describe('a big universe along the bottom', () => {
+  const items = (n: number, at: number) => Array.from({ length: n }, (_, i) => ({ i, current: i === at }))
+  it('shows all of a small one, else this title and its neighbours with room for See all', () => {
+    expect(stripWindow(items(6, 2)).length).toBe(6)
+    expect(stripWindow(items(52, 20)).map((x) => x.i)).toEqual([18, 19, 20, 21, 22])
+    expect(stripWindow(items(52, 0)).map((x) => x.i)).toEqual([0, 1, 2, 3, 4])
+    expect(stripWindow(items(52, 51)).map((x) => x.i)).toEqual([47, 48, 49, 50, 51])
   })
 })

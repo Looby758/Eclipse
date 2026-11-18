@@ -1,4 +1,4 @@
-import type { Library, LibraryEntry, TitleDetails } from './types'
+import type { Library, LibraryEntry, TitleDetails, WatchProviders } from './types'
 import { episodeKey, parseEpisodeKey } from './types'
 import { activeEntry, currentRewatch, sessionIsOn, setEpisodes, tickWith, watchesWith } from './library'
 import { remainingEpisodes } from './watchsoon'
@@ -517,11 +517,60 @@ export function learnLinks(library: Library, key: string, url: string): Library 
   const e = library.entries[key]
   const svc = serviceOf(url)
   if (!e || !svc) return library
-  const links: PlayLinks = { ...(e.links ?? {}), service: svc.service.name }
+  // Watching on a different service from before starts afresh, so Continue never mixes two services' links.
+  const same = e.links?.service === svc.service.name
+  const links: PlayLinks = { ...(same ? e.links : {}), service: svc.service.name }
   if (svc.playing) links.last = url
   else links.show = url
   if (JSON.stringify(links) === JSON.stringify(e.links ?? {})) return library
   return { ...library, entries: { ...library.entries, [key]: { ...e, links } } }
+}
+
+/** One place you could watch a title, for the Continue button's menu. */
+export interface WatchChoice {
+  /** The service's name as people know it ("NOW", "Disney+"). */
+  service: string
+  url: string
+  /** "Continue on Disney+" for where you've been watching, "Watch on NOW" for the rest. */
+  label: string
+  /** One of the services you pay for (or free). */
+  yours: boolean
+  /** Where you've been watching it (learnt from your browser). */
+  learnt: boolean
+  logoPath: string | null
+}
+
+const plain = (s: string): string => ` ${s.toLowerCase().replace(/\+/g, ' plus').replace(/[^a-z0-9]+/g, ' ').trim()} `
+
+/** TMDB's provider name ("Now TV Cinema", "Disney Plus") as the service people know, when it's one Eclipse knows. */
+export function serviceNameOf(providerName: string): string {
+  const p = plain(providerName)
+  return SERVICES.find((s) => p.includes(plain(s.name)))?.name ?? providerName
+}
+
+/**
+ * Everywhere you could watch a title: where you've been watching it first (straight back to the
+ * show), then each service it streams on or is free on, yours before the rest. Those go through
+ * TMDB's where-to-watch page, which links on to the show on that service.
+ */
+export function watchChoices(entry: LibraryEntry | undefined, providers: WatchProviders | null, mine: number[]): WatchChoice[] {
+  const out: WatchChoice[] = []
+  const target = playTarget(entry)
+  if (target && entry?.links?.service) out.push({ service: entry.links.service, url: target.url, label: target.label, yours: true, learnt: true, logoPath: null })
+  if (providers?.link) {
+    const listed = [...providers.stream.map((p) => ({ p, free: false })), ...providers.free.map((p) => ({ p, free: true }))]
+    listed.sort((a, b) => Number(mine.includes(b.p.id) || b.free) - Number(mine.includes(a.p.id) || a.free))
+    for (const { p, free } of listed) {
+      const service = serviceNameOf(p.name)
+      const learnt = out.find((c) => c.service === service)
+      if (learnt) {
+        learnt.logoPath ??= p.logoPath
+        continue
+      }
+      out.push({ service, url: providers.link, label: `Watch on ${service}`, yours: free || mine.includes(p.id), learnt: false, logoPath: p.logoPath })
+    }
+  }
+  return out
 }
 
 export function normalizeLinks(raw: unknown): PlayLinks | undefined {

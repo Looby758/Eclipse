@@ -151,3 +151,15 @@ export function universeStrip(current: TitleDetails, related: TitleDetails[], en
     .map((d) => universeItem(d, entries[d.key], today, d.key === current.key))
     .sort((a, b) => (a.date ?? '9999').localeCompare(b.date ?? '9999') || a.name.localeCompare(b.name))
 }
+
+/** How many cards fit along the bottom before the strip shows a window around this one. */
+export const STRIP_MAX = 6
+
+/** The cards to show: all of them when they fit, else this one and its neighbours in release order (leaving room for "See all"). */
+export function stripWindow<T extends { current: boolean }>(items: T[], max = STRIP_MAX): T[] {
+  if (items.length <= max) return items
+  const room = max - 1
+  const at = Math.max(0, items.findIndex((u) => u.current))
+  const start = Math.min(Math.max(0, at - Math.floor((room - 1) / 2)), items.length - room)
+  return items.slice(start, start + room)
+}

@@ -7,13 +7,14 @@ import { formatHours } from '@core/time'
 import { imageUrl, tmdbPageUrl } from '@core/tmdb'
 import { showCount, universeName, type UniverseItem } from '@core/universe'
 import { isWatchSoon } from '@core/watchsoon'
+import { serviceNameOf } from '@core/watching'
 import { episodeKey, STATUS_LABELS, WATCH_STATUSES, type MediaType, type SeasonDetails, type TitleDetails, type WatchProviders, type WatchStatus } from '@core/types'
 import { useApp } from '../store/app'
 import { itemOf } from '../lib/item'
 import { Pills } from './SpotlightHome'
 import RatingBars from './RatingBars'
-import { CastStrip, shortName, UniverseStrip } from './TitleStrips'
-import ContinueButton from './ContinueButton'
+import { CastStrip, shortName, UniverseAll, UniverseStrip } from './TitleStrips'
+import WatchButton from './WatchButton'
 import EntryDetails from './EntryDetails'
 import RewatchPanel from './RewatchPanel'
 import WatchWithPanel from './WatchWithPanel'
@@ -27,7 +28,7 @@ import Credits from './Credits'
 
 const ICONS: Record<WatchStatus, typeof Bookmark> = { want: Bookmark, watching: CirclePlay, watched: CircleCheck, stopped: CirclePause }
 
-type Panel = 'episodes' | 'note' | 'with' | 'time' | 'moments' | 'rewatch' | 'where' | 'more'
+type Panel = 'universe' | 'episodes' | 'note' | 'with' | 'time' | 'moments' | 'rewatch' | 'where' | 'more'
 
 /**
  * The Spotlight look's title page ("All on one screen"): the show's own picture fills the window,
@@ -189,7 +190,7 @@ export default function SpotlightTitle({ type, id }: { type: MediaType; id: numb
                   <Check size={17} /> Tick it
                 </button>
               )}
-              <ContinueButton titleKey={d.key} className="st-pill" />
+              <WatchButton details={d} />
               <StatusMenu details={d} />
             </div>
             <div className="st-extras">
@@ -222,12 +223,13 @@ export default function SpotlightTitle({ type, id }: { type: MediaType; id: numb
         <div className="st-body">
           {tv && seasons.length > 0 && <RatingBars seasons={seasons} entry={entry} onPick={openEpisode} />}
           <CastStrip details={d} universe={name} onMore={() => setPanel('more')} />
-          <UniverseStrip name={name} items={universe.items} />
+          <UniverseStrip name={name} items={universe.items} onAll={() => setPanel('universe')} />
         </div>
       </div>
 
       {panel && (
-        <Drawer title={pills.find((p) => p.id === panel)?.label ?? ''} onClose={() => setPanel(null)}>
+        <Drawer title={panel === 'universe' ? `${name} universe` : (pills.find((p) => p.id === panel)?.label ?? '')} onClose={() => setPanel(null)}>
+          {panel === 'universe' && <UniverseAll name={name} items={universe.items} />}
           {panel === 'episodes' && (
             <>
               <Heatmap details={d} onPick={(season, episode) => setFocus((f) => ({ season, episode, n: (f?.n ?? 0) + 1 }))} />
@@ -411,7 +413,7 @@ function WhereChip({ type, id, onOpen }: { type: MediaType; id: number; onOpen: 
   return (
     <button className="st-where" onClick={onOpen} title="Where to watch">
       <span className="st-where-chip">
-        {icon && <img src={icon} alt="" draggable={false} />} {pick.p.name}
+        {icon && <img src={icon} alt="" draggable={false} />} {serviceNameOf(pick.p.name)}
       </span>
       <span>{pick.note}</span>
     </button>
