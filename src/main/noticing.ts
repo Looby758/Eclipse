@@ -1,4 +1,4 @@
-import { report as reportHealth } from './health'
+import { log, report as reportHealth } from './health'
 import { app, globalShortcut, Notification } from 'electron'
 import { existsSync, readFileSync, renameSync, writeFileSync } from 'fs'
 import { join } from 'path'
@@ -7,6 +7,7 @@ import { bedtimeTonight, tonightStart } from '@core/time'
 import { episodeKey, type Library, type SearchResult, type TitleDetails } from '@core/types'
 import {
   addMoment,
+  atCredits,
   bedtimeWarning,
   followPlayback,
   formatAt,
@@ -195,12 +196,14 @@ async function onPlaying(): Promise<void> {
     hooks.changed()
   }
   const step = followPlayback(followed, next)
+  recordPlaying(now?.n ?? null, next, step.done)
   followed = step.followed
   const done = step.done
   if (done) {
     const s = suggestionFromPlaying(done, eveningDay(new Date()), getLibrary())
     // No notification: it waits on Home for when you're back in Eclipse.
     if (s) addSuggestions([s])
+    else log('[playing] not asked: a film, no episode named, or already ticked')
   }
   // Phase 31: on a Mac, the tab's address teaches where the show is watched.
   if (now?.n.url && next) {
@@ -219,6 +222,34 @@ async function onPlaying(): Promise<void> {
   const changed = JSON.stringify(next) !== JSON.stringify(current)
   current = next
   if (changed) hooks.changed()
+}
+
+// A record of what the player said, in the log (Settings → Is everything working? → Copy details),
+// to see why an episode wasn't offered: each new episode with what the player reported, where it
+// was once a minute, when it reached the credits, and what finished.
+let recorded = { id: '', at: 0, credits: false }
+const clock = (s: number | null): string => (s == null ? '?' : formatAt(s))
+
+function recordPlaying(n: NowPlaying | null, r: Recognised | null, done: Recognised | null): void {
+  if (done) log(`[playing] finished ${done.name} S${done.season}E${done.episode} at ${clock(done.position)} of ${clock(done.duration)}${done.sure ? '' : ' (episode guessed, not asked)'}`)
+  if (!r || !n) {
+    if (recorded.id) log('[playing] nothing playing')
+    recorded = { id: '', at: 0, credits: false }
+    return
+  }
+  const id = `${r.key}@${r.season}:${r.episode}`
+  const where = `${clock(r.position)} of ${clock(r.duration)}, ${r.playing ? 'playing' : 'paused'}`
+  const credits = atCredits(r)
+  if (id !== recorded.id) {
+    log(`[playing] ${r.name} S${r.season ?? '?'}E${r.episode ?? '?'}${r.sure ? '' : ' (guessed)'} at ${where}, from ${n.app}: ${n.title}${n.url ? ` (${n.url.split('?')[0]})` : ''}`)
+    recorded = { id, at: Date.now(), credits }
+  } else if (credits && !recorded.credits) {
+    log(`[playing] credits at ${where}`)
+    recorded = { ...recorded, at: Date.now(), credits }
+  } else if (Date.now() - recorded.at >= 60_000) {
+    log(`[playing] ${where}`)
+    recorded = { ...recorded, at: Date.now() }
+  }
 }
 
 /** Something's playing that isn't in your library: find which show it is, and ask once whether to add it. */

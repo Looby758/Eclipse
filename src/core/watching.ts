@@ -381,26 +381,23 @@ export function playingLine(r: Recognised): string {
 }
 
 /**
- * Follows playback between checks and says when something finished: it reached the last 5% (or
- * its last 3 minutes) while you watched, or it was already there when it stopped or moved on (the
+ * Follows playback between checks and says when something finished: it reached the credits while you watched, or it was already there when it stopped or moved on (the
  * credits, then the next episode). Stopping anywhere earlier doesn't count: you haven't finished it.
  */
 export function finished(prev: Recognised | null, now: Recognised | null): Recognised | null {
   if (!prev || prev.duration == null || prev.position == null || prev.duration < 300) return null
   const same = !!now && now.key === prev.key && now.season === prev.season && now.episode === prev.episode && (now.position ?? 0) >= (prev.position ?? 0) - 30
-  const nearEnd = (r: Recognised): boolean => r.duration != null && r.position != null && (r.position >= r.duration * 0.95 || r.duration - r.position <= 180)
-  if (same) return !nearEnd(prev) && nearEnd(now!) ? now : null
+  if (same) return !atCredits(prev) && atCredits(now!) ? now : null
   // Stopped or moved on: it counts only from the credits (repeat reports are dropped by id).
-  if (nearEnd(prev)) return prev
-  // The player went straight on to the next episode (autoplay, or Next on the credits screen): the
-  // service only does that at the end, which can come a little before the last 3 minutes.
-  return now && nextEpisode(prev, now) && prev.position >= prev.duration * 0.9 ? prev : null
+  return atCredits(prev) ? prev : null
 }
 
-/** `now` is the episode straight after `prev`, both named by the player. */
-function nextEpisode(prev: Recognised, now: Recognised): boolean {
-  if (!prev.sure || !now.sure || now.key !== prev.key || prev.season == null || prev.episode == null) return false
-  return (now.season === prev.season && now.episode === prev.episode + 1) || (now.season === prev.season + 1 && now.episode === 1)
+/**
+ * In the credits: the last 10% or the last 3 minutes. NOW and Disney+ can start the credits (and
+ * the next episode) with 4 or 5 minutes still to run, so the last 5% missed them.
+ */
+export function atCredits(r: Recognised): boolean {
+  return r.duration != null && r.position != null && (r.position >= r.duration * 0.9 || r.duration - r.position <= 180)
 }
 
 /**

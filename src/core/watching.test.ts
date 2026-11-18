@@ -267,14 +267,14 @@ describe('what’s playing', () => {
     expect(finished(np('Andor S2 E4', 600), null)).toBeNull()
   })
 
-  it('counts going straight on to the next episode from the last 10%', () => {
-    // Autoplay can start the next one with 4 minutes still to run (here 2460 of 2700).
+  it('counts the credits from the last 10%', () => {
+    // NOW can start the credits, and then the next episode, with 4 minutes still to run (2460 of 2700).
+    expect(finished(np('Andor S2 E4', 2400), np('Andor S2 E4', 2460))?.episode).toBe(4)
     expect(finished(np('Andor S2 E4', 2460), np('Andor S2 E5', 5))?.episode).toBe(4)
     expect(finished(np('Andor S1 E12', 2460), np('Andor S2 E1', 5))?.episode).toBe(12)
-    // Not from earlier on, not when stopping there, and not when jumping elsewhere.
+    // Not from earlier on.
+    expect(finished(np('Andor S2 E4', 2300), np('Andor S2 E4', 2400))).toBeNull()
     expect(finished(np('Andor S2 E4', 2300), np('Andor S2 E5', 5))).toBeNull()
-    expect(finished(np('Andor S2 E4', 2460), null)).toBeNull()
-    expect(finished(np('Andor S2 E4', 2460), np('Andor S2 E7', 5))).toBeNull()
   })
 
   it('keeps following the named episode while the next one loads', () => {
