@@ -57,6 +57,10 @@ Each computer needs the key pasted once.
 6. **Filters:** in Library or Search, pick **On my services**, **Rent or buy only** or **Not streaming anywhere**. The first time it checks every title, which takes a few seconds.
 7. **Home:** the suggestion shows the next episode and a button to tick it.
 
+## Phase 45: Eclipse on your phone
+
+A small page you save to your iPhone home screen that reads your library from Google Drive, anywhere. One-time setup (Google Cloud, GitHub Pages and the phone) is in [phone/README.md](phone/README.md). Changes from the phone are added to your library the next time Eclipse opens on your computer; if something clashes, Eclipse asks which to keep.
+
 ## Phases 36 to 42: what to try
 
 No new packages, so just pull and `npm run dev`.
