@@ -21,7 +21,8 @@ import { keysWatchedIn, yearInReview } from '@core/year'
 import { repairBatch, type Batch, type RepairChoice } from '@core/repair'
 import { refreshTray, setTray, setupTray, trayOn } from './tray'
 import { startTogetherReminders } from './together'
-import { acceptSuggestion, dismissSuggestion, notMine, noticingStatus, scanHistory, setNoticing, setupNoticing, stopNoticing } from './noticing'
+import { acceptSuggestion, changeDiscord, dismissSuggestion, notMine, noticingStatus, scanHistory, setNoticing, setupNoticing, stopNoticing } from './noticing'
+import { discordStatus, setupDiscord, stopDiscord } from './discord'
 import { showExtensionFolder } from './extension'
 import { editMoment } from '@core/watching'
 import { CATCH_UP_ID, dismissCatchUp } from '@core/catchup'
@@ -335,6 +336,10 @@ function setupIpc(): void {
   ipcMain.handle('catchup:dismiss', (_e, id: string) => (CATCH_UP_ID.test(String(id)) ? saveLibrary(dismissCatchUp(getLibrary(), String(id))) : getLibrary()))
   ipcMain.handle('tray:get', () => trayOn())
   ipcMain.handle('tray:set', (_e, on: boolean) => setTray(!!on))
+  ipcMain.handle('discord:status', () => discordStatus())
+  ipcMain.handle('discord:set', (_e, patch: { on?: unknown; appId?: unknown }) =>
+    changeDiscord({ ...(typeof patch?.on === 'boolean' ? { on: patch.on } : {}), ...(typeof patch?.appId === 'string' ? { appId: patch.appId } : {}) })
+  )
   ipcMain.handle('noticing:status', () => noticingStatus())
   ipcMain.handle('noticing:set', (_e, patch) => setNoticing(patch ?? {}))
   ipcMain.handle('noticing:scan', async () => {
@@ -506,6 +511,10 @@ app.whenReady().then(() => {
   // Today's backup, checked again every few hours in case Eclipse stays open past midnight.
   setInterval(() => dailyBackup(dataFolderNow()), 3 * 60 * 60 * 1000)
   setupRemote(broadcastLibrary, sendRemote)
+  setupDiscord(() => {
+    mainWindow?.webContents.send('discord:changed', discordStatus())
+    refreshTray()
+  })
   setupNoticing({ changed: () => mainWindow?.webContents.send('noticing:changed'), show: showWindow, libraryChanged: broadcastLibrary })
   startTogetherReminders(getLibrary, showWindow)
   startServiceWatch(getLibrary, () => mainWindow?.webContents.send('services:changed', getHistory()))
@@ -519,6 +528,7 @@ app.on('will-quit', () => {
   stopGuard()
   stopRemote()
   stopNoticing()
+  stopDiscord()
 })
 
 app.on('window-all-closed', () => {

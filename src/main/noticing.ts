@@ -32,6 +32,8 @@ import * as tmdb from './tmdb'
 import { browsers, streamingVisits } from './history'
 import { nowPlaying, startNowPlaying, stopNowPlaying } from './nowplaying'
 import { extensionLink, startExtensionLink, stopExtensionLink } from './extension'
+import { discordOn, setDiscord, updateDiscord } from './discord'
+import type { DiscordStatus } from '@shared/api'
 
 /**
  * Group B (Phases 27 to 30) in the main process: reads browser history and what's playing, turns
@@ -168,6 +170,8 @@ async function onPlaying(): Promise<void> {
   }
   const lib = getLibrary()
   const d = await showDetails(lib)
+  // Phase 44 can be on without the rest of "What's playing": then it only sets the Discord status.
+  const noticing = settings().playing
   const today = localDate(new Date())
   // Prefer a media session that's playing, then any media session, then browser windows.
   // The Chrome extension first, playing or paused: it names the episode. Then a media session
@@ -175,6 +179,13 @@ async function onPlaying(): Promise<void> {
   const order = (n: NowPlaying): number => (n.app.startsWith('Chrome extension') ? (n.status === 'playing' ? -2 : -1) : n.position != null && n.status === 'playing' ? 0 : n.position != null ? 1 : 2)
   const now = [...report.items].sort((a, b) => order(a) - order(b)).map((n) => ({ n, r: recognise(n, lib, d, today, new Date()) })).find((x) => x.r)
   const next = now?.r ?? null
+  updateDiscord(next, next ? lib.entries[next.key]?.title.posterPath : null)
+  if (!noticing) {
+    const moved = JSON.stringify(next) !== JSON.stringify(current)
+    current = next
+    if (moved) hooks.changed()
+    return
+  }
   if (!next) void noticeUnknown(report.items, lib)
   if (unknown && ((unknown.match && lib.entries[unknown.match.key]) || Date.now() - unknown.at > 12 * 3_600_000)) {
     unknown = null
@@ -256,16 +267,17 @@ function saveMoment(): void {
 
 function apply(): void {
   const s = settings()
-  if (s.playing) {
+  // The Discord status (Phase 44) needs to know what's playing too, even with the rest switched off.
+  if (s.playing || discordOn()) {
     startNowPlaying(() => void onPlaying().catch(() => undefined))
     startExtensionLink(() => void onPlaying().catch(() => undefined))
-    if (!globalShortcut.isRegistered(MOMENT_KEY)) globalShortcut.register(MOMENT_KEY, saveMoment)
   } else {
     stopNowPlaying()
     stopExtensionLink()
-    if (globalShortcut.isRegistered(MOMENT_KEY)) globalShortcut.unregister(MOMENT_KEY)
     current = null
   }
+  if (s.playing && !globalShortcut.isRegistered(MOMENT_KEY)) globalShortcut.register(MOMENT_KEY, saveMoment)
+  else if (!s.playing && globalShortcut.isRegistered(MOMENT_KEY)) globalShortcut.unregister(MOMENT_KEY)
   if (s.history && !scanTimer) {
     setTimeout(() => void scanHistory().catch(() => undefined), 30_000)
     scanTimer = setInterval(() => void scanHistory().catch(() => undefined), 30 * 60_000)
@@ -292,6 +304,15 @@ export function setNoticing(patch: Partial<NoticingSettings>): NoticingStatus {
   apply()
   if (patch.history) void scanHistory().catch(() => undefined)
   return noticingStatus()
+}
+
+/** Phase 44: switches the Discord status on or off (Settings, Home or the tray), starting or stopping what's-playing as needed. */
+export function changeDiscord(patch: { on?: boolean; appId?: string }): DiscordStatus {
+  const out = setDiscord(patch)
+  apply()
+  // Show it straight away rather than at the next check.
+  if (out.on) void onPlaying().catch(() => undefined)
+  return out
 }
 
 export function noticingStatus(): NoticingStatus {

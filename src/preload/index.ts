@@ -69,6 +69,13 @@ const api: EclipseApi = {
   dismissCatchUp: (id) => ipcRenderer.invoke('catchup:dismiss', id),
   trayOn: () => ipcRenderer.invoke('tray:get'),
   setTray: (on) => ipcRenderer.invoke('tray:set', on),
+  discordStatus: () => ipcRenderer.invoke('discord:status'),
+  setDiscord: (patch) => ipcRenderer.invoke('discord:set', patch),
+  onDiscordChanged: (callback) => {
+    const handler = (_e: unknown, s: Parameters<typeof callback>[0]): void => callback(s)
+    ipcRenderer.on('discord:changed', handler)
+    return () => ipcRenderer.removeListener('discord:changed', handler)
+  },
   noticingStatus: () => ipcRenderer.invoke('noticing:status'),
   setNoticing: (patch) => ipcRenderer.invoke('noticing:set', patch),
   scanHistory: () => ipcRenderer.invoke('noticing:scan'),
