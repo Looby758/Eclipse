@@ -198,7 +198,7 @@ function usePointerLift(ref: React.RefObject<HTMLDivElement | null>, enabled: bo
       x = e.clientX
       y = e.clientY
       // Over the dial, buttons, pills or a panel the wall stays as it is.
-      const over = e.target instanceof Element ? e.target.closest('.spot-center, .spot-pills, .spot-panel, .spot-foryou, button, a, input, select') : null
+      const over = e.target instanceof Element ? e.target.closest('.spot-center, .spot-pills, .spot-waiting, button, a, input, select') : null
       inside = !over
       queue()
     }
@@ -208,7 +208,7 @@ function usePointerLift(ref: React.RefObject<HTMLDivElement | null>, enabled: bo
     }
     const onClick = (e: MouseEvent): void => {
       if (e.button !== 0 || !inside || !lifted || e.defaultPrevented) return
-      const over = e.target instanceof Element ? e.target.closest('.spot-center, .spot-pills, .spot-panel, .spot-foryou, button, a, input, select') : null
+      const over = e.target instanceof Element ? e.target.closest('.spot-center, .spot-pills, .spot-waiting, button, a, input, select') : null
       const path = lifted.getAttribute('data-path')
       if (!over && path) open.current(path)
     }
