@@ -4,6 +4,7 @@ import { DEFAULT_PREFERENCES, UNDATED, WATCH_STATUSES, episodeKey, parseEpisodeK
 import type { TitleRef } from './types'
 import { normalizeLists, normalizeWatchSoon, refOf } from './lists'
 import { normalizeLinks, normalizeMoments } from './watching'
+import { normalizeTaste } from './taste'
 
 export type LibraryItem = { key: TitleKey; type: MediaType; id: number; title: TitleSnapshot }
 
@@ -357,8 +358,11 @@ export function normalizeLibrary(raw: unknown): Library {
   const rawLeft = raw && typeof raw === 'object' ? (raw as { repairLeft?: unknown }).repairLeft : undefined
   const rawCatch = raw && typeof raw === 'object' ? (raw as { catchUpDismissed?: unknown }).catchUpDismissed : undefined
   const rawHidden = raw && typeof raw === 'object' ? (raw as { recsHidden?: unknown }).recsHidden : undefined
+  const rawTaste = raw && typeof raw === 'object' ? (raw as { recsTaste?: unknown }).recsTaste : undefined
   const rawApplied = raw && typeof raw === 'object' ? (raw as { phoneApplied?: unknown }).phoneApplied : undefined
   const finish = (): Library => {
+    const taste = normalizeTaste(rawTaste)
+    if (taste) lib.recsTaste = taste
     if (Array.isArray(rawApplied)) {
       const ids = [...new Set(rawApplied.filter((x): x is string => typeof x === 'string' && !!x))].slice(-1000)
       if (ids.length) lib.phoneApplied = ids

@@ -245,8 +245,28 @@ export interface Library {
   catchUpDismissed?: string[]
   /** Recommendations you said "Not for me" to, by title key. */
   recsHidden?: string[]
+  /** What recommendations have learnt from your Interested and Not for me answers (phase 43). */
+  recsTaste?: Taste
   /** Eclipse on your phone (Phase 45): ids of the phone's changes already folded in (the phone then tidies them away). */
   phoneApplied?: string[]
+}
+
+/**
+ * Something a film or show has that recommendations can learn from: who made it, where it was on,
+ * who's in it and TMDB's keywords. Its id says which ("creator:1222", "network:174", "cast:17419",
+ * "keyword:12554").
+ */
+export interface Trait {
+  id: string
+  name: string
+}
+
+/** Learnt weights by trait id (above 0: you've said yes to things with it; below 0: no). */
+export interface Taste {
+  weights: Record<string, { w: number; name: string }>
+  /** How many Interested and Not for me answers it has learnt from. */
+  yes: number
+  no: number
 }
 
 /** A title taken off your library while clearing out the watchlist, kept whole so it can be put back. */

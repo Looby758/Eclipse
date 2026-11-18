@@ -1,6 +1,6 @@
-import { RefreshCw, X } from 'lucide-react'
+import { Layers, RefreshCw, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import type { Recommendation } from '@core/recommend'
+import { whyText, type Recommendation } from '@core/recommend'
 import { FILTER_LABELS, passesFilter, type AvailabilityFilter as Filter } from '@core/providers'
 import { useApp } from '../store/app'
 import { useAvailability } from '../lib/availability'
@@ -63,8 +63,11 @@ export default function Recommendations(): React.JSX.Element {
         <button className="link-btn inline" onClick={() => setRound((n) => n + 1)} aria-label="Refresh recommendations">
           <RefreshCw size={14} />
         </button>
+        <button className="btn glass small" onClick={() => useApp.getState().go({ name: 'picks' })} title="One at a time, with the trailer: Interested or Not for me">
+          <Layers size={14} /> One at a time
+        </button>
       </div>
-      <p className="muted small">From what you’ve watched and are watching, with the ones you rated highly and watched lately counting most. Anything already in your library is left out.</p>
+      <p className="muted small">From what you’ve watched and are watching, with the ones you rated highly and watched lately counting most. Each ✕ (Not for me) teaches it what you don’t want: anything with the same creators, network, main cast or themes moves down.</p>
       {error && <p className="error">{error}</p>}
       {!seeds && <p className="muted">Mark a few films or shows as watched (or start one) and recommendations show up here.</p>}
       {seeds > 0 && recs === null && !error && <p className="muted">Finding things you’ll like…</p>}
@@ -74,15 +77,14 @@ export default function Recommendations(): React.JSX.Element {
         {shown.map((r) => (
           <div key={r.key} className="rec-card">
             <TitleCard type={r.type} id={r.id} name={r.name} year={r.year} posterPath={r.posterPath} extra={r.year ? String(r.year) : undefined} />
-            <div className="rec-why muted small" title={`Because you watched ${r.because.join(', ')}`}>
-              Because you watched {r.because.slice(0, 2).join(' and ')}
-              {r.because.length > 2 ? ` +${r.because.length - 2}` : ''}
+            <div className="rec-why muted small" title={`Because of ${r.because.join(', ')}`}>
+              {whyText(r)}
             </div>
             <button
               className="rec-hide"
               aria-label={`Not for me: ${r.name}`}
               title="Not for me"
-              onClick={async () => setLibrary(await window.api.hideRecommendation(r.key))}
+              onClick={async () => setLibrary(await window.api.answerRecommendation({ key: r.key, type: r.type, id: r.id, title: { name: r.name, year: r.year, posterPath: r.posterPath } }, 'no'))}
             >
               <X size={14} />
             </button>

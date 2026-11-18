@@ -1,12 +1,14 @@
 import { activeEntry } from './library'
 import { lastTicked } from './nudges'
-import type { Library, LibraryEntry, SearchResult } from './types'
+import { learn, leaning } from './taste'
+import type { Library, LibraryEntry, SearchResult, Taste, Trait } from './types'
 
 /**
- * Recommendations for Search (asked for 17 Nov 2026): TMDB's "if you liked this" lists for the
- * films and shows you've watched or are watching, added up. A title recommended by several of
- * yours, or by ones you rated highly or watched lately, comes first. Anything already in your
- * library, dropped, or hidden with "Not for me" is left out.
+ * Recommendations for Search and the poster wall (asked for 17 Nov 2026, learning added in phase 43):
+ * TMDB's "recommended" and "similar" lists for the films and shows you've watched or are watching,
+ * added up. A title recommended by several of yours, or by ones you rated highly or watched lately,
+ * comes first. Then what you've taught it with Interested and Not for me (see taste.ts) raises or
+ * lowers each one. Anything already in your library, dropped, or hidden with "Not for me" is left out.
  */
 
 export interface Seed {
@@ -19,7 +21,14 @@ export interface Recommendation extends SearchResult {
   score: number
   /** The titles of yours it was recommended from, strongest first. */
   because: string[]
+  /** Creators, cast, networks or keywords it shares with things you said Interested to. */
+  liked?: string[]
+  /** …and with things you said Not for me to. */
+  disliked?: string[]
 }
+
+/** TMDB's "similar" lists go mostly by keywords and genres, so they count for less than "recommended". */
+export const SIMILAR_WEIGHT = 0.6
 
 const DAY = 86_400_000
 
@@ -72,7 +81,40 @@ export function recommend(library: Library, lists: { seed: Seed; results: Search
     .slice(0, limit)
 }
 
+/**
+ * Raises or lowers each recommendation by what your answers have taught it, then ranks them again.
+ * Titles whose traits haven't been fetched yet keep their score.
+ */
+export function applyTaste(recs: Recommendation[], traits: Record<string, Trait[] | undefined>, taste: Taste | undefined, limit = 40): Recommendation[] {
+  if (!taste || !Object.keys(taste.weights).length) return recs.slice(0, limit)
+  return recs
+    .map((r) => {
+      const l = leaning(taste, traits[r.key])
+      return { ...r, score: r.score * Math.exp(l.adjust), ...(l.liked.length ? { liked: l.liked } : {}), ...(l.disliked.length ? { disliked: l.disliked } : {}) }
+    })
+    .sort((a, b) => b.score - a.score || b.popularity - a.popularity)
+    .slice(0, limit)
+}
+
+/** Why a pick is there, in a line: "Because of The Walking Dead and Shadowhunters · you liked Jensen Ackles". */
+export function whyText(r: Pick<Recommendation, 'because' | 'liked'>): string {
+  const names = r.because.slice(0, 2)
+  const more = r.because.length - names.length
+  const base = names.length ? `Because of ${names.join(' and ')}${more > 0 ? ` +${more}` : ''}` : ''
+  const liked = r.liked?.length ? `you were interested in others with ${r.liked.slice(0, 2).join(' and ')}` : ''
+  return [base, liked].filter(Boolean).join(' · ')
+}
+
 /** "Not for me": hides a recommendation for good (the last 500). */
 export function hideRecommendation(library: Library, key: string): Library {
   return { ...library, recsHidden: [...new Set([...(library.recsHidden ?? []), key])].slice(-500) }
+}
+
+/**
+ * Interested or Not for me on a recommendation: learns from the title's traits, and Not for me also
+ * hides it for good. (Interested adds it to Want to watch; that's done with the usual setStatus.)
+ */
+export function answerRecommendation(library: Library, key: string, yes: boolean, traits: Trait[]): Library {
+  const lib = { ...library, recsTaste: learn(library.recsTaste, traits, yes) }
+  return yes ? lib : hideRecommendation(lib, key)
 }
