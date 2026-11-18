@@ -104,7 +104,7 @@ function pending(lib: Library = getLibrary()): Suggestion[] {
 function addSuggestions(found: Suggestion[]): Suggestion[] {
   const s = load()
   const merged = mergeSuggestions(s.suggestions, found, s.dismissed)
-  if (merged.suggestions.length !== s.suggestions.length) store({ ...s, suggestions: merged.suggestions })
+  if (merged.suggestions.length !== s.suggestions.length || merged.dismissed.length !== s.dismissed.length) store({ ...s, suggestions: merged.suggestions, dismissed: merged.dismissed })
   return merged.fresh
 }
 

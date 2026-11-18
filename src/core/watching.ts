@@ -210,14 +210,18 @@ export function tickSuggestion(library: Library, s: Suggestion, who?: string | n
 
 /**
  * Adds new suggestions to the saved ones, leaving out any already saved or said no to. A guess
- * saved by an earlier version (never shown any more) doesn't count as already asked: it's replaced,
- * or the episode it guessed would never be asked about again.
+ * saved by an earlier version (never shown any more) doesn't count: it's replaced, and a "Not this"
+ * on a guess was a no to the guess, so it's forgotten too. Otherwise an episode Eclipse once
+ * guessed wrongly could never be asked about once the player named it.
  */
-export function mergeSuggestions(saved: Suggestion[], found: Suggestion[], dismissed: string[]): { suggestions: Suggestion[]; fresh: Suggestion[] } {
+export function mergeSuggestions(saved: Suggestion[], found: Suggestion[], dismissed: string[]): { suggestions: Suggestion[]; dismissed: string[]; fresh: Suggestion[] } {
   const kept = saved.filter((x) => x.sure)
-  const known = new Set([...kept.map((x) => x.id), ...dismissed])
+  const sureIds = new Set(kept.map((x) => x.id))
+  const guessed = new Set(saved.filter((x) => !x.sure && !sureIds.has(x.id)).map((x) => x.id))
+  const no = new Set(dismissed.filter((id) => !guessed.has(id)))
+  const known = new Set([...sureIds, ...no])
   const fresh = found.filter((x, i) => !known.has(x.id) && found.findIndex((y) => y.id === x.id) === i)
-  return { suggestions: [...kept, ...fresh], fresh }
+  return { suggestions: [...kept, ...fresh], dismissed: [...no], fresh }
 }
 
 /**

@@ -284,9 +284,12 @@ describe('what’s playing', () => {
     const guess = { ...done, source: 'history' as const, sure: false }
     expect(mergeSuggestions([guess], [done], []).fresh).toEqual([done])
     expect(mergeSuggestions([guess], [done], []).suggestions).toEqual([done])
+    // "Not this" on the guess was a no to the guess: the player naming it asks after all.
+    expect(mergeSuggestions([guess], [done], [done.id])).toEqual({ suggestions: [done], dismissed: [], fresh: [done] })
     // Already asked, or said no to: not again.
     expect(mergeSuggestions([done], [done], []).fresh).toEqual([])
     expect(mergeSuggestions([], [done], [done.id]).fresh).toEqual([])
+    expect(mergeSuggestions([done], [done], [done.id]).dismissed).toEqual([done.id])
   })
 
   it('keeps following the named episode while the next one loads', () => {
