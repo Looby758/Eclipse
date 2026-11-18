@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createTmdb, imageUrl, isReadAccessToken, parseDetails, parseSearch, TmdbError } from './tmdb'
+import { createTmdb, imageUrl, isReadAccessToken, parseCredits, parseDetails, parsePeopleSearch, parsePerson, parseSearch, TmdbError } from './tmdb'
 
 const reply = (status: number, body: unknown = {}) => ({ ok: status >= 200 && status < 300, status, json: async () => body })
 
@@ -133,5 +133,44 @@ describe('stay for the credits and trailers', () => {
       })
     ).toBe('real')
     expect(pickTrailer({ results: [] })).toBeNull()
+  })
+})
+
+describe('actors: parts played, full cast and people search', () => {
+  it('keeps who they played in each title, joining two parts in one title', () => {
+    const p = parsePerson({
+      id: 1,
+      name: 'Katelyn Nacon',
+      movie_credits: { cast: [{ id: 10, title: 'A Film', release_date: '2020-01-01', character: 'Lucy' }] },
+      tv_credits: {
+        cast: [
+          { id: 1402, name: 'The Walking Dead', first_air_date: '2010-10-31', character: 'Enid', episode_count: 60 },
+          { id: 1402, name: 'The Walking Dead', first_air_date: '2010-10-31', character: 'Enid (voice)', episode_count: 3 },
+          { id: 99, name: 'A Guest Spot', first_air_date: '2019-01-01', character: 'Girl', episode_count: 1 }
+        ]
+      }
+    })
+    expect(p.acted.map((t) => [t.name, t.role])).toEqual([
+      ['A Film', 'Lucy'],
+      ['The Walking Dead', 'Enid / Enid (voice)']
+    ])
+  })
+
+  it('keeps everyone in a show, most episodes first, with their parts and episode counts', () => {
+    const cast = Array.from({ length: 20 }, (_, i) => ({ id: i + 1, name: `Person ${i + 1}`, total_episode_count: 100 - i, roles: [{ character: `Part ${i + 1}`, episode_count: 100 - i }] }))
+    const c = parseCredits({ cast: [...cast].reverse() })
+    expect(c.cast).toHaveLength(12)
+    expect(c.fullCast).toHaveLength(20)
+    expect(c.fullCast![0]).toEqual({ id: 1, name: 'Person 1', profilePath: null, role: 'Part 1', episodes: 100 })
+    expect(c.fullCast![19].name).toBe('Person 20')
+  })
+
+  it('reads people from a search with what they are known for', () => {
+    expect(
+      parsePeopleSearch([
+        { id: 5, name: 'Katelyn Nacon', profile_path: '/k.jpg', known_for_department: 'Acting', known_for: [{ name: 'The Walking Dead' }, { title: 'A Film' }] },
+        { id: 6 }
+      ])
+    ).toEqual([{ id: 5, name: 'Katelyn Nacon', profilePath: '/k.jpg', knownFor: 'Acting', knownTitles: ['The Walking Dead', 'A Film'] }])
   })
 })

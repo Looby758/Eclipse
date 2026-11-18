@@ -8,7 +8,7 @@ import type { CatchUp } from '@core/catchup'
 import type { WeekSoFar } from '@core/week'
 import type { Recommendation } from '@core/recommend'
 import type { NowPlaying, Recognised, Suggestion, UnknownShow } from '@core/watching'
-import type { CollectionDetails, Credits, ListSource, PersonDetails, TitleRef, TmdbListDetails } from '@core/types'
+import type { CollectionDetails, Credits, ListSource, PersonDetails, PersonResult, TitleRef, TmdbListDetails } from '@core/types'
 import type { Library, MediaType, PlannedTime, Preferences, Provider, SearchResult, SeasonDetails, TitleDetails, TitleKey, TitleSnapshot, WatchProviders, WatchStatus } from '@core/types'
 
 type Item = { key: TitleKey; type: MediaType; id: number; title: TitleSnapshot }
@@ -152,6 +152,8 @@ export interface EclipseApi {
   clearCache(): Promise<void>
 
   search(query: string): Promise<Result<Fetched<SearchResult[]>>>
+  /** Actors and directors whose name matches. */
+  searchPeople(query: string): Promise<Result<Fetched<PersonResult[]>>>
   details(type: MediaType, id: number, refresh?: boolean): Promise<Result<Fetched<TitleDetails>>>
   /** This week's trending titles (saved for a day), to fill the poster wall. */
   trending(): Promise<Result<Fetched<SearchResult[]>>>

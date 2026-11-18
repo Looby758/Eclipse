@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react'
 import { guideForQuery, guideTitleCount } from '@core/guides'
 import { listIdFor } from '@core/lists'
 import { plural } from '@core/format'
-import type { SearchResult } from '@core/types'
+import type { PersonResult, SearchResult } from '@core/types'
+import { imageUrl } from '@core/tmdb'
 import { useApp } from '../store/app'
 import Sheet from './Sheet'
 import TitleCard from './TitleCard'
@@ -17,6 +18,8 @@ export default function SearchSheet(): React.JSX.Element {
   const query = useApp((s) => s.query)
   const library = useApp((s) => s.library)
   const [results, setResults] = useState<SearchResult[]>([])
+  const [people, setPeople] = useState<PersonResult[]>([])
+  const [morePeople, setMorePeople] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [stale, setStale] = useState(false)
@@ -29,7 +32,9 @@ export default function SearchSheet(): React.JSX.Element {
 
   useEffect(() => {
     const q = query.trim()
+    setMorePeople(false)
     if (!q) {
+      setPeople([])
       setResults([])
       setError('')
       setLoading(false)
@@ -39,8 +44,10 @@ export default function SearchSheet(): React.JSX.Element {
     setLoading(true)
     // Wait until typing pauses, so TMDB isn't asked on every key.
     const timer = setTimeout(async () => {
-      const r = await window.api.search(q)
+      const [r, p] = await Promise.all([window.api.search(q), window.api.searchPeople(q)])
       if (cancelled) return
+      // People are a bonus: if that search fails, films and shows still show.
+      setPeople(p.ok ? p.value.data : [])
       setLoading(false)
       if (r.ok) {
         setResults(r.value.data)
@@ -65,7 +72,7 @@ export default function SearchSheet(): React.JSX.Element {
       </div>
       {stale && <p className="notice">Offline: showing results saved earlier.</p>}
       {error && <p className="error">{error}</p>}
-      {!query.trim() && <p className="muted">Type a film or show in the search box below, or pick from these.</p>}
+      {!query.trim() && <p className="muted">Type a film, show or person in the search box below, or pick from these.</p>}
       {!query.trim() && <Recommendations />}
       {order && (
         <button className="order-card" onClick={() => go({ name: 'list', id: listIdFor({ kind: 'guide', guideId: order.id }) })}>
@@ -78,8 +85,34 @@ export default function SearchSheet(): React.JSX.Element {
           </span>
         </button>
       )}
+      {people.length > 0 && (
+        <>
+          <h2 className="search-sub">People</h2>
+          <div className="people-results">
+            {people.slice(0, morePeople ? 20 : 4).map((p) => {
+              const face = imageUrl(p.profilePath, 'w92')
+              const role = p.knownFor === 'Directing' ? 'director' : 'actor'
+              return (
+                <button key={p.id} className="person-chip" onClick={() => go({ name: 'list', id: listIdFor({ kind: 'person', personId: p.id, role }) })} title={`See ${p.name}’s ${role === 'director' ? 'films' : 'films and shows'}`}>
+                  {face ? <img src={face} alt="" draggable={false} /> : <span className="person-initial">{p.name.slice(0, 1)}</span>}
+                  <span className="person-text">
+                    <span className="person-name">{p.name}</span>
+                    <span className="person-role">{p.knownTitles.length ? p.knownTitles.join(', ') : p.knownFor}</span>
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+          {people.length > 4 && !morePeople && (
+            <button className="link-btn" onClick={() => setMorePeople(true)}>
+              More people
+            </button>
+          )}
+          {results.length > 0 && <h2 className="search-sub">Films and shows</h2>}
+        </>
+      )}
       {results.length > 0 && <AvailabilityFilter value={filter} onChange={setFilter} checking={checking} />}
-      {query.trim() && !loading && !error && results.length === 0 && <p className="muted">No films or shows found.</p>}
+      {query.trim() && !loading && !error && results.length === 0 && people.length === 0 && <p className="muted">Nothing found.</p>}
       {results.length > 0 && shown.length === 0 && !checking && <p className="muted">None of these are {FILTER_LABELS[filter].toLowerCase()}.</p>}
       <div className="grid">
         {shown.map((r) => (

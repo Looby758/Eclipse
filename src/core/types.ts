@@ -15,7 +15,7 @@ export function parseTitleKey(key: string): { type: MediaType; id: number } | nu
   return m ? { type: m[1] as MediaType, id: Number(m[2]) } : null
 }
 
-/** One search result (people are left out: Phase 1 only searches films and shows). */
+/** One film or show search result (people are searched separately, see PersonResult). */
 export interface SearchResult {
   key: TitleKey
   type: MediaType
@@ -273,6 +273,8 @@ export interface TitleRef {
   episodes?: number
   /** Watch orders: the parts of the order it belongs to (e.g. "The Defenders"). */
   sections?: string[]
+  /** On an actor's list: the part they played (e.g. "Kim Wexler"). */
+  role?: string
 }
 
 export type ListSource =
@@ -303,11 +305,27 @@ export interface PersonRef {
   profilePath: string | null
   /** e.g. "Director" or the character played. */
   role: string
+  /** Shows: how many episodes they were in. */
+  episodes?: number
 }
 
 export interface Credits {
   directors: PersonRef[]
+  /** The main cast (the first 12). */
   cast: PersonRef[]
+  /** Everyone who was ever in it, main cast first (for "Full cast"). */
+  fullCast?: PersonRef[]
+}
+
+/** A person found by search. */
+export interface PersonResult {
+  id: number
+  name: string
+  profilePath: string | null
+  /** e.g. "Acting" or "Directing". */
+  knownFor: string
+  /** A few titles they're best known for, e.g. ["The Walking Dead", "The Mitchells vs. the Machines"]. */
+  knownTitles: string[]
 }
 
 export interface PersonDetails {

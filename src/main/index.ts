@@ -185,6 +185,7 @@ function setupIpc(): void {
   ipcMain.handle('tmdb:setKey', (_e, key: string) => attempt(async () => (await tmdb.setKey(key), status())))
   ipcMain.handle('tmdb:clearKey', () => (tmdb.clearKey(), status()))
   ipcMain.handle('tmdb:search', (_e, query: string) => attempt(() => tmdb.search(query)))
+  ipcMain.handle('tmdb:searchPeople', (_e, query: string) => attempt(() => tmdb.searchPeople(query)))
   const region = (): string => preferencesOf(getLibrary()).region
   ipcMain.handle('tmdb:season', (_e, tvId: number, n: number, refresh?: boolean) => attempt(() => tmdb.season(tvId, n, refresh)))
   ipcMain.handle('tmdb:providers', (_e, type: 'movie' | 'tv', id: number, refresh?: boolean) => attempt(() => tmdb.providers(type, id, region(), refresh)))

@@ -21,7 +21,7 @@ function lastWatched(library: Library, key: string): string {
 }
 
 /** Watched, or part-way through (episodes ticked). */
-function seenSome(library: Library, key: string): boolean {
+export function seenSome(library: Library, key: string): boolean {
   const e = library.entries[key]
   if (!e) return false
   return e.status === 'watched' || !!e.seenBefore || Object.keys(e.episodes ?? {}).length > 0 || (e.rewatches?.length ?? 0) > 0

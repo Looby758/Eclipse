@@ -13,6 +13,7 @@ const api: EclipseApi = {
   clearCache: () => ipcRenderer.invoke('cache:clear'),
 
   search: (query) => ipcRenderer.invoke('tmdb:search', query),
+  searchPeople: (query) => ipcRenderer.invoke('tmdb:searchPeople', query),
   details: (type, id, refresh) => ipcRenderer.invoke('tmdb:details', type, id, refresh),
   trending: () => ipcRenderer.invoke('tmdb:trending'),
   season: (tvId, n, refresh) => ipcRenderer.invoke('tmdb:season', tvId, n, refresh),

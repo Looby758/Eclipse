@@ -1,4 +1,4 @@
-import { Check, Clapperboard, ListPlus, Lightbulb, Plus, Users } from 'lucide-react'
+import { Check, ChevronDown, ChevronUp, Clapperboard, ListPlus, Lightbulb, Plus, Search, Users } from 'lucide-react'
 import type { KnownFrom } from '@core/knownfrom'
 import { useEffect, useState } from 'react'
 import { guidesWith } from '@core/guides'
@@ -6,6 +6,8 @@ import { customListsWith, listIdFor, listsOf } from '@core/lists'
 import { imageUrl } from '@core/tmdb'
 import type { Credits, TitleDetails, TitleRef } from '@core/types'
 import { useApp } from '../store/app'
+import { plural } from '@core/format'
+import Poster from './Poster'
 
 /**
  * On a title page: who made it and who's in it (each opens their filmography), the film series
@@ -17,12 +19,16 @@ export default function TitleLinks({ details: d }: { details: TitleDetails }): R
   const [credits, setCredits] = useState<Credits | null>(null)
   const [newList, setNewList] = useState<string | null>(null)
   const [known, setKnown] = useState<KnownFrom[]>([])
+  const [fullCast, setFullCast] = useState(false)
+  const [castQuery, setCastQuery] = useState('')
 
   useEffect(() => {
     let cancelled = false
     setCredits(null)
     window.api.credits(d.type, d.id).then((r) => !cancelled && r.ok && setCredits(r.value.data))
     setKnown([])
+    setFullCast(false)
+    setCastQuery('')
     window.api.knownFrom(d.type, d.id).then((r) => !cancelled && r.ok && setKnown(r.value))
     return () => {
       cancelled = true
@@ -34,10 +40,16 @@ export default function TitleLinks({ details: d }: { details: TitleDetails }): R
   const onIt = new Set(customListsWith(library, d.key).map((l) => l.id))
   const guides = guidesWith(d.key)
 
+  const openPerson = (id: number, role: 'director' | 'actor'): void => go({ name: 'list', id: listIdFor({ kind: 'person', personId: id, role }) })
+  const shownCast = credits?.cast.slice(0, 8) ?? []
+  const everyone = credits?.fullCast ?? credits?.cast ?? []
+  const q = castQuery.trim().toLowerCase()
+  const castMatches = q ? everyone.filter((p) => p.name.toLowerCase().includes(q) || p.role.toLowerCase().includes(q)) : everyone
+
   const person = (p: Credits['cast'][number], role: 'director' | 'actor'): React.JSX.Element => {
     const face = imageUrl(p.profilePath, 'w92')
     return (
-      <button key={`${role}:${p.id}`} className="person-chip" onClick={() => go({ name: 'list', id: listIdFor({ kind: 'person', personId: p.id, role }) })} title={`See ${p.name}’s ${role === 'director' ? 'films' : 'films and shows'}`}>
+      <button key={`${role}:${p.id}`} className="person-chip" onClick={() => openPerson(p.id, role)} title={`See ${p.name}’s ${role === 'director' ? 'films' : 'films and shows'}`}>
         {face ? <img src={face} alt="" draggable={false} /> : <span className="person-initial">{p.name.slice(0, 1)}</span>}
         <span className="person-text">
           <span className="person-name">{p.name}</span>
@@ -56,8 +68,44 @@ export default function TitleLinks({ details: d }: { details: TitleDetails }): R
           </h2>
           <div className="people-row">
             {credits.directors.slice(0, 3).map((p) => person(p, 'director'))}
-            {credits.cast.slice(0, 8).map((p) => person(p, 'actor'))}
+            {shownCast.map((p) => person(p, 'actor'))}
           </div>
+          {everyone.length > shownCast.length && (
+            <button className="link-btn full-cast-toggle" aria-expanded={fullCast} onClick={() => setFullCast(!fullCast)}>
+              {fullCast ? <ChevronUp size={15} /> : <ChevronDown size={15} />} {fullCast ? 'Hide full cast' : `Full cast (${everyone.length})`}
+            </button>
+          )}
+          {fullCast && (
+            <div className="full-cast">
+              <label className="full-cast-search">
+                <Search size={15} />
+                <input className="text-input" autoFocus placeholder="Find someone by name or part" value={castQuery} onChange={(e) => setCastQuery(e.target.value)} onKeyDown={(e) => e.key === 'Escape' && setCastQuery('')} />
+              </label>
+              {castMatches.length === 0 && <p className="muted">Nobody called “{castQuery.trim()}” in this.</p>}
+              <ul className="full-cast-list">
+                {castMatches.map((p) => {
+                  const face = imageUrl(p.profilePath, 'w92')
+                  return (
+                    <li key={p.id}>
+                      <button className="full-cast-row" onClick={() => openPerson(p.id, 'actor')} title={`See ${p.name}’s films and shows`}>
+                        {face ? <img src={face} alt="" loading="lazy" draggable={false} /> : <span className="person-initial">{p.name.slice(0, 1)}</span>}
+                        <span className="person-text">
+                          <span className="person-name">{p.name}</span>
+                          {(p.role || p.episodes) && (
+                            <span className="person-role">
+                              {p.role}
+                              {p.role && p.episodes ? ' · ' : ''}
+                              {p.episodes ? plural(p.episodes, 'episode', 'episodes') : ''}
+                            </span>
+                          )}
+                        </span>
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 
@@ -71,19 +119,24 @@ export default function TitleLinks({ details: d }: { details: TitleDetails }): R
               const face = imageUrl(p.profilePath, 'w92')
               return (
                 <li key={p.id}>
-                  {face ? <img src={face} alt="" draggable={false} /> : <span className="person-initial">{p.name.slice(0, 1)}</span>}
-                  <span>
-                    You know <strong>{p.name}</strong> from{' '}
-                    {titles.map((t, i) => (
-                      <span key={t.key}>
-                        {i > 0 ? (i === titles.length - 1 ? ' and ' : ', ') : ''}
-                        <button className="link-btn inline" onClick={() => go({ name: 'title', type: t.type, id: t.id })}>
-                          {t.name}
-                        </button>
-                      </span>
+                  <button className="known-person" onClick={() => openPerson(p.id, 'actor')} title={`See ${p.name}’s films and shows`}>
+                    {face ? <img src={face} alt="" draggable={false} /> : <span className="person-initial">{p.name.slice(0, 1)}</span>}
+                    <span className="person-text">
+                      <span className="person-name">{p.name}</span>
+                      {p.role && <span className="person-role">Here: {p.role}</span>}
+                    </span>
+                  </button>
+                  <div className="known-titles">
+                    {titles.map((t) => (
+                      <button key={t.key} className="known-title" onClick={() => go({ name: 'title', type: t.type, id: t.id })} title={`Open ${t.name}`}>
+                        <span className="known-poster">
+                          <Poster path={t.posterPath} type={t.type} name={t.name} size="w92" />
+                        </span>
+                        <span className="known-name">{t.name}</span>
+                        {t.role && <span className="known-role">as {t.role}</span>}
+                      </button>
                     ))}
-                    .
-                  </span>
+                  </div>
                 </li>
               )
             })}

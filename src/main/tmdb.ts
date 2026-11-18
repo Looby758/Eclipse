@@ -2,7 +2,7 @@ import { errorText, report } from './health'
 import { net, safeStorage } from 'electron'
 import { cached, CACHE_TTL } from '@core/cache'
 import { createTmdb, TmdbError, type Tmdb } from '@core/tmdb'
-import type { CollectionDetails, Credits, MediaType, PersonDetails, Provider, SearchResult, SeasonDetails, TitleDetails, TitleRef, TmdbListDetails, WatchProviders } from '@core/types'
+import type { CollectionDetails, Credits, MediaType, PersonDetails, PersonResult, Provider, SearchResult, SeasonDetails, TitleDetails, TitleRef, TmdbListDetails, WatchProviders } from '@core/types'
 import { expandGuide, guideById, guideRefs, type Guide, type GuideTitleInfo } from '@core/guides'
 import { releaseOrder, sourceOf, findList, refOf } from '@core/lists'
 import type { Library } from '@core/types'
@@ -94,6 +94,12 @@ const serveStaleUnlessKeyProblem = (err: unknown): boolean => !(err instanceof T
 export async function search(query: string): Promise<Fetched<SearchResult[]>> {
   const q = query.trim().toLowerCase()
   const r = await cached(fileCache, `search:${q}`, CACHE_TTL.search, () => tmdb().search(q), { shouldServeStale: serveStaleUnlessKeyProblem })
+  return { data: r.data, stale: r.source === 'stale', savedAt: r.savedAt }
+}
+
+export async function searchPeople(query: string): Promise<Fetched<PersonResult[]>> {
+  const q = query.trim().toLowerCase()
+  const r = await cached(fileCache, `search:people:${q}`, CACHE_TTL.search, () => tmdb().searchPeople(q), { shouldServeStale: serveStaleUnlessKeyProblem })
   return { data: r.data, stale: r.source === 'stale', savedAt: r.savedAt }
 }
 
@@ -192,8 +198,9 @@ async function keep<T>(key: string, ttl: number, job: () => Promise<T>, refresh 
   return { data: r.data, stale: r.source === 'stale', savedAt: r.savedAt }
 }
 
-export const credits = (type: MediaType, id: number): Promise<Fetched<Credits>> => keep(`credits:${type}:${id}`, CACHE_TTL.credits, () => tmdb().credits(type, id))
-export const person = (id: number, refresh = false): Promise<Fetched<PersonDetails>> => keep(`person:${id}`, CACHE_TTL.person, () => tmdb().person(id), refresh)
+// "v2": saved copies from before parts played and the full cast were kept are fetched again.
+export const credits = (type: MediaType, id: number): Promise<Fetched<Credits>> => keep(`credits2:${type}:${id}`, CACHE_TTL.credits, () => tmdb().credits(type, id))
+export const person = (id: number, refresh = false): Promise<Fetched<PersonDetails>> => keep(`person2:${id}`, CACHE_TTL.person, () => tmdb().person(id), refresh)
 export const collection = (id: number, refresh = false): Promise<Fetched<CollectionDetails>> => keep(`collection:${id}`, CACHE_TTL.collection, () => tmdb().collection(id), refresh)
 export const tmdbList = (id: number, refresh = false): Promise<Fetched<TmdbListDetails>> => keep(`list:${id}`, CACHE_TTL.list, () => tmdb().list(id), refresh)
 
