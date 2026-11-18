@@ -365,8 +365,10 @@ export function pickShow<T extends { type: string; name: string; popularity: num
 
 /** "Andor S2 E4, 31 minutes in" */
 export function playingLine(r: Recognised): string {
-  const ep = r.season ? ` S${r.season} E${r.episode}` : ''
-  const mins = r.position != null ? `, ${Math.floor(r.position / 60)} minutes in` : ''
+  // Only an episode the player named: a guess ("the next one") would be shown as fact.
+  const ep = r.season && r.sure ? ` S${r.season} E${r.episode}` : ''
+  const m = r.position != null ? Math.floor(r.position / 60) : null
+  const mins = m != null ? `, ${m} minute${m === 1 ? '' : 's'} in` : ''
   return `${r.name}${ep}${mins}`
 }
 

@@ -17,6 +17,7 @@ import {
   suggestFromVisits,
   fromExtension,
   pickShow,
+  playingLine,
   unknownShow,
   refreshSuggestion,
   suggestionFromPlaying,
@@ -243,6 +244,11 @@ describe('what’s playing', () => {
     expect(np('Andor S2 E4', 1860)).toMatchObject({ key: 'tv:1', season: 2, episode: 4, sure: true })
     expect(np('Andor', 60)).toMatchObject({ key: 'tv:1', season: 1, episode: 3, sure: false })
     expect(np('Some advert', 10)).toBeNull()
+  })
+
+  it('shows only an episode the player named', () => {
+    expect(playingLine(np('Andor S2 E4', 1860)!)).toBe('Andor S2 E4, 31 minutes in')
+    expect(playingLine(np('Andor', 60)!)).toBe('Andor, 1 minute in')
   })
 
   it('says when an episode finished', () => {
