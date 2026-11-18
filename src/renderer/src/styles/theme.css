@@ -32,7 +32,16 @@
   --row-tile-h: 198px;
   --row-gap: 14px;
   --spot-pool: rgba(8, 9, 20, 0.92);
-  --spot-veil: rgba(8, 9, 20, 0.3);
+  /* Brighter wall (S): no veil over Home's posters. The pool of shadow is a touch smaller (it was 52%); keep it big enough for the text */
+  --spot-veil: transparent;
+  --spot-pool-w: 50%;
+  --spot-pool-h: 50%;
+  --spot-pool-core: 50%;
+  --row-tile-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+  --row-tile-lift-shadow: 0 18px 44px rgba(0, 0, 0, 0.6);
+  /* The light that follows the mouse over Home's posters (X) */
+  --torch: rgba(255, 255, 255, 0.9);
+  --torch-size: 260px;
   --spot-shade: rgba(12, 13, 26, 0.75);
   --spot-glass: rgba(16, 17, 34, 0.62);
   --spot-pri: #ffffff;
@@ -160,7 +169,9 @@
     --status-stopped: #d43a74;
     --shadow: 0 24px 70px rgba(40, 30, 120, 0.18);
     --spot-pool: rgba(244, 245, 255, 0.94);
-    --spot-veil: rgba(238, 240, 251, 0.3);
+    --spot-veil: transparent;
+    --row-tile-shadow: 0 10px 24px rgba(40, 50, 110, 0.2);
+    --row-tile-lift-shadow: 0 18px 40px rgba(40, 50, 110, 0.3);
     --spot-shade: rgba(238, 240, 251, 0.35);
     --spot-glass: rgba(255, 255, 255, 0.7);
     --spot-pri: #13162c;
@@ -212,7 +223,9 @@
   --status-stopped: #d43a74;
   --shadow: 0 24px 70px rgba(40, 30, 120, 0.18);
   --spot-pool: rgba(244, 245, 255, 0.94);
-  --spot-veil: rgba(238, 240, 251, 0.3);
+  --spot-veil: transparent;
+  --row-tile-shadow: 0 10px 24px rgba(40, 50, 110, 0.2);
+  --row-tile-lift-shadow: 0 18px 40px rgba(40, 50, 110, 0.3);
   --spot-shade: rgba(238, 240, 251, 0.35);
   --spot-glass: rgba(255, 255, 255, 0.7);
   --spot-pri: #13162c;
