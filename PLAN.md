@@ -6,7 +6,7 @@ Nov 17, 2026 · @Looby
 
 A personal desktop app for tracking films and TV shows. It replaces Sequel and focuses on features that save time or help decide what to watch, not on star ratings.
 
-**Who it's for:** me, on a Windows PC and a Mac. No phone app needed.
+**Who it's for:** me, on a Windows PC and a Mac, plus a small phone version for looking things up and ticking (phase 45).
 
 **Guiding principles**
 
@@ -250,6 +250,12 @@ From a conversation about how I actually use Eclipse day to day: mostly ticking 
     - What I've said no to, and the learnt weights, are saved in the library so both computers agree. Free, local, no AI.
     *Needs:* nothing new (replaces the recommendations already in Search and on the poster wall).
 44. **Discord status while I watch.** While something of mine is playing, Discord shows "Watching The Walking Dead · S9 E4" on my profile, like it does for games, and clears it when I stop. It talks to the Discord app on the same computer, so it's free and nothing goes online from Eclipse. Sometimes I don't want people to know what I'm watching, so it must be quick to switch on and off: a toggle in the tray / menu bar menu and on Home, as well as in Settings. Off by default, per computer. *Needs:* 28 (what's playing).
+45. **Eclipse on my phone, anywhere.** I reach for my phone out of habit just to look at my stuff, and the phone remote (23) only works on the home Wi-Fi with a computer on. Instead, a small Eclipse page saved to my iPhone home screen that reads my library straight from the Google Drive folder, wherever I am, with no computer needed.
+    - **What's on it:** my library (Watching, Want to watch, Watched) with posters and where things stream, a show's episodes with ticking, search with adding to my lists, and recommendations (43 suits the phone well: Interested or Not for me, one at a time). Not on it: the heatmap, plans and evenings, settings and the poster wall.
+    - **No clashes:** the phone never rewrites `library.json`. Its ticks and additions go into a separate file in the same Drive folder (e.g. `from-phone.json`). When Eclipse on the PC or Mac next opens, or sees that file sync in, it folds them into the library and empties it. If something conflicts (an episode ticked on both with different days, a title removed on the computer but ticked on the phone), it asks me rather than guessing.
+    - **Google sign-in:** reuses the Google Cloud project Orbit already uses, with a second sign-in client added for the web page (a desktop app's client secret can't go in a web page, since anyone could read it). Only the Drive data folder is needed. I sign in once on the phone; Google may ask again now and then.
+    - **Hosting:** the page itself (no data) on GitHub Pages, free. My library goes straight from Drive to the phone. The TMDB key is entered once on the phone and kept there.
+    *Needs:* nothing new; 43 for recommendations on the phone. Replaces 23 for looking things up away from home; 23 stays for the sofa.
 
 ## Open questions
 
@@ -449,4 +455,4 @@ You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls
 
 - Added to the plan (17 Nov 2026): future ideas from a brainstorm, listed under Future ideas as candidate phases 12 to 32. Group A (12 to 26) stand on their own; Group B (27 to 31) is the chain about noticing what I watch, in order; Group C (32, Apple TV) waits until I have a TV. Calendar-aware planning is a maybe. I mostly watch on the computer for now (an Apple TV and iPhone later).
 - Added to the plan (17 Nov 2026): from a review of what the app still needs, candidate phases 36 to 41 under *Safety and everyday comfort*: undo and a check before removing, daily backups, starting with the computer (only after asking), an "Is everything working?" panel, finding things in the library, and calmer screens and keyboard use; then 42, a quick welcome for someone new (for sharing with a friend). Turned down: daily refresh of airing shows with new-episode notifications.
-- Added to the plan (18 Nov 2026): candidate phases 43 (recommendations that learn from my no's, replacing the genre-based ones) and 44 (Discord status while I watch, quick to switch on and off), from a conversation about how I use Eclipse day to day.
+- Added to the plan (18 Nov 2026): candidate phases 43 (recommendations that learn from my no's, replacing the genre-based ones), 44 (Discord status while I watch, quick to switch on and off) and 45 (Eclipse on my phone anywhere, reading the library from Google Drive), from a conversation about how I use Eclipse day to day.
