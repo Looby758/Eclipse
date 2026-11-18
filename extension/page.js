@@ -121,43 +121,50 @@
   }
 
   const episodeLines = new Map()
+  const visible = (el) => el.getClientRects().length > 0
   function texts(v) {
-    const out = []
-    const add = (t) => {
-      if (t && t.length <= 200 && !out.includes(t)) out.push(t)
+    // Each line with how much to trust it. Lines naming an episode compete: only the best one goes
+    // to Eclipse, so an episode list elsewhere on the page ("S1 E1: Pilot") can't win.
+    const lines = []
+    const add = (t, score) => {
+      if (!t || t.length > 200) return
+      const had = lines.find((l) => l.t === t)
+      if (had) had.score = Math.max(had.score, score)
+      else lines.push({ t, score, at: lines.length })
     }
     const site = SITES.find(([host]) => host.test(location.hostname))
     // Each selector's lines, nearest the video first.
     for (const sel of site ? site[1] : []) {
       const els = all(sel).filter((el) => !skipped(el))
-      els.sort((a, b) => nearness(b, v) - nearness(a, v))
       // When some sit beside the video, the rest belong to another player: leave them out.
       const beside = els.some((el) => nearness(el, v) >= 2)
-      for (const el of els) if (!beside || nearness(el, v) >= 2) add(text(el))
+      for (const el of els) if (!beside || nearness(el, v) >= 2) add(text(el), 4 + nearness(el, v))
     }
     try {
       const m = navigator.mediaSession && navigator.mediaSession.metadata
-      if (m) [m.title, m.artist, m.album].forEach((t) => add((t || '').trim()))
+      if (m) [m.title, m.artist, m.album].forEach((t) => add((t || '').trim(), 3))
     } catch {
       // No media session.
     }
-    add(document.title.trim())
-    if (!out.some((t) => EPISODE.test(t))) {
-      // The smallest bits of text that name an episode (not the big containers around them).
-      for (const el of all(GENERIC)) {
-        if (el.children.length > 3) continue
-        const t = text(el)
-        if (t.length >= 4 && t.length <= 150 && EPISODE.test(t) && !skipped(el)) add(t)
-        if (out.length >= 12) break
-      }
+    add(document.title.trim(), 3)
+    // The smallest bits of text that name an episode (not the big containers around them), on
+    // screen and beside the video first.
+    for (const el of all(GENERIC)) {
+      if (el.children.length > 3) continue
+      const t = text(el)
+      if (t.length >= 4 && t.length <= 150 && EPISODE.test(t) && !skipped(el)) add(t, (visible(el) ? 2 : 0) + (v && el.getRootNode() === v.getRootNode() ? 0.5 : 0))
+      if (lines.length >= 40) break
     }
+    const named = lines.filter((l) => EPISODE.test(l.t)).sort((a, b) => b.score - a.score || a.at - b.at)
     // The episode lines go with the page's address (Disney+ gives each episode its own): when the
-    // player hides them (controls tucked away, the end-of-episode screen), keep using the last ones
-    // seen on this address rather than saying nothing.
+    // player hides them (controls tucked away, the end-of-episode screen), keep using the last one
+    // seen on this address, unless only a hidden line is left.
     const here = location.href.split('?')[0]
-    const named = out.filter((t) => EPISODE.test(t))
-    if (named.length) episodeLines.set(here, named)
-    else for (const t of episodeLines.get(here) || []) add(t)
+    let best = named[0] ? named[0].t : null
+    if (named[0] && named[0].score >= 2) episodeLines.set(here, best)
+    else if (episodeLines.has(here)) best = episodeLines.get(here)
+    const out = lines.filter((l) => !EPISODE.test(l.t)).map((l) => l.t)
+    if (best) out.splice(Math.min(1, out.length), 0, best)
     return out.filter(Boolean).slice(0, 12)
   }
 
@@ -193,6 +200,13 @@
     for (const el of all('[class*="time" i], [data-testid*="time" i], [class*="remaining" i], [class*="elapsed" i], [class*="duration" i]')) {
       if (el.children.length > 2) continue
       const t = (el.textContent || '').trim()
+      // "0:00:26 / 0:35:40" (NOW): how far in and how long, together.
+      const both = /^((?:\d+:)?\d{1,2}:\d{2})\s*(?:\/|of)\s*((?:\d+:)?\d{1,2}:\d{2})$/.exec(t)
+      if (both) {
+        at = clockSecs(both[1])
+        total = clockSecs(both[2])
+        continue
+      }
       if (!/^-?\s*(\d+:)?\d{1,2}:\d{2}$/.test(t)) continue
       const kind = label(el)
       if (/remain|left/i.test(kind) || t.startsWith('-')) left = clockSecs(t)

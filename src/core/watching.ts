@@ -83,17 +83,19 @@ export function parseEpisode(text: string): { season: number; episode: number } 
 
 /**
  * The show in your library a title is about: the longest show name that appears in it as whole
- * words. Very short names (under 4 letters) must be the whole title, so "It" doesn't match everything.
+ * words. Very short names (under 4 letters) must be the whole title, or one whole part of it
+ * ("Ted · S1 E4"), so "It" doesn't match everything.
  */
 export function matchTitle(text: string, library: Library, types: ('tv' | 'movie')[] = ['tv']): LibraryEntry | null {
   const t = ` ${norm(text)} `
+  const parts = new Set(text.split(' · ').map((p) => norm(cleanTitle(p))))
   let best: LibraryEntry | null = null
   let bestLen = 0
   for (const e of Object.values(library.entries)) {
     if (!types.includes(e.type)) continue
     const n = norm(e.title.name)
     if (!n) continue
-    const hit = n.length < 4 ? t.trim() === n : t.includes(` ${n} `)
+    const hit = n.length < 4 ? t.trim() === n || parts.has(n) : t.includes(` ${n} `)
     if (hit && n.length > bestLen) {
       best = e
       bestLen = n.length

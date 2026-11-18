@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Eclipse: what's playing",
-  "version": "1.3.1",
+  "version": "1.4.0",
   "description": "Tells the Eclipse app on this computer which episode you're watching on Disney+, NOW and other services. Nothing leaves your computer.",
   "icons": {
     "16": "icon16.png",

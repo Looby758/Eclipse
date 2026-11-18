@@ -82,6 +82,8 @@ describe('recognising services, shows and episodes', () => {
     expect(matchTitle('Young Sheldon', lib)).toBeNull()
     expect(matchTitle('Your Honor', lib)).toBeNull()
     expect(matchTitle('You', lib)?.key).toBe('tv:4')
+    expect(matchTitle('You - NOW · S1 E4 · Pilot', lib)?.key).toBe('tv:4')
+    expect(matchTitle('Thank You · S1 E4', lib)).toBeNull()
     expect(matchTitle('Dune', lib)).toBeNull()
     expect(matchTitle('Dune', lib, ['movie'])?.key).toBe('movie:5')
   })
@@ -207,6 +209,8 @@ describe('the Chrome extension', () => {
     const np = fromExtension(report())!
     expect(np).toMatchObject({ app: 'Chrome extension (Disney+)', status: 'playing', position: 2650, duration: 2700 })
     expect(recognise(np, lib, details, today)).toMatchObject({ key: 'tv:2', season: 5, episode: 3, sure: true, service: 'Disney+' })
+    // NOW, with a short name: "You - NOW" then "S1 E4".
+    expect(recognise(fromExtension(report({ url: 'https://www.nowtv.com/gb/watch/playback/vod/1', texts: ['You - NOW', 'S1 E4'] }))!, lib, details, today)).toMatchObject({ key: 'tv:4', season: 1, episode: 4, sure: true, service: 'NOW' })
     expect(fromExtension(report({ paused: true }))?.status).toBe('paused')
     expect(fromExtension(report({ ended: true }))?.status).toBe('stopped')
   })
