@@ -39,7 +39,9 @@ describe('talking to Discord', () => {
         }
       })
     })
-    await new Promise<void>((res) => server.listen(join(dir, 'discord-ipc-0'), res))
+    // Windows talks to Discord over a named pipe, which ignores XDG_RUNTIME_DIR; elsewhere it's a socket file in that folder.
+    const where = process.platform === 'win32' ? '\\\\?\\pipe\\discord-ipc-0' : join(dir, 'discord-ipc-0')
+    await new Promise<void>((res, rej) => server.once('error', rej).listen(where, res))
   })
   afterAll(() => {
     server.close()
