@@ -100,6 +100,8 @@ export interface NoticingStatus {
   suggestions: Suggestion[]
   /** The bookmark shortcut, as shown on this computer. */
   momentKey: string
+  /** The Chrome extension: when it last reported, anything stopping it, and where its files are. */
+  extension: { lastAt: number | null; error: string | null; folder: string }
 }
 
 /** Phase 36: a change the "Done · Undo" bar can put back. */
@@ -253,6 +255,8 @@ export interface EclipseApi {
    */
   acceptSuggestion(id: string, who?: string | null): Promise<Library>
   dismissSuggestion(id: string): Promise<NoticingStatus>
+  /** Opens the Chrome extension's folder, to load it in Chrome. */
+  showExtensionFolder(): Promise<void>
   onNoticingChanged(callback: () => void): () => void
   /** Changes a saved moment's note (empty clears it), or deletes the moment with null. */
   editMoment(key: TitleKey, index: number, note: string | null): Promise<Library>

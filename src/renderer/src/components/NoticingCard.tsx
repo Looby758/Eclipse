@@ -1,5 +1,5 @@
 import { askToStartWithComputer } from '../lib/startAsk'
-import { Eye, RefreshCw } from 'lucide-react'
+import { Eye, FolderOpen, RefreshCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { NoticingSettings } from '@shared/api'
 import { useNoticing } from '../lib/noticing'
@@ -99,6 +99,25 @@ export default function NoticingCard(): React.JSX.Element {
 
       {s?.playing && (
         <>
+          <h3 className="card-sub">The exact episode, from Chrome</h3>
+          <p className="muted small">
+            Disney+ and NOW don’t put the episode in the page title, so on their own Eclipse can only see that something’s playing. The Eclipse extension for Chrome reads the episode from the player itself (“S5:E3”) and passes it to Eclipse, on this computer only.
+          </p>
+          <ol className="muted small" style={{ paddingLeft: 18, margin: '6px 0' }}>
+            <li>In Chrome, go to <code>chrome://extensions</code> and switch on Developer mode (top right).</li>
+            <li>Press Load unpacked and choose the folder that opens with the button below.</li>
+            <li>Play an episode: it shows up under “What Eclipse sees right now” within 10 seconds.</li>
+          </ol>
+          <div className="row" style={{ alignItems: 'center' }}>
+            <button className="btn glass" onClick={() => void window.api.showExtensionFolder()}>
+              <FolderOpen size={15} /> Show the extension folder
+            </button>
+            <span className="muted small">
+              {status?.extension.error ? '' : status?.extension.lastAt ? `Last heard from ${ago(status.extension.lastAt)}.` : 'Not heard from yet.'}
+            </span>
+          </div>
+          {status?.extension.error && <p className="error small">{status.extension.error}</p>}
+
           <h3 className="card-sub">Bedtime guard</h3>
           <p className="muted small">When you start an episode that would end past your bedtime (set in Evenings), a notification says by how much.</p>
           <Switch on={!!s?.bedtime} set={(on) => void set({ bedtime: on })} />
@@ -123,7 +142,7 @@ export default function NoticingCard(): React.JSX.Element {
             ) : (
               !status?.playing.error && <p className="muted small">The computer isn’t reporting anything playing.</p>
             )}
-            <p className="muted small">Play something on Disney+ or NOW and it should show up here within a few seconds. If it shows up but isn’t recognised, the show needs to be in your library.</p>
+            <p className="muted small">Play something on Disney+ or NOW and it should show up here within a few seconds. If it shows up but isn’t recognised, the show needs to be in your library. Eclipse only asks to tick an episode when it was told which one: if “Recognised” has no S and E, the player didn’t say.</p>
           </div>
         </>
       )}

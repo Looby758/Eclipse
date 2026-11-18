@@ -29,6 +29,7 @@ import { getLibrary, saveLibrary } from './library'
 import * as tmdb from './tmdb'
 import { browsers, streamingVisits } from './history'
 import { nowPlaying, startNowPlaying, stopNowPlaying } from './nowplaying'
+import { extensionLink, startExtensionLink, stopExtensionLink } from './extension'
 
 /**
  * Group B (Phases 27 to 30) in the main process: reads browser history and what's playing, turns
@@ -127,20 +128,17 @@ const trySave = (lib: Library): boolean => {
 export async function scanHistory(): Promise<void> {
   if (!settings().history) return
   const s = loadSettings()
-  // Once: look back over the last two weeks again, for episodes watched with someone that earlier
-  // versions passed over because you'd ticked them on your own first watch.
-  const lookBack = Date.now() - 14 * 86_400_000
-  const since = s.historyWithRescan ? (s.historySince ?? lookBack) : Math.min(s.historySince ?? lookBack, lookBack)
+  const since = s.historySince ?? Date.now() - 14 * 86_400_000
   const result = await streamingVisits(since)
   const lib = getLibrary()
-  const found = suggestFromVisits(result.visits, lib, await showDetails(lib), new Set(load().dismissed), localDate(new Date()))
+  const found = suggestFromVisits(result.visits, lib, new Set(load().dismissed))
   const fresh = addSuggestions(found)
   // Learn where each show is watched, for "Play next".
   let next = getLibrary()
   for (const p of showPagesFromVisits(result.visits, next)) next = learnLinks(next, p.key, p.url)
   if (next !== getLibrary() && trySave(next)) hooks.libraryChanged()
   const latest = Math.max(since, ...result.visits.map((v) => v.at))
-  saveSettings({ historySince: latest + 1, historyWithRescan: true })
+  saveSettings({ historySince: latest + 1 })
   lastScan = { at: Date.now(), browsers: result.browsers, errors: result.errors, visits: result.visits.length }
   const plural = (n: number, w: string): string => `${n} ${w}${n === 1 ? '' : 's'}`
   if (!result.browsers.length && result.errors.length) reportHealth('history', false, `Couldn't read browser history: ${result.errors.join('; ')}`)
@@ -222,9 +220,11 @@ function apply(): void {
   const s = settings()
   if (s.playing) {
     startNowPlaying(() => void onPlaying().catch(() => undefined))
+    startExtensionLink(() => void onPlaying().catch(() => undefined))
     if (!globalShortcut.isRegistered(MOMENT_KEY)) globalShortcut.register(MOMENT_KEY, saveMoment)
   } else {
     stopNowPlaying()
+    stopExtensionLink()
     if (globalShortcut.isRegistered(MOMENT_KEY)) globalShortcut.unregister(MOMENT_KEY)
     current = null
   }
@@ -264,6 +264,7 @@ export function noticingStatus(): NoticingStatus {
     lastScan,
     playing: { raw: report.items, error: report.error, recognised: current, line: current ? playingLine(current) : null },
     suggestions: pending(),
+    extension: extensionLink(),
     momentKey: process.platform === 'darwin' ? '⌘⌥B' : 'Ctrl+Alt+B'
   }
 }
@@ -292,5 +293,6 @@ export function dismissSuggestion(id: string): void {
 
 export function stopNoticing(): void {
   stopNowPlaying()
+  stopExtensionLink()
   globalShortcut.unregisterAll()
 }

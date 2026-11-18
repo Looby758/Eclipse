@@ -163,10 +163,25 @@ export function stopNowPlaying(): void {
   if (macTimer) clearInterval(macTimer)
   macTimer = null
   latest = { at: 0, items: [], error: null }
+  fromExtension.clear()
 }
 
-/** What the computer reported last (nothing once it's been quiet for over a minute). */
+// What the Chrome extension reported, by page (see extension.ts). Reports come every 10 seconds
+// while a player is open, so one older than 30 seconds means the tab was closed.
+const fromExtension = new Map<string, { at: number; item: NowPlaying }>()
+
+export function addExtensionItem(item: NowPlaying): void {
+  fromExtension.set(item.url ?? item.app, { at: Date.now(), item })
+}
+
+/**
+ * What the computer reported last (nothing once it's been quiet for over a minute), with the Chrome
+ * extension's reports first: they name the episode and say how far in you are.
+ */
 export function nowPlaying(): PlayingReport {
-  if (latest.at && Date.now() - latest.at > 60_000) return { ...latest, items: [] }
-  return latest
+  const now = Date.now()
+  for (const [k, v] of fromExtension) if (now - v.at > 30_000) fromExtension.delete(k)
+  const ext = [...fromExtension.values()].map((v) => v.item)
+  const own = latest.at && now - latest.at > 60_000 ? [] : latest.items
+  return { ...latest, at: Math.max(latest.at, ...[...fromExtension.values()].map((v) => v.at)), items: [...ext, ...own] }
 }

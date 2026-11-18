@@ -72,6 +72,7 @@ const api: EclipseApi = {
   scanHistory: () => ipcRenderer.invoke('noticing:scan'),
   acceptSuggestion: (id, who) => ipcRenderer.invoke('noticing:accept', id, who),
   dismissSuggestion: (id) => ipcRenderer.invoke('noticing:dismiss', id),
+  showExtensionFolder: () => ipcRenderer.invoke('noticing:extensionFolder'),
   onNoticingChanged: (callback) => {
     const handler = (): void => callback()
     ipcRenderer.on('noticing:changed', handler)
