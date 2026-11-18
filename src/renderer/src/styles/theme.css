@@ -105,7 +105,11 @@
   --radius: 16px;
   --radius-lg: 26px;
   --radius-sheet: 32px;
-  --sheet-top: 110px;
+  --sheet-top: 88px;
+  /* The page stops above the dock, so nothing hides under it. */
+  --sheet-bottom: 116px;
+  /* The widest a page's content gets. */
+  --page-max: 1240px;
   --sheet-side: 40px;
   --poster-lift: 44px;
   --shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
@@ -118,6 +122,7 @@
   /* Dropdown lists (native popups need solid colours) */
   --menu-bg: #15132a;
   --focus: #8fe3ff;
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23c9c6e6' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   --menu-text: #f0eeff;
   color-scheme: dark;
 }
@@ -169,6 +174,7 @@
   --frost-on-shadow: 0 4px 14px rgba(40, 30, 120, 0.2);
     --menu-bg: #ffffff;
     --focus: #2f6bff;
+    --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%2355507a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     --menu-text: #130f2e;
     color-scheme: light;
   }
@@ -221,5 +227,6 @@
   --menu-bg: #ffffff;
   --menu-text: #130f2e;
   --focus: #2f6bff;
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%2355507a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   color-scheme: light;
 }

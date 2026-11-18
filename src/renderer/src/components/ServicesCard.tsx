@@ -59,9 +59,11 @@ export default function ServicesCard({ welcome }: { welcome?: boolean } = {}): R
         <>
           <h2>Your services</h2>
           <p className="muted">Pick the streaming services you pay for. Eclipse lights them up on title pages and uses them for the “On my services” filter.</p>
-          <button className="link-btn" style={{ marginBottom: 12 }} onClick={() => useApp.getState().go({ name: 'services' })}>
-            {prefs.services.length > 0 ? 'Do I still need them? Which services are best for my watchlist?' : 'Which services are best for my watchlist?'}
-          </button>
+          <p>
+            <button className="link-btn" onClick={() => useApp.getState().go({ name: 'services' })}>
+              {prefs.services.length > 0 ? 'Do I still need them? Which services are best for my watchlist?' : 'Which services are best for my watchlist?'}
+            </button>
+          </p>
         </>
       )}
       <label className="region-select">
