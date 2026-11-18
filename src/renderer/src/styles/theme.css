@@ -40,8 +40,8 @@
   --spot-hi: #8fe3ff;
   --spot-hi-2: #b4a2ff;
 
-  /* Frosted glass (Spotlight's pages) */
-  --frost-veil: rgba(8, 9, 20, 0.28);
+  /* Frosted glass (Spotlight's pages). The veil is a touch stronger since the wall behind pages is no longer blurred (that blur made pages slow to open). */
+  --frost-veil: rgba(8, 9, 20, 0.42);
   --frost-sheet: rgba(14, 15, 34, 0.45);
   --frost-blur: blur(36px) saturate(1.5);
   --frost-pane: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
@@ -164,7 +164,7 @@
     --spot-on-pri: #ffffff;
     --spot-hi: #2f6bff;
     --spot-hi-2: #7a4dff;
-  --frost-veil: rgba(238, 240, 251, 0.3);
+  --frost-veil: rgba(238, 240, 251, 0.45);
   --frost-sheet: rgba(255, 255, 255, 0.5);
   --frost-pane: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.4));
   --frost-pane-hover: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.55));
@@ -216,7 +216,7 @@
   --spot-on-pri: #ffffff;
   --spot-hi: #2f6bff;
   --spot-hi-2: #7a4dff;
-  --frost-veil: rgba(238, 240, 251, 0.3);
+  --frost-veil: rgba(238, 240, 251, 0.45);
   --frost-sheet: rgba(255, 255, 255, 0.5);
   --frost-pane: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.4));
   --frost-pane-hover: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.55));

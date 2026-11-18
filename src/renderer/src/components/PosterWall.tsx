@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
 import { imageUrl } from '@core/tmdb'
 import { OWN_ENOUGH, WALL_COLUMNS, WALL_PER_COLUMN, wallPosters } from '../lib/wall'
 import { useApp } from '../store/app'
@@ -20,7 +20,7 @@ interface Tile {
  * this week's trending titles while it's small. Each column drifts up or down and holds two copies
  * of its posters so it loops smoothly. Decoration only: it can't be clicked and screen readers skip it.
  */
-export default function PosterWall({ rows = false }: { rows?: boolean }): React.JSX.Element {
+function PosterWall({ rows = false }: { rows?: boolean }): React.JSX.Element {
   const library = useApp((s) => s.library)
   const hasKey = useApp((s) => !!s.status?.hasKey)
   const [trending, setTrending] = useState<string[]>([])
@@ -70,7 +70,7 @@ export default function PosterWall({ rows = false }: { rows?: boolean }): React.
 
   const tile = (t: Tile): React.JSX.Element =>
     t.url ? (
-      <img key={t.key} className="wall-tile" src={t.url} alt="" draggable={false} />
+      <img key={t.key} className="wall-tile" src={t.url} alt="" decoding="async" draggable={false} />
     ) : (
       <div key={t.key} className="wall-tile" style={{ background: `linear-gradient(165deg, hsl(${t.hue} 85% 62%), hsl(272 65% 28%) 70%, hsl(250 50% 10%))` }} />
     )
@@ -101,3 +101,6 @@ export default function PosterWall({ rows = false }: { rows?: boolean }): React.
     </div>
   )
 }
+
+// Only redraws when the posters change, not every time you open a page.
+export default memo(PosterWall)
