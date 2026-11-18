@@ -57,11 +57,15 @@
     return [...found]
   }
   let known = []
+  // Only what's on the page now: when you move to the next episode, Disney+ can leave the last
+  // episode's player behind, taken off the page but still holding its title ("S24:E1").
   const all = (sel) => {
     const out = [...document.querySelectorAll(sel)]
-    for (const r of known) out.push(...r.querySelectorAll(sel))
-    return out
+    for (const r of known) if (r.host && r.host.isConnected) out.push(...r.querySelectorAll(sel))
+    return out.filter((el) => el.isConnected)
   }
+  // Lines beside the playing video, and on screen, come first.
+  const nearness = (el, v) => (v && el.getRootNode() === v.getRootNode() ? 2 : 0) + (el.getClientRects().length ? 1 : 0)
 
   // Where each service's player shows the show and episode, best first.
   const SITES = [
@@ -103,13 +107,20 @@
     return ready.filter((v) => !v.paused && v.videoWidth > 0).sort((a, b) => b.videoWidth * b.videoHeight - a.videoWidth * a.videoHeight)[0] || null
   }
 
-  function texts() {
+  function texts(v) {
     const out = []
     const add = (t) => {
       if (t && t.length <= 200 && !out.includes(t)) out.push(t)
     }
     const site = SITES.find(([host]) => host.test(location.hostname))
-    for (const sel of site ? site[1] : []) for (const el of all(sel)) if (!skipped(el)) add(text(el))
+    // Each selector's lines, nearest the video first.
+    for (const sel of site ? site[1] : []) {
+      const els = all(sel).filter((el) => !skipped(el))
+      els.sort((a, b) => nearness(b, v) - nearness(a, v))
+      // When some sit beside the video, the rest belong to another player: leave them out.
+      const beside = els.some((el) => nearness(el, v) >= 2)
+      for (const el of els) if (!beside || nearness(el, v) >= 2) add(text(el))
+    }
     try {
       const m = navigator.mediaSession && navigator.mediaSession.metadata
       if (m) [m.title, m.artist, m.album].forEach((t) => add((t || '').trim()))
@@ -135,7 +146,7 @@
       const list = videos()
       const v = video(list)
       const finite = (n) => (Number.isFinite(n) ? n : null)
-      const report = v ? { url: location.href, texts: texts(), position: finite(v.currentTime), duration: finite(v.duration), paused: v.paused, ended: v.ended } : null
+      const report = v ? { url: location.href, texts: texts(v), position: finite(v.currentTime), duration: finite(v.duration), paused: v.paused, ended: v.ended } : null
       // What it looked at, for the popup when nothing's found.
       const seen = list.map((x) => `${x.readyState}/${Number.isFinite(x.duration) ? Math.round(x.duration) : String(x.duration)}/${x.paused ? 'paused' : 'playing'}`)
       document.documentElement.dataset.eclipse = JSON.stringify({ report, seen, roots: known.length })
