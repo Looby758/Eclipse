@@ -621,16 +621,23 @@ button.list-seen.undo:hover { background: var(--glass-hover); }
 .spot-btn.pri { background: var(--spot-pri); color: var(--spot-on-pri); border-color: transparent; }
 .spot-btn.pri:hover { filter: brightness(0.94); }
 .spot-btn:disabled { opacity: 0.6; cursor: default; }
-.spot-foryou { position: absolute; left: 30px; bottom: 28px; z-index: 5; }
-.spot-panel { position: absolute; right: 30px; top: 84px; bottom: 70px; width: 360px; z-index: 6; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: var(--radius-lg); background: var(--sheet); border: 1px solid var(--line); backdrop-filter: blur(30px); box-shadow: var(--shadow); animation: sheet-rise 0.4s var(--ease) both; }
-.spot-panel-head { display: flex; align-items: center; justify-content: space-between; }
-.spot-panel-head h2 { margin: 0; font: 650 var(--text-lg) var(--font-display); }
+/* "Waiting for you": the Home cards in an always-open column on the right. Empty cards render nothing,
+   so the column hides itself when nothing is waiting and the dial slides back to the middle. */
+.spot-waiting { --wait-w: min(340px, 30vw); position: absolute; right: 30px; top: 84px; bottom: 70px; width: var(--wait-w); z-index: 6; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 2px 4px 12px; scrollbar-width: thin; -webkit-app-region: no-drag; }
+.spot-waiting:not(:has(.note, .otd)) { display: none; }
+.spot-waiting-head { align-self: flex-start; margin: 0 0 2px; padding: 5px 12px; border-radius: 99px; font: 600 var(--text-xs) var(--font-ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--text); background: var(--spot-glass); border: 1px solid var(--line); backdrop-filter: blur(14px); }
+/* The rise is on each card, not the column: an animating column would stop the cards' glass from blurring the wall. */
+.spot-waiting > * { flex: none; animation: sheet-rise 0.4s var(--ease) both; }
+.spot-waiting .note, .spot-waiting .otd { background: var(--sheet); backdrop-filter: blur(30px); }
+.spotlight .spot-center { transition: left 0.6s var(--ease); }
+.spotlight:has(.spot-waiting :is(.note, .otd)) .spot-center { left: calc(50% - var(--wait-shift, 190px)); }
+@media (max-width: 1180px) { .spotlight { --wait-shift: 170px; } }
 .dock.tucked { opacity: 0; pointer-events: none; transform: translate(-50%, 140%); }
 .app.spot .home-credit { right: 30px; bottom: 34px; }
 /* Keep Spotlight's pills clickable over the drag strip, and clear of Windows' minimise, maximise and close buttons. */
-.spot-pills, .spot-foryou { -webkit-app-region: no-drag; z-index: 6; }
+.spot-pills { -webkit-app-region: no-drag; z-index: 6; }
 [data-platform='win'] .spot-pills { top: 52px; }
-[data-platform='win'] .spot-panel { top: 114px; }
+[data-platform='win'] .spot-waiting { top: 114px; }
 
 /* ---- Frosted glass (Phase 34b): with Spotlight on, every page is see-through panes over the posters ---- */
 .app.frost {
@@ -771,11 +778,11 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px
 /* Phase 41: keep the poster wall (and every other moving touch) still */
 :root[data-still] .wall-col, :root[data-still] .wall-row, :root[data-still] .aurora, :root[data-still] .glow-text,
 :root[data-still] .timeline-dot.next, :root[data-still] .heat-cell.next, :root[data-still] .sheet, :root[data-still] .setup,
-:root[data-still] .home-side, :root[data-still] .spot-panel, :root[data-still] .guard.nudge, :root[data-still] .undo-bar { animation: none; }
+:root[data-still] .home-side, :root[data-still] .spot-waiting > *, :root[data-still] .guard.nudge, :root[data-still] .undo-bar { animation: none; }
 :root[data-still] .timeline-dot.next, :root[data-still] .heat-cell.next { box-shadow: 0 0 0 2px var(--cyan), 0 0 16px var(--halo); }
 :root[data-still] *, :root[data-still] *::before, :root[data-still] *::after { transition-duration: 0s !important; scroll-behavior: auto !important; }
 @media (prefers-reduced-motion: reduce) {
-  .aurora, .glow-text, .heat-cell.next, .sheet, .setup, .home-side, .spot-panel, .guard.nudge, .undo-bar { animation: none; }
+  .aurora, .glow-text, .heat-cell.next, .sheet, .setup, .home-side, .spot-waiting > *, .guard.nudge, .undo-bar { animation: none; }
 }
 
 /* Phase 42: the welcome for someone new */

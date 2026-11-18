@@ -1,4 +1,4 @@
-import { Check, Hourglass, Library, ListChecks, Moon, Search, Settings, Sparkles, X } from 'lucide-react'
+import { Check, Hourglass, Library, ListChecks, Moon, Search, Settings, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { entriesWith, isTogether, nextEpisodeFor, nextSession, preferencesOf, withTogether } from '@core/library'
 import { sessionLabel } from '../lib/together'
@@ -42,27 +42,18 @@ function Pills(): React.JSX.Element {
   )
 }
 
-/** "For you tonight": the Home cards, tucked into a panel so the dial stays calm. */
-function ForYou(): React.JSX.Element {
-  const [open, setOpen] = useState(false)
+/**
+ * "Waiting for you": the Home cards in a column on the right, always open, so whatever needs you
+ * (did you watch this, add this show, watching together) is there when you come back. The column
+ * hides itself when every card is empty, and the dial moves back to the middle (see app.css).
+ */
+function Waiting(): React.JSX.Element {
   return (
-    <>
-      <button className={`spot-pill spot-foryou ${open ? 'on' : ''}`} onClick={() => setOpen((o) => !o)} aria-expanded={open}>
-        <Sparkles size={16} /> For you tonight
-      </button>
-      {open && (
-        <aside className="spot-panel" aria-label="For you tonight">
-          <div className="spot-panel-head">
-            <h2>For you tonight</h2>
-            <button className="link-btn inline" aria-label="Close" onClick={() => setOpen(false)}>
-              <X size={18} />
-            </button>
-          </div>
-          <HomeNotes />
-          <OnThisDay />
-        </aside>
-      )}
-    </>
+    <aside className="spot-waiting" aria-label="Waiting for you">
+      <h2 className="spot-waiting-head">Waiting for you</h2>
+      <HomeNotes />
+      <OnThisDay />
+    </aside>
   )
 }
 
@@ -192,7 +183,7 @@ export default function SpotlightHome(): React.JSX.Element {
         </div>
       </div>
 
-      <ForYou />
+      <Waiting />
     </div>
   )
 }
