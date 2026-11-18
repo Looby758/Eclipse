@@ -246,7 +246,7 @@ From a conversation about how I actually use Eclipse day to day: mostly ticking 
     - Candidates come from TMDB's "similar" and "recommended" lists for what I've watched, rated highly or finished, as now.
     - A full-screen mode shows them one at a time with the trailer, like *Clear out the watchlist*, with **Interested** (adds it to Want to watch), **Not for me** and **Skip**, plus keyboard shortcuts.
     - Each *Not for me* lowers the score of anything sharing its creators, network, main cast or TMDB keywords; each *Interested* raises them. It starts out fairly generic and gets sharper after a couple of sessions.
-    - Every pick says why it's there ("Because of The Walking Dead and Shadowhunters, and you liked other shows from The CW"), so I can tell when it's guessing.
+    - Every pick says why it's there ("Because of The Walking Dead and Shadowhunters"), so I can tell when it's guessing.
     - What I've said no to, and the learnt weights, are saved in the library so both computers agree. Free, local, no AI.
     *Needs:* nothing new (replaces the recommendations already in Search and on the poster wall).
 44. **Discord status while I watch.** While something of mine is playing, Discord shows "Watching The Walking Dead · S9 E4" on my profile, like it does for games, and clears it when I stop. It talks to the Discord app on the same computer, so it's free and nothing goes online from Eclipse. Sometimes I don't want people to know what I'm watching, so it must be quick to switch on and off: a toggle in the tray / menu bar menu and on Home, as well as in Settings. Off by default, per computer. *Needs:* 28 (what's playing).
