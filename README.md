@@ -89,7 +89,7 @@ No new packages, so just pull and `npm run dev`.
 ## Phase 34: what to try
 
 1. **Spotlight Home:** open Eclipse. Home is now the Tonight dial with your pick inside it. Try **Tick it**, **Something else**, and clicking the poster.
-2. **Waiting for you** (the column on the right) holds the Home cards, always open. It hides itself, and the dial moves back to the middle, when nothing is waiting.
+2. **The Home column** (on the right, with no title) holds the Home cards, always open. It hides itself, and the dial moves back to the middle, when nothing is waiting.
 3. **Classic Home:** Settings → *Appearance* → *Home* → **Classic (legacy)** for the Home from before. Switch back with **Spotlight**.
 4. **New logo:** in the corner of the app, and (once you build an installer) as the app icon and the tray icon.
 5. **Frosted glass:** open Settings, Library or any title. The page is now see-through glass over the drifting posters, and anything switched on is a white pill. Try Dark and Light. Pick **Classic (legacy)** Home to get the old flat look back.

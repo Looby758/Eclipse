@@ -625,11 +625,10 @@ button.list-seen.undo:hover { background: var(--glass-hover); }
 .spot-btn.pri { background: var(--spot-pri); color: var(--spot-on-pri); border-color: transparent; }
 .spot-btn.pri:hover { filter: brightness(0.94); }
 .spot-btn:disabled { opacity: 0.6; cursor: default; }
-/* "Waiting for you": the Home cards in an always-open column on the right. Empty cards render nothing,
+/* The Home column: the Home cards in an always-open, untitled column on the right. Empty cards render nothing,
    so the column hides itself when nothing is waiting and the dial slides back to the middle. */
 .spot-waiting { --wait-w: min(340px, 30vw); position: absolute; right: 30px; top: 84px; bottom: 70px; width: var(--wait-w); z-index: 6; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 2px 4px 12px; scrollbar-width: thin; -webkit-app-region: no-drag; }
 .spot-waiting:not(:has(.note, .otd)) { display: none; }
-.spot-waiting-head { align-self: flex-start; margin: 0 0 2px; padding: 5px 12px; border-radius: 99px; font: 600 var(--text-xs) var(--font-ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--text); background: var(--spot-glass); border: 1px solid var(--line); backdrop-filter: blur(14px); }
 /* The rise is on each card, not the column: an animating column would stop the cards' glass from blurring the wall. */
 .spot-waiting > * { flex: none; animation: sheet-rise 0.4s var(--ease) both; }
 .spot-waiting .note, .spot-waiting .otd { background: var(--sheet); backdrop-filter: blur(30px); }
