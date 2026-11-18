@@ -16,5 +16,5 @@ export default function Poster({ path, type, name, size = 'w342' }: { path: stri
       </div>
     )
   }
-  return <img className="poster" src={url} alt={name} loading="lazy" draggable={false} onError={() => setFailed(true)} />
+  return <img className="poster" src={url} alt={name} loading="lazy" decoding="async" draggable={false} onError={() => setFailed(true)} />
 }

@@ -120,6 +120,9 @@
   /* The widest a page's content gets. */
   --page-max: 1240px;
   --sheet-side: 40px;
+  /* A page's shadow is kept tight: a big soft one (80px) took the graphics chip ~150ms to draw each
+     time a page opened, which was the pause before pages appeared. */
+  --sheet-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
   --poster-lift: 44px;
   --shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
 

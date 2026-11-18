@@ -1,4 +1,5 @@
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync } from 'fs'
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync } from 'fs'
+import { readdir, readFile, stat } from 'fs/promises'
 import { join } from 'path'
 import { localDate, normalizeLibrary } from '@core/library'
 import { BACKUP_NAME, backupName, backupsToDrop, librarySummary } from '@core/safety'
@@ -49,18 +50,32 @@ function readBackup(file: string): Library {
   return normalizeLibrary(JSON.parse(readFileSync(file, 'utf8')))
 }
 
-/** The backups, newest first, with what's in each. */
-export function listBackups(folder: string | null): BackupInfo[] {
+/** What's in each backup file, kept while the file is unchanged, so opening Settings doesn't re-read them all. */
+const summaries = new Map<string, { mtimeMs: number; size: number; info: BackupInfo }>()
+
+/**
+ * The backups, newest first, with what's in each. Reads the files without holding up the app (each
+ * one is a whole library), and only the ones that are new or changed since last time.
+ */
+export async function listBackups(folder: string | null): Promise<BackupInfo[]> {
   if (!folder) return []
   const dir = dirOf(folder)
   if (!existsSync(dir)) return []
   const out: BackupInfo[] = []
-  for (const name of readdirSync(dir)) {
+  for (const name of await readdir(dir)) {
     const day = BACKUP_NAME.exec(name)?.[1]
     if (!day) continue
     const file = join(dir, name)
     try {
-      out.push({ day, file: name, bytes: statSync(file).size, ...librarySummary(readBackup(file)) })
+      const { mtimeMs, size } = await stat(file)
+      const known = summaries.get(file)
+      if (known && known.mtimeMs === mtimeMs && known.size === size) {
+        out.push(known.info)
+        continue
+      }
+      const info = { day, file: name, bytes: size, ...librarySummary(normalizeLibrary(JSON.parse(await readFile(file, 'utf8')))) }
+      summaries.set(file, { mtimeMs, size, info })
+      out.push(info)
     } catch {
       // A half-synced or broken copy: leave it out of the list.
     }
