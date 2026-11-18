@@ -168,14 +168,14 @@ export function stopNowPlaying(): void {
 
 // What the Chrome extension reported, by page (see extension.ts). Reports come every 10 seconds
 // while a player is open, so one older than 30 seconds means the tab was closed.
-const fromExtension = new Map<string, { at: number; item: NowPlaying }>()
+const fromExtension = new Map<string, { at: number; item: NowPlaying; named?: string }>()
 
 export function addExtensionItem(item: NowPlaying): void {
   const key = item.url ?? item.app
   // The player hides the episode line with its controls: keep the last one named on this page.
-  const before = fromExtension.get(key)?.item
-  const kept = !parseEpisode(item.title) && before && parseEpisode(before.title) ? { ...item, title: `${item.title} · ${before.title}` } : item
-  fromExtension.set(key, { at: Date.now(), item: kept })
+  const named = parseEpisode(item.title) ? item.title : fromExtension.get(key)?.named
+  const kept = named && named !== item.title ? { ...item, title: `${item.title} · ${named}` } : item
+  fromExtension.set(key, { at: Date.now(), item: kept, named })
 }
 
 /**
