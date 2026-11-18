@@ -391,7 +391,28 @@ export function finished(prev: Recognised | null, now: Recognised | null): Recog
   const nearEnd = (r: Recognised): boolean => r.duration != null && r.position != null && (r.position >= r.duration * 0.95 || r.duration - r.position <= 180)
   if (same) return !nearEnd(prev) && nearEnd(now!) ? now : null
   // Stopped or moved on: it counts only from the credits (repeat reports are dropped by id).
-  return nearEnd(prev) ? prev : null
+  if (nearEnd(prev)) return prev
+  // The player went straight on to the next episode (autoplay, or Next on the credits screen): the
+  // service only does that at the end, which can come a little before the last 3 minutes.
+  return now && nextEpisode(prev, now) && prev.position >= prev.duration * 0.9 ? prev : null
+}
+
+/** `now` is the episode straight after `prev`, both named by the player. */
+function nextEpisode(prev: Recognised, now: Recognised): boolean {
+  if (!prev.sure || !now.sure || now.key !== prev.key || prev.season == null || prev.episode == null) return false
+  return (now.season === prev.season && now.episode === prev.episode + 1) || (now.season === prev.season + 1 && now.episode === 1)
+}
+
+/**
+ * One step of following playback, for finishes: what finished, and what to follow next. While the
+ * player's tab moves to the next episode's address, something that only names the show (the
+ * window title, Windows' media controls) fills the gap with a guess at the episode. That guess
+ * can't say which episode finished, so the last episode the player named is kept until it names
+ * another or everything stops.
+ */
+export function followPlayback(followed: Recognised | null, now: Recognised | null): { done: Recognised | null; followed: Recognised | null } {
+  if (now && !now.sure && now.type === 'tv' && followed?.sure && followed.key === now.key) return { done: null, followed }
+  return { done: finished(followed, now), followed: now }
 }
 
 /**

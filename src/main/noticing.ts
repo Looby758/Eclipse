@@ -8,7 +8,7 @@ import { episodeKey, type Library, type SearchResult, type TitleDetails } from '
 import {
   addMoment,
   bedtimeWarning,
-  finished,
+  followPlayback,
   formatAt,
   learnLinks,
   playingLine,
@@ -54,6 +54,8 @@ interface Saved {
 let saved: Saved | null = null
 let lastScan: { at: number; browsers: string[]; errors: string[]; visits: number } | null = null
 let current: Recognised | null = null
+/** The episode being followed for finishes: the last one the player named (see followPlayback). */
+let followed: Recognised | null = null
 let warned = ''
 let details: Record<string, TitleDetails> = {}
 let detailsAt = 0
@@ -183,6 +185,7 @@ async function onPlaying(): Promise<void> {
   if (!noticing) {
     const moved = JSON.stringify(next) !== JSON.stringify(current)
     current = next
+    followed = null
     if (moved) hooks.changed()
     return
   }
@@ -191,7 +194,9 @@ async function onPlaying(): Promise<void> {
     unknown = null
     hooks.changed()
   }
-  const done = finished(current, next)
+  const step = followPlayback(followed, next)
+  followed = step.followed
+  const done = step.done
   if (done) {
     const s = suggestionFromPlaying(done, eveningDay(new Date()), getLibrary())
     // No notification: it waits on Home for when you're back in Eclipse.
@@ -275,6 +280,7 @@ function apply(): void {
     stopNowPlaying()
     stopExtensionLink()
     current = null
+    followed = null
   }
   if (s.playing && !globalShortcut.isRegistered(MOMENT_KEY)) globalShortcut.register(MOMENT_KEY, saveMoment)
   else if (!s.playing && globalShortcut.isRegistered(MOMENT_KEY)) globalShortcut.unregister(MOMENT_KEY)
