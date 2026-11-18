@@ -40,9 +40,9 @@
   --spot-hi: #8fe3ff;
   --spot-hi-2: #b4a2ff;
 
-  /* Frosted glass (Spotlight's pages). The page is a touch less see-through, as the frost now comes from the blurred posters behind it rather than a live blur. */
+  /* Frosted glass (Spotlight's pages) */
   --frost-veil: rgba(8, 9, 20, 0.28);
-  --frost-sheet: rgba(14, 15, 34, 0.6);
+  --frost-sheet: rgba(14, 15, 34, 0.45);
   --frost-blur: blur(36px) saturate(1.5);
   --frost-pane: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
   --frost-pane-hover: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08));
@@ -111,6 +111,9 @@
   /* The widest a page's content gets. */
   --page-max: 1240px;
   --sheet-side: 40px;
+  /* A page's shadow is kept tight: a big soft one (80px) took the graphics chip ~150ms to draw each
+     time a page opened, which was the pause before pages appeared. */
+  --sheet-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
   --poster-lift: 44px;
   --shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
 
@@ -165,7 +168,7 @@
     --spot-hi: #2f6bff;
     --spot-hi-2: #7a4dff;
   --frost-veil: rgba(238, 240, 251, 0.3);
-  --frost-sheet: rgba(255, 255, 255, 0.62);
+  --frost-sheet: rgba(255, 255, 255, 0.5);
   --frost-pane: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.4));
   --frost-pane-hover: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.55));
   --frost-float: rgba(255, 255, 255, 0.6);
@@ -217,7 +220,7 @@
   --spot-hi: #2f6bff;
   --spot-hi-2: #7a4dff;
   --frost-veil: rgba(238, 240, 251, 0.3);
-  --frost-sheet: rgba(255, 255, 255, 0.62);
+  --frost-sheet: rgba(255, 255, 255, 0.5);
   --frost-pane: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.4));
   --frost-pane-hover: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.55));
   --frost-float: rgba(255, 255, 255, 0.6);

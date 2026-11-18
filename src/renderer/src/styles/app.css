@@ -37,15 +37,8 @@ code { font-size: 0.92em; }
 .veil { position: absolute; inset: 0; pointer-events: none; }
 .on-home .veil { background: var(--veil-home); }
 .on-page .veil { background: var(--veil-page); }
-/* Pages: the frosted look comes from a second, pre-blurred copy of the wall, not from blurring the
-   window behind the page. Each poster's blur is drawn once and then just slides along, while a live
-   backdrop blur had to be redone every frame of the moving wall, which made pages open late. Opening a
-   page only cross-fades the two copies. (0.001, not 0, so the hidden copy stays drawn and ready.) */
-.wall-layer { position: absolute; inset: 0; transition: opacity 0.3s var(--ease); }
-.wall-soft { opacity: 0.001; }
-.wall-soft .wall-tile { filter: blur(14px) saturate(1.4); }
-.on-page .wall-soft { opacity: 1; }
-.on-page .wall-sharp { opacity: 0.001; }
+/* The wall looks the same behind pages as on Home (no blur switched on), so opening a page never has
+   to redraw its hundreds of posters; the page's own frost softens what's behind it. */
 @media (prefers-reduced-motion: reduce) { .wall-col { animation: none; } }
 
 /* A pale glow in the title's poster colour, behind its sheet. */
@@ -108,7 +101,7 @@ code { font-size: 0.92em; }
 
 /* ---- Sheets (every page that isn't home) ---- */
 /* Pages keep their content in a centred column on wide windows, so nothing sits stranded on the left. */
-.sheet { --page-side: max(48px, calc((100% - var(--page-max)) / 2)); position: absolute; left: var(--sheet-side); right: var(--sheet-side); top: var(--sheet-top); bottom: var(--sheet-bottom); z-index: 3; border-radius: var(--radius-sheet); background: var(--sheet); border: 1px solid var(--line); box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35); animation: page-rise 0.32s var(--ease) both; }
+.sheet { --page-side: max(48px, calc((100% - var(--page-max)) / 2)); position: absolute; left: var(--sheet-side); right: var(--sheet-side); top: var(--sheet-top); bottom: var(--sheet-bottom); z-index: 3; border-radius: var(--radius-sheet); background: var(--sheet); border: 1px solid var(--line); backdrop-filter: blur(30px); box-shadow: var(--sheet-shadow); animation: page-rise 0.32s var(--ease) both; }
 @keyframes sheet-rise { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 /* Pages come up quicker and from nearer than the welcome does, so clicking feels immediate. */
 @keyframes page-rise { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -643,8 +636,9 @@ button.list-seen.undo:hover { background: var(--glass-hover); }
   --line: var(--frost-line);
   --veil-page: var(--frost-veil);
 }
-.app.frost .sheet, .app.frost .setup { box-shadow: var(--frost-rim), 0 30px 80px rgba(0, 0, 0, 0.45); }
-.app.frost .setup { backdrop-filter: var(--frost-blur); }
+.app.frost .sheet, .app.frost .setup { backdrop-filter: var(--frost-blur); }
+.app.frost .setup { box-shadow: var(--frost-rim), 0 30px 80px rgba(0, 0, 0, 0.45); }
+.app.frost .sheet { box-shadow: var(--frost-rim), var(--sheet-shadow); }
 .app.frost .card, .app.frost .hours, .app.frost .time-card, .app.frost .episode-panel, .app.frost .setup-step,
 .app.frost .soon-tonight, .app.frost .rewatch-now, .app.frost .with-row, .app.frost .order-card, .app.frost .list-card,
 .app.frost .next-up, .app.frost .note, .app.frost .otd, .app.frost .dock, .app.frost .back-btn, .app.frost .mini-card { box-shadow: var(--frost-rim); }
@@ -807,6 +801,6 @@ select { appearance: none; -webkit-appearance: none; padding-right: 34px !import
 select:hover { border-color: var(--accent); }
 .card .link-btn + .region-select, .card > .link-btn { margin-top: 0; }
 
-/* No live blur inside pages either: each one would re-blur the moving wall through the page every frame. */
+/* No second blur inside pages: the page is frosted already, and each one is extra work every frame of the moving wall. */
 .app .sheet .btn.glass, .app .sheet .mini-card, .app .sheet .next-up, .app .sheet .status-badge, .app .sheet .rec-hide,
 .app .sheet .jt-summary, .app .sheet .jt-panel, .app .sheet .note, .app .sheet .otd { backdrop-filter: none; }

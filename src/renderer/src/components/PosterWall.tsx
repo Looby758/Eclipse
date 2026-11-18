@@ -75,8 +75,9 @@ function PosterWall({ rows = false }: { rows?: boolean }): React.JSX.Element {
       <div key={t.key} className="wall-tile" style={{ background: `linear-gradient(165deg, hsl(${t.hue} 85% 62%), hsl(272 65% 28%) 70%, hsl(250 50% 10%))` }} />
     )
 
-  const layer = rows
-    ? (
+  if (rows) {
+    return (
+      <div className="wall rows" aria-hidden>
         <div className="wall-rows">
           {lines.map((row, r) => (
             <div key={r} className={`wall-row ${r % 2 ? 'right' : 'left'}`} style={{ animationDuration: `calc(var(--row-speed) + ${r * 9}s)` }}>
@@ -84,23 +85,19 @@ function PosterWall({ rows = false }: { rows?: boolean }): React.JSX.Element {
             </div>
           ))}
         </div>
-      )
-    : (
-        <div className="wall-tilt">
-          {columns.map((col, c) => (
-            <div key={c} className={`wall-col ${c % 2 ? 'down' : 'up'}`} style={{ animationDuration: `calc(var(--wall-speed) + ${c * 6}s)` }}>
-              {col.map(tile)}
-            </div>
-          ))}
-        </div>
-      )
+      </div>
+    )
+  }
 
-  // Two copies drifting in step: sharp for Home, softly blurred behind pages. Opening a page only
-  // cross-fades between them, so nothing has to be blurred again while the wall moves.
   return (
-    <div className={`wall ${rows ? 'rows' : ''}`} aria-hidden>
-      <div className="wall-layer wall-sharp">{layer}</div>
-      <div className="wall-layer wall-soft">{layer}</div>
+    <div className="wall" aria-hidden>
+      <div className="wall-tilt">
+        {columns.map((col, c) => (
+          <div key={c} className={`wall-col ${c % 2 ? 'down' : 'up'}`} style={{ animationDuration: `calc(var(--wall-speed) + ${c * 6}s)` }}>
+            {col.map(tile)}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
