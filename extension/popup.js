@@ -30,7 +30,7 @@ chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
       return
     }
     const p = r.report
-    $('page').textContent = `On this page: ${p.texts.slice(0, 3).join(' · ') || 'no title found'}${p.position != null ? ` · ${clock(p.position)}` : ''}${p.duration != null ? ` of ${clock(p.duration)}` : ''}${p.paused ? ' · paused' : ''}`
+    $('page').textContent = `On this page: ${p.texts.slice(0, 3).join(' · ') || 'no title found'}${p.position != null ? ` · ${clock(p.position)}` : ''}${p.duration != null ? ` of ${clock(p.duration)}` : ''}${p.paused ? ' · paused' : ''}${p.timeFrom === 'video' ? ' (time from the video, not the player’s bar: may be off)' : ''}`
   })
 })
 

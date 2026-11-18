@@ -94,17 +94,30 @@
   }
 
   /** Every video the page has, in the page or tucked away, and which one is the programme. */
+  let last = null
   function videos() {
     const list = new Set([...all('video'), ...media])
-    for (const v of list) if (!v.isConnected && v.paused) list.delete(v)
+    // Old players taken off the page are left out, except the one you were just watching (a paused
+    // Disney+ video can live off the page).
+    for (const v of list) if (!v.isConnected && v.paused && v !== last) list.delete(v)
     return [...list]
   }
   function video(list) {
     const ready = list.filter((v) => v.readyState > 0)
-    // A programme: over two minutes long. Streams that don't say how long they are: the biggest one playing.
-    const long = ready.filter((v) => Number.isFinite(v.duration) && v.duration > 120).sort((a, b) => b.duration - a.duration)[0]
-    if (long) return long
-    return ready.filter((v) => !v.paused && v.videoWidth > 0).sort((a, b) => b.videoWidth * b.videoHeight - a.videoWidth * a.videoHeight)[0] || null
+    const size = (v) => v.videoWidth * v.videoHeight
+    const pick = () => {
+      // A programme: over two minutes long, the one playing first.
+      const long = ready.filter((v) => Number.isFinite(v.duration) && v.duration > 120).sort((a, b) => Number(a.paused) - Number(b.paused) || b.duration - a.duration)[0]
+      if (long) return long
+      // Streams that don't say how long they are: the biggest one playing, else the one you were
+      // watching (paused), else the biggest one on the page.
+      const playing = ready.filter((v) => !v.paused && v.videoWidth > 0).sort((a, b) => size(b) - size(a))[0]
+      if (playing) return playing
+      if (last && ready.includes(last)) return last
+      return ready.filter((v) => v.isConnected && v.videoWidth > 0).sort((a, b) => size(b) - size(a))[0] || null
+    }
+    last = pick()
+    return last
   }
 
   function texts(v) {
@@ -140,13 +153,80 @@
     return out.filter(Boolean).slice(0, 12)
   }
 
+  // ---- Where you are in the episode ----
+  // Some players (Disney+) count the video's own time from when it loaded, not the episode's, so a
+  // skip doesn't show. The player's progress bar and time labels know the real place: read those
+  // when they're there, and while the controls are hidden carry on from the last reading by how
+  // far the video has played since.
+  const clockSecs = (t) => {
+    const m = /(-)?\s*(?:(\d+):)?(\d{1,2}):(\d{2})/.exec(t || '')
+    return m ? Number(m[2] || 0) * 3600 + Number(m[3]) * 60 + Number(m[4]) : null
+  }
+  const label = (el) => `${el.getAttribute('aria-label') || ''} ${typeof el.className === 'string' ? el.className : ''} ${el.getAttribute('data-testid') || ''}`
+  const NOT_PROGRESS = /volume|audio|sound|brightness|speed|subtitle|caption/i
+
+  function fromControls() {
+    let bar = null
+    for (const el of all('[role="slider"], [role="progressbar"], input[type="range"], progress')) {
+      if (NOT_PROGRESS.test(label(el))) continue
+      const max = Number(el.getAttribute('aria-valuemax') ?? el.max)
+      const now = Number(el.getAttribute('aria-valuenow') ?? el.value)
+      if (!(max > 0) || !(now >= 0) || now > max) continue
+      if (!bar || max > bar.max) bar = { el, max, now }
+    }
+    // "1:02 of 21:30" on the bar itself is the clearest of all.
+    const vt = bar && bar.el.getAttribute('aria-valuetext')
+    const pair = vt && /(\d+(?::\d{2}){1,2}).*?(?:of|\/)\s*(\d+(?::\d{2}){1,2})/.exec(vt)
+    if (pair) return { position: clockSecs(pair[1]), duration: clockSecs(pair[2]) }
+    // Time labels: what's left ("20:08", "-20:08"), how far in, how long.
+    let left = null
+    let at = null
+    let total = null
+    for (const el of all('[class*="time" i], [data-testid*="time" i], [class*="remaining" i], [class*="elapsed" i], [class*="duration" i]')) {
+      if (el.children.length > 2) continue
+      const t = (el.textContent || '').trim()
+      if (!/^-?\s*(\d+:)?\d{1,2}:\d{2}$/.test(t)) continue
+      const kind = label(el)
+      if (/remain|left/i.test(kind) || t.startsWith('-')) left = clockSecs(t)
+      else if (/duration|total/i.test(kind)) total = clockSecs(t)
+      else if (/elapsed|current|position/i.test(kind)) at = clockSecs(t)
+      else if (left == null) left = clockSecs(t)
+    }
+    if (bar) {
+      // Seconds, or milliseconds for very big numbers; 0 to 1 or 0 to 100 is a fraction.
+      if (bar.max > 100 || (bar.max === 100 && total == null && left == null && at == null)) {
+        const scale = bar.max > 6 * 3600 ? 1000 : 1
+        if (bar.max > 100) return { position: bar.now / scale, duration: bar.max / scale }
+      }
+      const f = bar.now / bar.max
+      if (total != null) return { position: total * f, duration: total }
+      if (left != null && f < 1) return { position: (left / (1 - f)) * f, duration: left / (1 - f) }
+      if (at != null && f > 0) return { position: at, duration: at / f }
+    }
+    if (at != null && total != null) return { position: at, duration: total }
+    if (at != null && left != null) return { position: at, duration: at + left }
+    return null
+  }
+
+  let anchor = null
+  function where(v) {
+    const ui = fromControls()
+    if (ui && ui.duration > 60 && ui.position >= 0 && ui.position <= ui.duration + 5) {
+      anchor = { v, offset: ui.position - v.currentTime, duration: ui.duration }
+      return { position: ui.position, duration: ui.duration, from: 'player' }
+    }
+    if (anchor && anchor.v === v) return { position: Math.max(0, Math.min(anchor.duration, v.currentTime + anchor.offset)), duration: anchor.duration, from: 'player' }
+    const finite = (n) => (Number.isFinite(n) ? n : null)
+    return { position: finite(v.currentTime), duration: finite(v.duration), from: 'video' }
+  }
+
   function write() {
     try {
       known = openRoots()
       const list = videos()
       const v = video(list)
-      const finite = (n) => (Number.isFinite(n) ? n : null)
-      const report = v ? { url: location.href, texts: texts(v), position: finite(v.currentTime), duration: finite(v.duration), paused: v.paused, ended: v.ended } : null
+      const w = v ? where(v) : null
+      const report = v ? { url: location.href, texts: texts(v), position: w.position, duration: w.duration, timeFrom: w.from, paused: v.paused, ended: v.ended } : null
       // What it looked at, for the popup when nothing's found.
       const seen = list.map((x) => `${x.readyState}/${Number.isFinite(x.duration) ? Math.round(x.duration) : String(x.duration)}/${x.paused ? 'paused' : 'playing'}`)
       document.documentElement.dataset.eclipse = JSON.stringify({ report, seen, roots: known.length })
