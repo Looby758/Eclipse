@@ -310,7 +310,13 @@ export function fromExtension(raw: unknown): NowPlaying | null {
 
 /** Works out which of your shows (or films) is playing, and which episode. */
 export function recognise(np: NowPlaying, library: Library, details: Record<string, TitleDetails>, today: string, now: Date = new Date()): Recognised | null {
-  const text = [np.title, np.artist, np.album].filter(Boolean).map((s) => cleanTitle(s!)).join(' · ')
+  // Each part cleaned on its own: a site's ending (" - NOW") would otherwise take the rest with it.
+  const text = [np.title, np.artist, np.album]
+    .filter(Boolean)
+    .flatMap((s) => s!.split(' · '))
+    .map((s) => cleanTitle(s))
+    .filter(Boolean)
+    .join(' · ')
   const hit = matchTitle(text, library, ['tv', 'movie'])
   if (!hit) return null
   const e = guessFrom(hit, now)
