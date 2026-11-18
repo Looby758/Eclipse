@@ -152,16 +152,23 @@ function ownInPlay(raw: LibraryEntry): boolean {
   return raw.status === 'watching' && Object.keys(raw.episodes ?? {}).length > 0
 }
 
-/** Where an episode could still be ticked: each watch with someone without it, then your own. */
-export function tickTargets(raw: LibraryEntry, k: string): TickTarget[] {
+const lastTick = (episodes: Record<string, string> | undefined): string => Object.values(episodes ?? {}).reduce((a, d) => (d > a && d !== 'seen' ? d : a), '')
+
+/**
+ * Where an episode could still be ticked: each watch with someone without it, then your own.
+ * For a guessed episode, pass the day it was watched: progress ticked on a later day means that
+ * evening is already accounted for, and "the next one" now would be a later episode you haven't
+ * seen (old history read again, or ticked by hand since), so that place is left out.
+ */
+export function tickTargets(raw: LibraryEntry, k: string, guessedOn?: string): TickTarget[] {
+  const stale = (episodes: Record<string, string> | undefined): boolean => !!guessedOn && lastTick(episodes) > guessedOn
   const out: TickTarget[] = watchesWith(raw)
-    .filter(({ watch }) => !watch.episodes?.[k])
+    .filter(({ watch }) => !watch.episodes?.[k] && !stale(watch.episodes))
     .map(({ watch }) => ({ with: watch.with }))
-  if (ownInPlay(raw) && !ticked(activeEntry(raw), k)) out.push({ with: null })
+  const own = activeEntry(raw)
+  if (ownInPlay(raw) && !ticked(own, k) && !stale(own?.episodes)) out.push({ with: null })
   return out
 }
-
-const lastTick = (episodes: Record<string, string> | undefined): string => Object.values(episodes ?? {}).reduce((a, d) => (d > a && d !== 'seen' ? d : a), '')
 
 /**
  * Whose progress to guess the next episode from, when the title doesn't name it: a watch with
@@ -182,7 +189,7 @@ export function guessFrom(raw: LibraryEntry, at: Date): LibraryEntry {
 export function refreshSuggestion(s: Suggestion, library: Library): Suggestion | null {
   const raw = library.entries[s.key]
   if (!raw) return null
-  const targets = tickTargets(raw, episodeKey(s.season, s.episode))
+  const targets = tickTargets(raw, episodeKey(s.season, s.episode), s.sure ? undefined : s.day)
   return targets.length ? { ...s, targets } : null
 }
 
@@ -238,7 +245,7 @@ export function suggestFromVisits(visits: Visit[], library: Library, details: Re
     const k = episodeKey(ep.season, ep.episode)
     plan.add(k)
     const id = `${e.key}@${k}`
-    const targets = tickTargets(raw, k)
+    const targets = tickTargets(raw, k, named ? undefined : v.day)
     if (!targets.length || dismissed.has(id) || out.some((s) => s.id === id)) continue
     out.push({ id, key: e.key, name: e.title.name, season: ep.season, episode: ep.episode, day: v.day, source: 'history', service: svc.service.name, url: v.url, sure: !!named, targets })
   }

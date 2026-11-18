@@ -182,6 +182,22 @@ describe('watching with someone', () => {
     expect(suggestionFromPlaying({ ...r!, episode: 2 }, '2026-11-10', l)).toBeNull()
   })
 
+  it('doesn’t guess from evenings already ticked since', () => {
+    // Watched E1 to E3 on the 10th, ticked them by hand on the 12th; history read again later.
+    const l = setEpisodes(emptyLibrary(), twd, ['S1E1', 'S1E2', 'S1E3'], true, at('2026-11-12'))
+    const visits = [1, 2, 3].map((n) => v(`https://www.nowtv.com/gb/watch/playback/${n}`, 'The Walking Dead - NOW', '2026-11-10', `2${n}:00`))
+    expect(suggestFromVisits(visits, l, details, new Set(), today)).toEqual([])
+    // Named episodes still count, and so do guesses from evenings after your last tick.
+    expect(suggestFromVisits([v('https://www.nowtv.com/gb/watch/playback/9', 'The Walking Dead S1 E5 - NOW', '2026-11-10')], l, details, new Set(), today).map((x) => x.id)).toEqual(['tv:2@S1E5'])
+    expect(suggestFromVisits([v('https://www.nowtv.com/gb/watch/playback/9', 'The Walking Dead - NOW', '2026-11-13')], l, details, new Set(), today).map((x) => x.id)).toEqual(['tv:2@S1E4'])
+    // Saved guesses go away too, but saying yes to one guess from an evening keeps the rest.
+    const guess = { id: 'tv:2@S1E4', key: 'tv:2', name: 'The Walking Dead', season: 1, episode: 4, day: '2026-11-10', source: 'history' as const, service: 'NOW', url: null, sure: false }
+    expect(refreshSuggestion(guess, l)).toBeNull()
+    const early = setEpisodes(emptyLibrary(), twd, ['S1E1'], true, at('2026-11-01'))
+    const yes = tickSuggestion(early, { ...guess, id: 'tv:2@S1E2', episode: 2 })
+    expect(refreshSuggestion({ ...guess, id: 'tv:2@S1E3', episode: 3 }, yes)?.targets).toEqual([{ with: null }])
+  })
+
   it('keeps working for shows you only watch yourself, and old saved suggestions', () => {
     expect(tickTargets(lib.entries['tv:1'], 'S1E3')).toEqual([{ with: null }])
     expect(tickTargets(lib.entries['tv:1'], 'S1E2')).toEqual([])
