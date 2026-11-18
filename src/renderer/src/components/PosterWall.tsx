@@ -3,6 +3,7 @@ import { imageUrl } from '@core/tmdb'
 import { OWN_ENOUGH, WALL_COLUMNS, WALL_PER_COLUMN, wallPosters } from '../lib/wall'
 import type { MediaType, SearchResult } from '@core/types'
 import { useApp } from '../store/app'
+import { isTyping } from '../lib/keys'
 
 const ROWS = 6
 const PER_ROW = 14
@@ -22,7 +23,7 @@ type TitleRef = { type: MediaType; id: number }
 /**
  * The slowly moving, tilted wall of posters behind every screen: your library with recommendations
  * for you mixed in, topped up with this week's trending titles while it's small. Each column drifts up or down and holds two copies
- * of its posters so it loops smoothly. Decoration only: it can't be clicked and screen readers skip it.
+ * of its posters so it loops smoothly. Screen readers skip it; on Spotlight Home its posters can be clicked (see usePointerLift).
  */
 function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: boolean }): React.JSX.Element {
   const rowsRef = useRef<HTMLDivElement>(null)
@@ -148,6 +149,11 @@ function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: b
  * pointer on the window and finds the poster under it. It also checks a few times a second while the
  * mouse is still, because the rows keep drifting underneath. Off over the dial, buttons and panels,
  * with "Keep the poster wall still", and with the computer's reduce-animations setting.
+ *
+ * Holding Shift peeks at the wall: the dial, buttons, pills and panels fade away (the `wall-peek`
+ * class on the page) and every poster can be lifted and clicked, even behind where the dial was and
+ * with the wall kept still. Letting go of Shift, pressing another key, or leaving the window brings
+ * everything back. Shift is left alone while you're typing in a field.
  */
 function usePointerLift(ref: React.RefObject<HTMLDivElement | null>, enabled: boolean, onOpen: (path: string) => void): void {
   const open = useRef(onOpen)
@@ -161,6 +167,9 @@ function usePointerLift(ref: React.RefObject<HTMLDivElement | null>, enabled: bo
     let inside = false
     let frame = 0
     let lifted: Element | null = null
+    let peek = false
+    let seen = false
+    const root = document.documentElement
 
     const lift = (el: Element | null): void => {
       if (el === lifted) return
@@ -168,11 +177,11 @@ function usePointerLift(ref: React.RefObject<HTMLDivElement | null>, enabled: bo
       el?.classList.add('lifted')
       lifted = el
       // The page sits on top of the wall, so show the hand cursor on the whole page while a poster is lifted.
-      document.documentElement.classList.toggle('wall-pointing', !!el?.getAttribute('data-path'))
+      root.classList.toggle('wall-pointing', !!el?.getAttribute('data-path'))
     }
     const update = (): void => {
       frame = 0
-      if (!inside || reduce.matches || document.documentElement.hasAttribute('data-still')) {
+      if (!inside || (!peek && (reduce.matches || root.hasAttribute('data-still')))) {
         wall.classList.remove('lit')
         lift(null)
         return
@@ -194,36 +203,70 @@ function usePointerLift(ref: React.RefObject<HTMLDivElement | null>, enabled: bo
     const queue = (): void => {
       if (!frame) frame = requestAnimationFrame(update)
     }
+    // Over the dial, buttons, pills or a panel the wall stays as it is (while peeking they're faded
+    // out and can't be pointed at, so everything counts as the wall).
+    const OVER = '.spot-center, .spot-pills, .spot-panel, .spot-foryou, button, a, input, select'
+    const overUi = (t: EventTarget | null): boolean => !peek && t instanceof Element && !!t.closest(OVER)
     const onMove = (e: PointerEvent): void => {
       x = e.clientX
       y = e.clientY
-      // Over the dial, buttons, pills or a panel the wall stays as it is.
-      const over = e.target instanceof Element ? e.target.closest('.spot-center, .spot-pills, .spot-panel, .spot-foryou, button, a, input, select') : null
-      inside = !over
+      seen = true
+      // Shift was let go somewhere we didn't hear about it.
+      if (peek && !e.shiftKey) setPeek(false)
+      inside = !overUi(e.target)
       queue()
     }
     const onLeave = (): void => {
       inside = false
       queue()
     }
+    const setPeek = (on: boolean): void => {
+      if (on === peek) return
+      peek = on
+      root.classList.toggle('wall-peek', on)
+      // The mouse may not move: work out again what's under it now the page has faded in or out.
+      if (seen) inside = !overUi(document.elementFromPoint(x, y))
+      queue()
+    }
+    const onKeyDown = (e: KeyboardEvent): void => {
+      if (e.key === 'Shift' && !e.ctrlKey && !e.metaKey && !e.altKey && !isTyping(e.target)) setPeek(true)
+      // Shift as part of something else (Shift+Tab, a shortcut): not a peek.
+      else if (e.key !== 'Shift') setPeek(false)
+    }
+    const onKeyUp = (e: KeyboardEvent): void => {
+      if (e.key === 'Shift') setPeek(false)
+    }
+    const onBlur = (): void => {
+      setPeek(false)
+      onLeave()
+    }
+    const onHidden = (): void => {
+      if (document.hidden) setPeek(false)
+    }
     const onClick = (e: MouseEvent): void => {
-      if (e.button !== 0 || !inside || !lifted || e.defaultPrevented) return
-      const over = e.target instanceof Element ? e.target.closest('.spot-center, .spot-pills, .spot-panel, .spot-foryou, button, a, input, select') : null
+      if (e.button !== 0 || !inside || !lifted || e.defaultPrevented || overUi(e.target)) return
       const path = lifted.getAttribute('data-path')
-      if (!over && path) open.current(path)
+      if (path) open.current(path)
     }
     const tick = window.setInterval(() => inside && queue(), 150)
     window.addEventListener('pointermove', onMove)
     window.addEventListener('click', onClick)
-    document.documentElement.addEventListener('pointerleave', onLeave)
-    window.addEventListener('blur', onLeave)
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('keyup', onKeyUp)
+    document.addEventListener('visibilitychange', onHidden)
+    root.addEventListener('pointerleave', onLeave)
+    window.addEventListener('blur', onBlur)
     return () => {
       window.clearInterval(tick)
       if (frame) cancelAnimationFrame(frame)
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('click', onClick)
-      document.documentElement.removeEventListener('pointerleave', onLeave)
-      window.removeEventListener('blur', onLeave)
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('keyup', onKeyUp)
+      document.removeEventListener('visibilitychange', onHidden)
+      root.removeEventListener('pointerleave', onLeave)
+      window.removeEventListener('blur', onBlur)
+      root.classList.remove('wall-peek')
       wall.classList.remove('lit')
       lift(null)
     }

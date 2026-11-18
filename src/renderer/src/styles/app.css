@@ -585,6 +585,10 @@ button.list-seen.undo:hover { background: var(--glass-hover); }
 .wall-torch { position: absolute; inset: 0; pointer-events: none; opacity: 0; mix-blend-mode: soft-light; background: radial-gradient(circle var(--torch-size) at var(--px, -999px) var(--py, -999px), var(--torch), transparent); transition: opacity 0.6s var(--ease); }
 .wall.rows.lit .wall-torch { opacity: 1; }
 :root.wall-pointing .app.spot, :root.wall-pointing .app.spot .spotlight { cursor: pointer; }
+/* Holding Shift on Spotlight Home: everything over the wall fades away so any poster can be clicked. */
+.app.spot > :not(.wall):not(.veil), .app.spot .veil { transition: opacity 0.25s var(--ease); }
+:root.wall-peek .app.spot > :not(.wall):not(.veil) { opacity: 0; pointer-events: none; }
+:root.wall-peek .app.spot .veil { opacity: 0.35; }
 @keyframes row-left { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 @keyframes row-right { from { transform: translateX(-50%); } to { transform: translateX(0); } }
 @media (prefers-reduced-motion: reduce) { .wall-row { animation: none; } }
