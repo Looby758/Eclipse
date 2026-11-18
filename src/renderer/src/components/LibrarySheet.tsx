@@ -1,5 +1,5 @@
 import { Search, Sparkles, X } from "lucide-react";
-import { useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import {
   countByStatus,
   entriesWith,
@@ -33,6 +33,7 @@ import AvailabilityFilter from "./AvailabilityFilter";
 import WatchlistHours from "./WatchlistHours";
 
 const SORT_KEY = "eclipse.librarySort";
+const FIRST_CARDS = 42;
 
 function savedSort(): LibrarySort {
   try {
@@ -76,6 +77,13 @@ export default function LibrarySheet(): React.JSX.Element {
       // Remembering it is only a nicety.
     }
   };
+  // A long library draws its first few rows straight away and the rest just after the page has
+  // come up, so opening it never waits on hundreds of posters.
+  const [limit, setLimit] = useState(FIRST_CARDS);
+  useEffect(() => {
+    const t = setTimeout(() => startTransition(() => setLimit(Infinity)), 400);
+    return () => clearTimeout(t);
+  }, []);
   const timed = tab === "want" || tab === "watching";
   const inTab = entriesWith(library, tab, type);
   const keys = inTab.map((e) => e.key);
@@ -247,7 +255,7 @@ export default function LibrarySheet(): React.JSX.Element {
         </div>
       ) : (
         <div className="grid">
-          {entries.map((e) => (
+          {entries.slice(0, limit).map((e) => (
             <TitleCard
               key={e.key}
               type={e.type}
