@@ -158,10 +158,11 @@
     const named = lines.filter((l) => EPISODE.test(l.t)).sort((a, b) => b.score - a.score || a.at - b.at)
     // The episode lines go with the page's address (Disney+ gives each episode its own): when the
     // player hides them (controls tucked away, the end-of-episode screen), keep using the last one
-    // seen on this address, unless only a hidden line is left.
+    // seen on this address. A line only hidden away on the page (NOW's episode guide, "S3 E1 ...")
+    // never names the episode by itself: during an advert before the next one it's all there is.
     const here = location.href.split('?')[0]
-    let best = named[0] ? named[0].t : null
-    if (named[0] && named[0].score >= 2) episodeLines.set(here, best)
+    let best = null
+    if (named[0] && named[0].score >= 2) episodeLines.set(here, (best = named[0].t))
     else if (episodeLines.has(here)) best = episodeLines.get(here)
     const out = lines.filter((l) => !EPISODE.test(l.t)).map((l) => l.t)
     if (best) out.splice(Math.min(1, out.length), 0, best)
