@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { franchisesOf, sameFamily, stripWindow, namesRelated, sameUniverse, showCount, universeName, universeStrip } from './universe'
+import { familyRank, franchisesOf, sameFamily, stripWindow, namesRelated, sameUniverse, showCount, universeName, universeStrip } from './universe'
 import type { LibraryEntry, TitleDetails } from './types'
 
 const show = (id: number, name: string, date: string, seasons: [number, number][], extra: Partial<TitleDetails> = {}): TitleDetails => ({
@@ -113,9 +113,31 @@ describe('family first in a big universe', () => {
   })
 
   it('shows the family around this title, topped up with the nearest others', () => {
-    const items = Array.from({ length: 30 }, (_, i) => ({ i, current: i === 10, family: [2, 10, 25].includes(i) }))
+    const items = Array.from({ length: 30 }, (_, i) => ({ i, current: i === 10, family: [2, 10, 25].includes(i) ? 1 : 0 }))
     expect(stripWindow(items).map((x) => x.i)).toEqual([2, 9, 10, 11, 25])
-    const lots = Array.from({ length: 30 }, (_, i) => ({ i, current: i === 10, family: i % 2 === 0 }))
+    const lots = Array.from({ length: 30 }, (_, i) => ({ i, current: i === 10, family: i % 2 === 0 ? 1 : 0 }))
     expect(stripWindow(lots).map((x) => x.i)).toEqual([6, 8, 10, 12, 14])
+  })
+})
+
+describe('hand-picked families', () => {
+  const t = (key: string, name: string) => ({ key: key as 'tv:1', name, collection: null })
+  it('puts the stories that carry on from each other closest', () => {
+    expect(familyRank(t('tv:83867', 'Andor'), t('movie:330459', 'Rogue One: A Star Wars Story'))).toBe(2)
+    expect(familyRank(t('tv:85271', 'WandaVision'), t('tv:999', 'VisionQuest'))).toBe(2)
+    expect(familyRank(t('tv:91363', 'What If...?'), t('tv:888', 'Marvel Zombies'))).toBe(2)
+    expect(familyRank(t('tv:88396', 'The Falcon and the Winter Soldier'), t('movie:822119', 'Captain America: Brave New World'))).toBe(2)
+    expect(familyRank(t('tv:88396', 'The Falcon and the Winter Soldier'), t('movie:986056', 'Thunderbolts*'))).toBe(2)
+    // Daredevil is closest to Born Again, then the rest of the Defenders. Echo goes with Hawkeye.
+    expect(familyRank(t('tv:61889', 'Daredevil'), t('tv:202555', 'Daredevil: Born Again'))).toBe(2)
+    expect(familyRank(t('tv:88329', 'Hawkeye'), t('tv:122226', 'Echo'))).toBe(2)
+    expect(familyRank(t('tv:202555', 'Daredevil: Born Again'), t('tv:122226', 'Echo'))).toBeLessThan(2)
+    expect(familyRank(t('tv:61889', 'Daredevil'), t('tv:62285', 'The Defenders'))).toBe(1)
+    expect(familyRank(t('tv:83867', 'Andor'), t('tv:82856', 'The Mandalorian'))).toBe(0)
+  })
+
+  it('fills the row closest first', () => {
+    const items = Array.from({ length: 30 }, (_, i) => ({ i, current: i === 10, family: i === 29 ? 2 : [2, 3].includes(i) ? 1 : 0 }))
+    expect(stripWindow(items).map((x) => x.i)).toEqual([2, 3, 9, 10, 29])
   })
 })

@@ -104,8 +104,8 @@ export interface UniverseItem {
   posterPath: string | null
   /** The page you're on. */
   current: boolean
-  /** Its closest family within the universe (the other Avengers films, the Defenders shows), shown first along the bottom. */
-  family?: boolean
+  /** How close it is to this title, shown first along the bottom: 2 a hand-picked family (Andor and Rogue One), 1 the same film series, names or small watch-order group, 0 just the same universe. */
+  family?: number
   /** "Next: S3 E4", "Not started", "Watched", "Want to watch". */
   line: string
   /** Episodes seen and out so far (films: 1 of 1 once watched). */
@@ -160,44 +160,65 @@ function smallSections(key: string): Set<string> {
 }
 
 /**
- * The closest family inside a universe: the same film series (the Avengers films, the Iron Man
- * films), names that go together (Captain America: …, Spider-Man: …), or a small group in the
- * watch-order guide (The Defenders).
+ * Hand-picked families inside the big universes, closer than anything the names or film series
+ * show: the stories that carry straight on from each other. A title can be in more than one.
+ * Matched by TMDB id, or by name for ones the watch-order guides don't list yet.
  */
-export function sameFamily(a: Pick<TitleDetails, 'key' | 'name' | 'collection'>, b: Pick<TitleDetails, 'key' | 'name' | 'collection'>): boolean {
-  if (a.key === b.key) return false
-  if (a.collection && a.collection.id === b.collection?.id) return true
-  if (namesRelated(a.name, b.name)) return true
+export const FAMILIES: { name: string; titles: (string | { name: string })[] }[] = [
+  { name: 'WandaVision', titles: ['tv:85271', 'tv:138501', 'tv:213375', { name: 'Agatha All Along' }, { name: 'VisionQuest' }] },
+  { name: 'Andor', titles: ['tv:83867', 'movie:330459'] },
+  { name: 'The Mandalorian', titles: ['tv:82856', 'tv:114461', 'tv:115036', 'movie:1228710', { name: 'The Mandalorian and Grogu' }] },
+  { name: 'Daredevil', titles: ['tv:61889', 'tv:202555'] },
+  { name: 'Hawkeye', titles: ['tv:88329', 'tv:122226'] },
+  { name: 'Captain America', titles: ['movie:1771', 'movie:100402', 'movie:271110', 'movie:822119', 'tv:88396'] },
+  { name: 'Thunderbolts', titles: ['movie:986056', 'movie:497698', 'tv:88396'] },
+  { name: 'What If', titles: ['tv:91363', { name: 'Marvel Zombies' }] }
+]
+
+const inFamily = (f: (typeof FAMILIES)[number], t: Pick<TitleDetails, 'key' | 'name'>): boolean =>
+  f.titles.some((x) => (typeof x === 'string' ? x === t.key : normalizeName(x.name) === normalizeName(t.name)))
+
+/**
+ * How close two titles in the same universe are. 2: a hand-picked family (WandaVision, Agatha All
+ * Along and VisionQuest). 1: the same film series (the Avengers films), names that go together
+ * (Captain America: …), or a small group in the watch-order guide (The Defenders). 0: neither.
+ */
+export function familyRank(a: Pick<TitleDetails, 'key' | 'name' | 'collection'>, b: Pick<TitleDetails, 'key' | 'name' | 'collection'>): number {
+  if (a.key === b.key) return 0
+  if (FAMILIES.some((f) => inFamily(f, a) && inFamily(f, b))) return 2
+  if (a.collection && a.collection.id === b.collection?.id) return 1
+  if (namesRelated(a.name, b.name)) return 1
   const sa = smallSections(a.key)
-  return [...smallSections(b.key)].some((s) => sa.has(s))
+  return [...smallSections(b.key)].some((x) => sa.has(x)) ? 1 : 0
 }
+
+export const sameFamily = (a: Pick<TitleDetails, 'key' | 'name' | 'collection'>, b: Pick<TitleDetails, 'key' | 'name' | 'collection'>): boolean => familyRank(a, b) > 0
 
 /** The strip: this title and the related ones, in the order they came out. Empty when nothing's related. */
 export function universeStrip(current: TitleDetails, related: TitleDetails[], entries: Record<string, LibraryEntry>, today: string): UniverseItem[] {
   if (!related.length) return []
   const all = [current, ...related.filter((r) => r.key !== current.key && entries[r.key])]
   return all
-    .map((d) => ({ ...universeItem(d, entries[d.key], today, d.key === current.key), family: d.key === current.key || sameFamily(current, d) }))
+    .map((d) => ({ ...universeItem(d, entries[d.key], today, d.key === current.key), family: familyRank(current, d) }))
     .sort((a, b) => (a.date ?? '9999').localeCompare(b.date ?? '9999') || a.name.localeCompare(b.name))
 }
 
 /** How many cards fit along the bottom before the strip shows a window around this one. */
 export const STRIP_MAX = 6
 
-/** The cards to show: all of them when they fit, else this one and its neighbours in release order (leaving room for "See all"). */
-export function stripWindow<T extends { current: boolean; family?: boolean }>(items: T[], max = STRIP_MAX): T[] {
+/**
+ * The cards to show: all of them when they fit, else this one and the closest family (leaving room
+ * for "See all"): hand-picked family first, then series and names, then whatever came out nearest,
+ * shown in release order.
+ */
+export function stripWindow<T extends { current: boolean; family?: number }>(items: T[], max = STRIP_MAX): T[] {
   if (items.length <= max) return items
-  const room = max - 1
-  const near = (list: T[]): T[] => {
-    const at = Math.max(0, list.findIndex((u) => u.current))
-    const start = Math.min(Math.max(0, at - Math.floor((room - 1) / 2)), list.length - room)
-    return list.slice(Math.max(0, start), Math.max(0, start) + room)
-  }
-  // Its family first (the other Avengers films), then whatever came out nearest to it.
-  const family = items.filter((u) => u.current || u.family)
-  if (family.length >= room) return near(family)
   const at = Math.max(0, items.findIndex((u) => u.current))
-  const rest = items.map((u, i) => ({ u, d: Math.abs(i - at) })).filter(({ u }) => !family.includes(u)).sort((a, b) => a.d - b.d)
-  const picked = new Set([...family, ...rest.slice(0, room - family.length).map((x) => x.u)])
+  const others = items
+    .map((u, i) => ({ u, rank: u.family ?? 0, d: Math.abs(i - at) }))
+    .filter(({ u }) => u !== items[at])
+    .sort((a, b) => b.rank - a.rank || a.d - b.d)
+    .slice(0, max - 2)
+  const picked = new Set([items[at], ...others.map((x) => x.u)])
   return items.filter((u) => picked.has(u))
 }
