@@ -13,8 +13,8 @@ You do this once. It takes about 10 minutes. Nothing here is secret, so it's fin
 ### 1. Google Cloud (in Orbit's project)
 
 1. Open [console.cloud.google.com](https://console.cloud.google.com) and sign in. In the project picker at the top, choose the project Orbit uses.
-2. **Turn on the two APIs.** Menu (☰) → **APIs & Services → Library**. Search **Google Drive API**: if it says *Manage*, it's already on; if it says *Enable*, press it. Then search **Google Picker API** and press **Enable**.
-3. **Allow "only the files you pick".** Menu → **Google Auth Platform → Data access** (on older screens: *APIs & Services → OAuth consent screen → Edit app → Scopes*). Press **Add or remove scopes**, tick the one ending in **`/auth/drive.file`** ("See, edit, create and delete only the specific Google Drive files you use with this app"), then **Update** and **Save**. It's a "non-sensitive" permission, so Google doesn't need to review anything.
+2. **Turn on the APIs.** Menu (☰) → **APIs & Services → Library**. Search **Google Drive API**: if it says *Manage*, it's already on; if it says *Enable*, press it. Do the same for **Google Picker API** and **YouTube Data API v3**.
+3. **Allow "only the files you pick".** Type **OAuth consent screen** in the console's search bar, then **Data access** (on older screens: *APIs & Services → OAuth consent screen → Edit app → Scopes*). Press **Add or remove scopes**, tick the one ending in **`/auth/drive.file`** ("See, edit, create and delete only the specific Google Drive files you use with this app"), then **Update** and **Save**. It's a "non-sensitive" permission, so Google doesn't need to review anything.
 4. **Make sure you're allowed to sign in.** Menu → **Google Auth Platform → Audience**. If it says *Testing*, check your Google account is in **Test users** (add it if not).
 5. **Make the phone's sign-in client.** Menu → **Google Auth Platform → Clients** (or *APIs & Services → Credentials*) → **Create client** (*Create credentials → OAuth client ID*).
    - Application type: **Web application**
@@ -24,8 +24,9 @@ You do this once. It takes about 10 minutes. Nothing here is secret, so it's fin
    - Press **Create**, and copy the **Client ID** (it ends in `.apps.googleusercontent.com`). Leave the client secret alone: the page doesn't use one.
 6. **Make a key for Google's file picker.** Menu → **APIs & Services → Credentials → Create credentials → API key**. When it's made, press **Edit API key** (or the key's name):
    - Name: `Eclipse phone picker`
-   - Application restrictions: **Websites**, then **Add** `https://looby758.github.io/*`
-   - API restrictions: **Restrict key**, and tick only **Google Picker API**
+   - Application restrictions: **None** (Google's picker runs inside a Google page, so a website restriction stops it working)
+   - API restrictions: **Restrict key**, and tick **Google Picker API**, **Google Drive API** and **YouTube Data API v3** (the picker quietly uses all three; without them it says "The API developer key is invalid"). If YouTube Data API v3 isn't listed, enable it first under *APIs & Services → Library*.
+   - It's safe without a website restriction: the key can only open the picker, and nothing in your Drive can be read without your own Google sign-in.
    - **Save**, then copy the key (it starts with `AIza`).
 7. **Find the project number.** Menu → **Cloud overview → Dashboard** (or *IAM & Admin → Settings*). Copy the **Project number** (only digits, not the project ID).
 
