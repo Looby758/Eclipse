@@ -9,6 +9,7 @@ import {
   followPlayback,
   learnLinks,
   mergeSuggestions,
+  noKey,
   matchTitle,
   momentsOf,
   parseEpisode,
@@ -278,18 +279,18 @@ describe('what’s playing', () => {
     expect(finished(np('Andor S2 E4', 2300), np('Andor S2 E5', 5))).toBeNull()
   })
 
-  it('asks about a finished episode that an earlier version only guessed', () => {
+  it('asks about a finished episode after a no to a guess from history', () => {
     const done = suggestionFromPlaying(np('Andor S2 E4', 2650)!, today, lib)!
-    // An old guess from browser history, saved with the same id but never shown any more.
-    const guess = { ...done, source: 'history' as const, sure: false }
-    expect(mergeSuggestions([guess], [done], []).fresh).toEqual([done])
-    expect(mergeSuggestions([guess], [done], []).suggestions).toEqual([done])
-    // "Not this" on the guess was a no to the guess: the player naming it asks after all.
-    expect(mergeSuggestions([guess], [done], [done.id])).toEqual({ suggestions: [done], dismissed: [], fresh: [done] })
-    // Already asked, or said no to: not again.
+    const history = { ...done, source: 'history' as const }
+    // An old guess, saved with the same id but never shown any more: replaced.
+    expect(mergeSuggestions([{ ...history, sure: false }], [done], []).suggestions).toEqual([done])
+    // "Not this" on the history one isn't a no to what the player saw finish.
+    expect(mergeSuggestions([history], [done], [noKey(history)])).toEqual({ suggestions: [done], fresh: [done] })
+    expect(mergeSuggestions([], [done], [done.id]).fresh).toEqual([done])
+    // Already asking, or said no to the player's one: not again.
     expect(mergeSuggestions([done], [done], []).fresh).toEqual([])
-    expect(mergeSuggestions([], [done], [done.id]).fresh).toEqual([])
-    expect(mergeSuggestions([done], [done], [done.id]).dismissed).toEqual([done.id])
+    expect(mergeSuggestions([done], [done], [noKey(done)]).fresh).toEqual([])
+    expect(mergeSuggestions([history], [history], [history.id]).fresh).toEqual([])
   })
 
   it('keeps following the named episode while the next one loads', () => {
@@ -305,6 +306,11 @@ describe('what’s playing', () => {
     expect(suggestionFromPlaying(next.done!, today, lib)).toMatchObject({ id: 'tv:1@S2E4' })
     // Without it, the guess took over and the finish was dropped as unsure.
     expect(suggestionFromPlaying(finished(guess, np('Andor S2 E5', 5))!, today, lib)).toBeNull()
+    // Named for the first time already in the credits (after a guess, or Eclipse just opened): asks.
+    expect(followPlayback(guess, named).done).toBe(named)
+    expect(followPlayback(null, named).done).toBe(named)
+    expect(followPlayback(named, np('Andor S2 E4', 2660)).done).toBeNull()
+    expect(followPlayback(null, np('Andor S2 E4', 1200)).done).toBeNull()
     // Everything stopping still counts from the credits.
     expect(followPlayback(named, null)).toEqual({ done: named, followed: null })
   })

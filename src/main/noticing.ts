@@ -13,6 +13,7 @@ import {
   formatAt,
   learnLinks,
   mergeSuggestions,
+  noKey,
   playingLine,
   recognise,
   refreshSuggestion,
@@ -98,13 +99,13 @@ export function settings(): NoticingSettings {
 function pending(lib: Library = getLibrary()): Suggestion[] {
   const { suggestions, dismissed } = load()
   const no = new Set(dismissed)
-  return suggestions.filter((s) => !no.has(s.id)).flatMap((s) => refreshSuggestion(s, lib) ?? [])
+  return suggestions.filter((s) => !no.has(noKey(s))).flatMap((s) => refreshSuggestion(s, lib) ?? [])
 }
 
 function addSuggestions(found: Suggestion[]): Suggestion[] {
   const s = load()
   const merged = mergeSuggestions(s.suggestions, found, s.dismissed)
-  if (merged.suggestions.length !== s.suggestions.length || merged.dismissed.length !== s.dismissed.length) store({ ...s, suggestions: merged.suggestions, dismissed: merged.dismissed })
+  if (merged.fresh.length || merged.suggestions.length !== s.suggestions.length) store({ ...s, suggestions: merged.suggestions })
   return merged.fresh
 }
 
@@ -386,7 +387,8 @@ export function acceptSuggestion(id: string, who?: string | null): Library {
 
 export function dismissSuggestion(id: string): void {
   const s = load()
-  store({ ...s, dismissed: [...s.dismissed, id] })
+  const which = s.suggestions.find((x) => x.id === id && x.sure)
+  store({ ...s, dismissed: [...s.dismissed, which ? noKey(which) : id] })
 }
 
 export function stopNoticing(): void {

@@ -209,19 +209,29 @@ export function tickSuggestion(library: Library, s: Suggestion, who?: string | n
 }
 
 /**
- * Adds new suggestions to the saved ones, leaving out any already saved or said no to. A guess
- * saved by an earlier version (never shown any more) doesn't count: it's replaced, and a "Not this"
- * on a guess was a no to the guess, so it's forgotten too. Otherwise an episode Eclipse once
- * guessed wrongly could never be asked about once the player named it.
+ * What a "Not this" is recorded as: the id for one from browser history (or saved before this
+ * was kept apart), the id with "#playing" for one the player saw finish. A no to a guess from
+ * history isn't a no to the episode the player later names and sees to the end.
  */
-export function mergeSuggestions(saved: Suggestion[], found: Suggestion[], dismissed: string[]): { suggestions: Suggestion[]; dismissed: string[]; fresh: Suggestion[] } {
-  const kept = saved.filter((x) => x.sure)
-  const sureIds = new Set(kept.map((x) => x.id))
-  const guessed = new Set(saved.filter((x) => !x.sure && !sureIds.has(x.id)).map((x) => x.id))
-  const no = new Set(dismissed.filter((id) => !guessed.has(id)))
-  const known = new Set([...sureIds, ...no])
-  const fresh = found.filter((x, i) => !known.has(x.id) && found.findIndex((y) => y.id === x.id) === i)
-  return { suggestions: [...kept, ...fresh], dismissed: [...no], fresh }
+export const noKey = (s: Pick<Suggestion, 'id' | 'source'>): string => (s.source === 'playing' ? `${s.id}#playing` : s.id)
+
+/**
+ * Adds new suggestions to the saved ones, leaving out any still being asked about or said no to.
+ * Guesses saved by earlier versions (never shown any more) are dropped. A finish the player saw
+ * replaces one from history that you said no to.
+ */
+export function mergeSuggestions(saved: Suggestion[], found: Suggestion[], dismissed: string[]): { suggestions: Suggestion[]; fresh: Suggestion[] } {
+  const no = new Set(dismissed)
+  let kept = saved.filter((x) => x.sure)
+  const fresh: Suggestion[] = []
+  for (const x of found) {
+    if (no.has(noKey(x)) || fresh.some((y) => y.id === x.id)) continue
+    const had = kept.find((y) => y.id === x.id)
+    if (had && !no.has(noKey(had))) continue
+    kept = kept.filter((y) => y.id !== x.id)
+    fresh.push(x)
+  }
+  return { suggestions: [...kept, ...fresh], fresh }
 }
 
 /**
@@ -425,7 +435,11 @@ export function atCredits(r: Recognised): boolean {
  */
 export function followPlayback(followed: Recognised | null, now: Recognised | null): { done: Recognised | null; followed: Recognised | null } {
   if (now && !now.sure && now.type === 'tv' && followed?.sure && followed.key === now.key) return { done: null, followed }
-  return { done: finished(followed, now), followed: now }
+  // The player names an episode that's already in its credits (Eclipse opened then, or you skipped
+  // to the end): that's a finish too.
+  const arrived = !!now?.sure && !(followed?.sure && followed.key === now.key && followed.season === now.season && followed.episode === now.episode)
+  const done = finished(followed, now) ?? (arrived && now!.duration != null && now!.duration >= 300 && atCredits(now!) ? now : null)
+  return { done, followed: now }
 }
 
 /**
