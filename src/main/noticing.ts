@@ -1,4 +1,4 @@
-import { report as reportHealth } from './health'
+import { log, report as reportHealth } from './health'
 import { app, globalShortcut, Notification } from 'electron'
 import { existsSync, readFileSync, renameSync, writeFileSync } from 'fs'
 import { join } from 'path'
@@ -7,10 +7,13 @@ import { bedtimeTonight, tonightStart } from '@core/time'
 import { episodeKey, type Library, type SearchResult, type TitleDetails } from '@core/types'
 import {
   addMoment,
+  atCredits,
   bedtimeWarning,
-  finished,
+  followPlayback,
   formatAt,
   learnLinks,
+  mergeSuggestions,
+  noKey,
   playingLine,
   recognise,
   refreshSuggestion,
@@ -54,6 +57,8 @@ interface Saved {
 let saved: Saved | null = null
 let lastScan: { at: number; browsers: string[]; errors: string[]; visits: number } | null = null
 let current: Recognised | null = null
+/** The episode being followed for finishes: the last one the player named (see followPlayback). */
+let followed: Recognised | null = null
 let warned = ''
 let details: Record<string, TitleDetails> = {}
 let detailsAt = 0
@@ -94,15 +99,14 @@ export function settings(): NoticingSettings {
 function pending(lib: Library = getLibrary()): Suggestion[] {
   const { suggestions, dismissed } = load()
   const no = new Set(dismissed)
-  return suggestions.filter((s) => !no.has(s.id)).flatMap((s) => refreshSuggestion(s, lib) ?? [])
+  return suggestions.filter((s) => !no.has(noKey(s))).flatMap((s) => refreshSuggestion(s, lib) ?? [])
 }
 
-function addSuggestions(found: Suggestion[]): number {
+function addSuggestions(found: Suggestion[]): Suggestion[] {
   const s = load()
-  const known = new Set([...s.suggestions.map((x) => x.id), ...s.dismissed])
-  const fresh = found.filter((x) => !known.has(x.id))
-  if (fresh.length) store({ ...s, suggestions: [...s.suggestions, ...fresh] })
-  return fresh.length
+  const merged = mergeSuggestions(s.suggestions, found, s.dismissed)
+  if (merged.fresh.length || merged.suggestions.length !== s.suggestions.length) store({ ...s, suggestions: merged.suggestions })
+  return merged.fresh
 }
 
 function notify(title: string, body: string, onClick?: () => void): void {
@@ -142,7 +146,7 @@ export async function scanHistory(): Promise<void> {
   const result = await streamingVisits(since)
   const lib = getLibrary()
   const found = suggestFromVisits(result.visits, lib, new Set(load().dismissed))
-  const fresh = addSuggestions(found)
+  const fresh = addSuggestions(found).length
   // Learn where each show is watched, for "Play next".
   let next = getLibrary()
   for (const p of showPagesFromVisits(result.visits, next)) next = learnLinks(next, p.key, p.url)
@@ -183,6 +187,7 @@ async function onPlaying(): Promise<void> {
   if (!noticing) {
     const moved = JSON.stringify(next) !== JSON.stringify(current)
     current = next
+    followed = null
     if (moved) hooks.changed()
     return
   }
@@ -191,11 +196,16 @@ async function onPlaying(): Promise<void> {
     unknown = null
     hooks.changed()
   }
-  const done = finished(current, next)
+  const step = followPlayback(followed, next)
+  recordPlaying(now?.n ?? null, next, step.done)
+  followed = step.followed
+  const done = step.done
   if (done) {
     const s = suggestionFromPlaying(done, eveningDay(new Date()), getLibrary())
     // No notification: it waits on Home for when you're back in Eclipse.
-    if (s) addSuggestions([s])
+    if (!s) log('[playing] not asked: a film, no episode named, or already ticked')
+    else if (addSuggestions([s]).length) log(`[playing] asking about ${s.name} S${s.season}E${s.episode} on Home`)
+    else log(`[playing] not asked again: ${s.name} S${s.season}E${s.episode} was already asked about, or you said no to it`)
   }
   // Phase 31: on a Mac, the tab's address teaches where the show is watched.
   if (now?.n.url && next) {
@@ -214,6 +224,34 @@ async function onPlaying(): Promise<void> {
   const changed = JSON.stringify(next) !== JSON.stringify(current)
   current = next
   if (changed) hooks.changed()
+}
+
+// A record of what the player said, in the log (Settings → Is everything working? → Copy details),
+// to see why an episode wasn't offered: each new episode with what the player reported, where it
+// was once a minute, when it reached the credits, and what finished.
+let recorded = { id: '', at: 0, credits: false }
+const clock = (s: number | null): string => (s == null ? '?' : formatAt(s))
+
+function recordPlaying(n: NowPlaying | null, r: Recognised | null, done: Recognised | null): void {
+  if (done) log(`[playing] finished ${done.name} S${done.season}E${done.episode} at ${clock(done.position)} of ${clock(done.duration)}${done.sure ? '' : ' (episode guessed, not asked)'}`)
+  if (!r || !n) {
+    if (recorded.id) log('[playing] nothing playing')
+    recorded = { id: '', at: 0, credits: false }
+    return
+  }
+  const id = `${r.key}@${r.season}:${r.episode}`
+  const where = `${clock(r.position)} of ${clock(r.duration)}, ${r.playing ? 'playing' : 'paused'}`
+  const credits = atCredits(r)
+  if (id !== recorded.id) {
+    log(`[playing] ${r.name} S${r.season ?? '?'}E${r.episode ?? '?'}${r.sure ? '' : ' (guessed)'} at ${where}, from ${n.app}: ${n.title}${n.url ? ` (${n.url.split('?')[0]})` : ''}`)
+    recorded = { id, at: Date.now(), credits }
+  } else if (credits && !recorded.credits) {
+    log(`[playing] credits at ${where}`)
+    recorded = { ...recorded, at: Date.now(), credits }
+  } else if (Date.now() - recorded.at >= 60_000) {
+    log(`[playing] ${where}`)
+    recorded = { ...recorded, at: Date.now() }
+  }
 }
 
 /** Something's playing that isn't in your library: find which show it is, and ask once whether to add it. */
@@ -275,6 +313,7 @@ function apply(): void {
     stopNowPlaying()
     stopExtensionLink()
     current = null
+    followed = null
   }
   if (s.playing && !globalShortcut.isRegistered(MOMENT_KEY)) globalShortcut.register(MOMENT_KEY, saveMoment)
   else if (!s.playing && globalShortcut.isRegistered(MOMENT_KEY)) globalShortcut.unregister(MOMENT_KEY)
@@ -348,7 +387,8 @@ export function acceptSuggestion(id: string, who?: string | null): Library {
 
 export function dismissSuggestion(id: string): void {
   const s = load()
-  store({ ...s, dismissed: [...s.dismissed, id] })
+  const which = s.suggestions.find((x) => x.id === id && x.sure)
+  store({ ...s, dismissed: [...s.dismissed, which ? noKey(which) : id] })
 }
 
 export function stopNoticing(): void {

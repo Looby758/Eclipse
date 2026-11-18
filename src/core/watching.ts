@@ -209,6 +209,32 @@ export function tickSuggestion(library: Library, s: Suggestion, who?: string | n
 }
 
 /**
+ * What a "Not this" is recorded as: the id for one from browser history (or saved before this
+ * was kept apart), the id with "#playing" for one the player saw finish. A no to a guess from
+ * history isn't a no to the episode the player later names and sees to the end.
+ */
+export const noKey = (s: Pick<Suggestion, 'id' | 'source'>): string => (s.source === 'playing' ? `${s.id}#playing` : s.id)
+
+/**
+ * Adds new suggestions to the saved ones, leaving out any still being asked about or said no to.
+ * Guesses saved by earlier versions (never shown any more) are dropped. A finish the player saw
+ * replaces one from history that you said no to.
+ */
+export function mergeSuggestions(saved: Suggestion[], found: Suggestion[], dismissed: string[]): { suggestions: Suggestion[]; fresh: Suggestion[] } {
+  const no = new Set(dismissed)
+  let kept = saved.filter((x) => x.sure)
+  const fresh: Suggestion[] = []
+  for (const x of found) {
+    if (no.has(noKey(x)) || fresh.some((y) => y.id === x.id)) continue
+    const had = kept.find((y) => y.id === x.id)
+    if (had && !no.has(noKey(had))) continue
+    kept = kept.filter((y) => y.id !== x.id)
+    fresh.push(x)
+  }
+  return { suggestions: [...kept, ...fresh], fresh }
+}
+
+/**
  * From browser visits to streaming players: one suggestion per episode the page title names, on
  * the day it was played. Titles that don't name the episode (Disney+, NOW) are left to the Chrome
  * extension, which reads it from the player: guessing "the next one" from history ticked the wrong
@@ -381,17 +407,39 @@ export function playingLine(r: Recognised): string {
 }
 
 /**
- * Follows playback between checks and says when something finished: it reached the last 5% (or
- * its last 3 minutes) while you watched, or it was already there when it stopped or moved on (the
+ * Follows playback between checks and says when something finished: it reached the credits while you watched, or it was already there when it stopped or moved on (the
  * credits, then the next episode). Stopping anywhere earlier doesn't count: you haven't finished it.
  */
 export function finished(prev: Recognised | null, now: Recognised | null): Recognised | null {
   if (!prev || prev.duration == null || prev.position == null || prev.duration < 300) return null
   const same = !!now && now.key === prev.key && now.season === prev.season && now.episode === prev.episode && (now.position ?? 0) >= (prev.position ?? 0) - 30
-  const nearEnd = (r: Recognised): boolean => r.duration != null && r.position != null && (r.position >= r.duration * 0.95 || r.duration - r.position <= 180)
-  if (same) return !nearEnd(prev) && nearEnd(now!) ? now : null
+  if (same) return !atCredits(prev) && atCredits(now!) ? now : null
   // Stopped or moved on: it counts only from the credits (repeat reports are dropped by id).
-  return nearEnd(prev) ? prev : null
+  return atCredits(prev) ? prev : null
+}
+
+/**
+ * In the credits: the last 10% or the last 3 minutes. NOW and Disney+ can start the credits (and
+ * the next episode) with 4 or 5 minutes still to run, so the last 5% missed them.
+ */
+export function atCredits(r: Recognised): boolean {
+  return r.duration != null && r.position != null && (r.position >= r.duration * 0.9 || r.duration - r.position <= 180)
+}
+
+/**
+ * One step of following playback, for finishes: what finished, and what to follow next. While the
+ * player's tab moves to the next episode's address, something that only names the show (the
+ * window title, Windows' media controls) fills the gap with a guess at the episode. That guess
+ * can't say which episode finished, so the last episode the player named is kept until it names
+ * another or everything stops.
+ */
+export function followPlayback(followed: Recognised | null, now: Recognised | null): { done: Recognised | null; followed: Recognised | null } {
+  if (now && !now.sure && now.type === 'tv' && followed?.sure && followed.key === now.key) return { done: null, followed }
+  // The player names an episode that's already in its credits (Eclipse opened then, or you skipped
+  // to the end): that's a finish too.
+  const arrived = !!now?.sure && !(followed?.sure && followed.key === now.key && followed.season === now.season && followed.episode === now.episode)
+  const done = finished(followed, now) ?? (arrived && now!.duration != null && now!.duration >= 300 && atCredits(now!) ? now : null)
+  return { done, followed: now }
 }
 
 /**
