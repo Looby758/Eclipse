@@ -249,7 +249,10 @@ describe('what’s playing', () => {
     const a = np('Andor S2 E4', 2000) as Recognised
     expect(finished(a, np('Andor S2 E4', 2300))).toBeNull()
     expect(finished(np('Andor S2 E4', 2300), np('Andor S2 E4', 2600))?.episode).toBe(4)
-    expect(finished(np('Andor S2 E4', 2300), np('Andor S2 E5', 10))?.episode).toBe(4)
+    // Moving on counts only from the credits: stopping part-way (here 85% in) isn't finishing.
+    expect(finished(np('Andor S2 E4', 2300), np('Andor S2 E5', 10))).toBeNull()
+    expect(finished(np('Andor S2 E4', 2300), null)).toBeNull()
+    expect(finished(np('Andor S2 E4', 2600), np('Andor S2 E5', 10))?.episode).toBe(4)
     expect(finished(np('Andor S2 E4', 600), null)).toBeNull()
   })
 

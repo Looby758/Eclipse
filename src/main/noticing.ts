@@ -17,7 +17,6 @@ import {
   showPagesFromVisits,
   suggestFromVisits,
   suggestionFromPlaying,
-  suggestionWith,
   tickSuggestion,
   pickShow,
   unknownShow,
@@ -154,11 +153,6 @@ export async function scanHistory(): Promise<void> {
   else if (!result.browsers.length) reportHealth('history', false, 'No Chrome, Edge or Opera history found on this computer')
   else reportHealth('history', true, `Checked ${result.browsers.join(', ')}, found ${plural(fresh, 'episode')}${result.errors.length ? ` (${result.errors.join('; ')})` : ''}`)
   hooks.changed()
-  if (fresh) {
-    const one = found.find((x) => x)
-    const who = one ? suggestionWith(one) : ''
-    notify('Eclipse', fresh === 1 ? `Did you watch ${one?.name}${who ? ` ${who}` : ''}? Tick it in Eclipse.` : `${fresh} things you watched are waiting to be ticked.`, hooks.show)
-  }
 }
 
 // ---- Phase 28 and 29: what's playing ----
@@ -187,8 +181,8 @@ async function onPlaying(): Promise<void> {
   const done = finished(current, next)
   if (done) {
     const s = suggestionFromPlaying(done, eveningDay(new Date()), getLibrary())
-    const who = s ? suggestionWith(s) : ''
-    if (s && addSuggestions([s])) notify('Finished it?', `${playingLine({ ...done, position: null })}${who ? ` ${who}` : ''}: open Eclipse to tick it.`, hooks.show)
+    // No notification: it waits on Home for when you're back in Eclipse.
+    if (s) addSuggestions([s])
   }
   // Phase 31: on a Mac, the tab's address teaches where the show is watched.
   if (now?.n.url && next) {
@@ -226,7 +220,7 @@ async function noticeUnknown(items: NowPlaying[], lib: Library): Promise<void> {
   if (match && lib.entries[match.key]) return
   unknown = { show, match, at: Date.now() }
   hooks.changed()
-  notify(`Watching ${match?.name ?? show.name}?`, 'It isn’t in Eclipse yet: add it to keep track of what you’ve seen.', hooks.show)
+  // No notification: "Add it" waits on Home.
 }
 
 /** "Not mine": don't ask about this show again. */

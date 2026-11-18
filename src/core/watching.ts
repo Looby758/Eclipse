@@ -372,15 +372,16 @@ export function playingLine(r: Recognised): string {
 
 /**
  * Follows playback between checks and says when something finished: it reached the last 5% (or
- * its last 3 minutes), or it was past 80% when it stopped or switched to something else.
+ * its last 3 minutes) while you watched, or it was already there when it stopped or moved on (the
+ * credits, then the next episode). Stopping anywhere earlier doesn't count: you haven't finished it.
  */
 export function finished(prev: Recognised | null, now: Recognised | null): Recognised | null {
   if (!prev || prev.duration == null || prev.position == null || prev.duration < 300) return null
   const same = !!now && now.key === prev.key && now.season === prev.season && now.episode === prev.episode && (now.position ?? 0) >= (prev.position ?? 0) - 30
   const nearEnd = (r: Recognised): boolean => r.duration != null && r.position != null && (r.position >= r.duration * 0.95 || r.duration - r.position <= 180)
   if (same) return !nearEnd(prev) && nearEnd(now!) ? now : null
-  // Stopped or moved on: it counts if you'd got most of the way (repeat reports are dropped by id).
-  return prev.position >= prev.duration * 0.8 ? prev : null
+  // Stopped or moved on: it counts only from the credits (repeat reports are dropped by id).
+  return nearEnd(prev) ? prev : null
 }
 
 /**
