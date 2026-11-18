@@ -275,6 +275,9 @@ export interface TitleRef {
   sections?: string[]
   /** On an actor's list: the part they played (e.g. "Kim Wexler"). */
   role?: string
+  /** On an actor's list (shows): how many episodes they were in, and TMDB's ids for the part. */
+  roleEpisodes?: number
+  creditIds?: string[]
 }
 
 export type ListSource =
@@ -307,6 +310,15 @@ export interface PersonRef {
   role: string
   /** Shows: how many episodes they were in. */
   episodes?: number
+  /** TMDB's ids for their part(s), to look up which episodes they were in. */
+  creditIds?: string[]
+}
+
+/** Which episodes of a show someone was in, from TMDB. */
+export interface PartEpisodes {
+  episodes: { season: number; number: number; name: string; airDate: string | null }[]
+  /** When TMDB only knows the seasons (usual for the main cast). */
+  seasons: number[]
 }
 
 export interface Credits {
@@ -367,6 +379,8 @@ export interface Episode {
   voteAverage: number | null
   voteCount: number
   stillPath: string | null
+  /** TMDB ids of the guest stars in it (to find which episodes someone was in). */
+  guestStars?: number[]
 }
 
 export interface SeasonDetails {

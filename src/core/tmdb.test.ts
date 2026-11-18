@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createTmdb, imageUrl, isReadAccessToken, parseCredits, parseDetails, parsePeopleSearch, parsePerson, parseSearch, TmdbError } from './tmdb'
+import { createTmdb, imageUrl, isReadAccessToken, parseCreditEpisodes, parseCredits, parseDetails, parsePeopleSearch, parsePerson, parseSearch, TmdbError } from './tmdb'
 
 const reply = (status: number, body: unknown = {}) => ({ ok: status >= 200 && status < 300, status, json: async () => body })
 
@@ -172,5 +172,34 @@ describe('actors: parts played, full cast and people search', () => {
         { id: 6 }
       ])
     ).toEqual([{ id: 5, name: 'Katelyn Nacon', profilePath: '/k.jpg', knownFor: 'Acting', knownTitles: ['The Walking Dead', 'A Film'] }])
+  })
+})
+
+describe('which episodes someone was in', () => {
+  it('reads the episodes of a part in order, or just its seasons', () => {
+    expect(
+      parseCreditEpisodes({
+        media: {
+          episodes: [
+            { season_number: 7, episode_number: 2, name: 'The Well', air_date: '2016-10-30' },
+            { season_number: 6, episode_number: 4, name: 'Here’s Not Here', air_date: '2015-11-01' }
+          ],
+          seasons: [{ season_number: 7 }, { season_number: 6 }]
+        }
+      })
+    ).toEqual({
+      episodes: [
+        { season: 6, number: 4, name: 'Here’s Not Here', airDate: '2015-11-01' },
+        { season: 7, number: 2, name: 'The Well', airDate: '2016-10-30' }
+      ],
+      seasons: [6, 7]
+    })
+    expect(parseCreditEpisodes({ media: { seasons: [{ season_number: 1 }] } })).toEqual({ episodes: [], seasons: [1] })
+    expect(parseCreditEpisodes({})).toEqual({ episodes: [], seasons: [] })
+  })
+
+  it('keeps episode counts and part ids on an actor’s shows', () => {
+    const p = parsePerson({ id: 1, tv_credits: { cast: [{ id: 1402, name: 'The Walking Dead', character: 'Enid', episode_count: 5, credit_id: 'abc' }] } })
+    expect(p.acted[0]).toMatchObject({ role: 'Enid', roleEpisodes: 5, creditIds: ['abc'] })
   })
 })

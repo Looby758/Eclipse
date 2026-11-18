@@ -15,6 +15,7 @@ import Poster from './Poster'
 import ProgressBar from './ProgressBar'
 import AvailabilityFilter from './AvailabilityFilter'
 import Credits from './Credits'
+import PartEpisodes from './PartEpisodes'
 
 type Show = 'all' | 'left' | 'seen'
 
@@ -91,10 +92,12 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
     const pos = own ? items.findIndex((i) => itemKey(i) === itemKey(r)) : -1
     const ticked = r.season && !seen ? Object.keys(entry?.episodes ?? {}).filter((k) => parseEpisodeKey(k)?.season === r.season).length : 0
     const canDrag = own && show === 'all' && filter === 'any'
+    // An actor's show: "12 episodes", opening to which ones.
+    const part = source?.kind === 'person' && r.type === 'tv' && !r.season && !!r.roleEpisodes
     return (
       <li
         key={itemKey(r)}
-        className={`list-row ${seen ? 'seen' : ''} ${next ? 'next' : ''} ${dragFrom === pos && canDrag ? 'dragging' : ''}`}
+        className={`list-row ${part ? 'with-part' : ''} ${seen ? 'seen' : ''} ${next ? 'next' : ''} ${dragFrom === pos && canDrag ? 'dragging' : ''}`}
         draggable={canDrag}
         onDragStart={() => setDragFrom(pos)}
         onDragOver={(e) => canDrag && e.preventDefault()}
@@ -158,6 +161,7 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
             </span>
           )}
         </span>
+        {part && source?.kind === 'person' && <PartEpisodes tvId={r.id} personId={source.personId} creditIds={r.creditIds ?? []} count={r.roleEpisodes} />}
       </li>
     )
   }

@@ -192,6 +192,7 @@ function setupIpc(): void {
   ipcMain.handle('tmdb:providersMany', (_e, keys: string[]) => tmdb.providersMany(keys, region()))
   ipcMain.handle('tmdb:credits', (_e, type: 'movie' | 'tv', id: number) => attempt(() => tmdb.credits(type, id)))
   ipcMain.handle('tmdb:person', (_e, id: number) => attempt(() => tmdb.person(id)))
+  ipcMain.handle('tmdb:partEpisodes', (_e, tvId: number, personId: number, creditIds: string[]) => attempt(() => tmdb.partEpisodes(tvId, personId, creditIds)))
   ipcMain.handle('tmdb:collection', (_e, id: number) => attempt(() => tmdb.collection(id)))
   ipcMain.handle('tmdb:list', (_e, id: number) => attempt(() => tmdb.tmdbList(id)))
   ipcMain.handle('calendar:preview', () => attempt(() => tmdb.calendarEvents(getLibrary())))

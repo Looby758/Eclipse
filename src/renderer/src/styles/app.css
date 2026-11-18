@@ -530,6 +530,21 @@ button.list-seen.undo:hover { background: var(--glass-hover); }
 .full-cast-row:hover { background: var(--glass-hover); }
 .full-cast-row img, .full-cast-row .person-initial { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
 
+/* Which episodes someone was in (full cast and actor pages) */
+.full-cast-list > li { display: flex; flex-direction: column; gap: 2px; }
+.full-cast-list { align-items: start; }
+.part-toggle { font-size: var(--text-xs); padding: 2px 6px; }
+.part-list { padding: 4px 8px 6px; }
+.part-list ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.part-list li { display: flex; align-items: baseline; gap: 8px; font-size: var(--text-xs); color: var(--text); }
+.part-list li.seen { color: var(--text-muted); }
+.part-code { font-weight: 700; color: var(--text-strong); min-width: 56px; font-variant-numeric: tabular-nums; }
+.part-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.part-year { color: var(--text-faint); }
+.part-seen { color: var(--ok); display: inline-flex; }
+.list-row.with-part { flex-wrap: wrap; }
+.list-row.with-part .part-episodes { flex-basis: 100%; padding-left: 92px; margin-top: -4px; }
+
 /* People in search */
 .people-results { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; margin-bottom: 20px; }
 .people-results .person-chip { max-width: none; width: 100%; }

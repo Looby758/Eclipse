@@ -8,7 +8,7 @@ import type { CatchUp } from '@core/catchup'
 import type { WeekSoFar } from '@core/week'
 import type { Recommendation } from '@core/recommend'
 import type { NowPlaying, Recognised, Suggestion, UnknownShow } from '@core/watching'
-import type { CollectionDetails, Credits, ListSource, PersonDetails, PersonResult, TitleRef, TmdbListDetails } from '@core/types'
+import type { CollectionDetails, Credits, ListSource, PartEpisodes, PersonDetails, PersonResult, TitleRef, TmdbListDetails } from '@core/types'
 import type { Library, MediaType, PlannedTime, Preferences, Provider, SearchResult, SeasonDetails, TitleDetails, TitleKey, TitleSnapshot, WatchProviders, WatchStatus } from '@core/types'
 
 type Item = { key: TitleKey; type: MediaType; id: number; title: TitleSnapshot }
@@ -172,6 +172,8 @@ export interface EclipseApi {
   /** Cast you know from other things you've watched. */
   knownFrom(type: MediaType, id: number): Promise<Result<KnownFrom[]>>
   person(id: number): Promise<Result<Fetched<PersonDetails>>>
+  /** Which episodes of a show someone was in (or just the seasons, when that's all TMDB knows). */
+  partEpisodes(tvId: number, personId: number, creditIds: string[]): Promise<Result<PartEpisodes>>
   collection(id: number): Promise<Result<Fetched<CollectionDetails>>>
   tmdbList(id: number): Promise<Result<Fetched<TmdbListDetails>>>
   /** Everything in a list (person, collection, guide, TMDB list or your own), in its order. */

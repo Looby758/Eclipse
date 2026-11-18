@@ -1,4 +1,4 @@
-import type { CollectionDetails, Credits, Episode, MediaType, NextEpisode, PersonDetails, PersonRef, PersonResult, Provider, SearchResult, Season, SeasonDetails, TitleDetails, TitleRef, TmdbListDetails, WatchProviders } from './types'
+import type { CollectionDetails, Credits, Episode, MediaType, NextEpisode, PartEpisodes, PersonDetails, PersonRef, PersonResult, Provider, SearchResult, Season, SeasonDetails, TitleDetails, TitleRef, TmdbListDetails, WatchProviders } from './types'
 import { titleKey } from './types'
 
 /**
@@ -67,6 +67,8 @@ export interface Tmdb {
   credits(type: MediaType, id: number): Promise<Credits>
   /** A person and their films and shows. */
   person(id: number): Promise<PersonDetails>
+  /** The episodes (or seasons) one part in a show covers, by TMDB's credit id. */
+  credit(creditId: string): Promise<PartEpisodes>
   /** A film series (TMDB collection), e.g. "The Dark Knight Collection". */
   collection(id: number): Promise<CollectionDetails>
   /** A public list on TMDB, by its number. */
@@ -151,6 +153,10 @@ export function createTmdb({ key, fetch, language = 'en-GB' }: TmdbOptions): Tmd
     async person(id) {
       const raw = await get<RawPerson>(`/person/${id}`, { language, append_to_response: 'movie_credits,tv_credits' })
       return parsePerson(raw)
+    },
+
+    async credit(creditId) {
+      return parseCreditEpisodes(await get<RawCredit>(`/credit/${encodeURIComponent(creditId)}`))
     },
 
     async collection(id) {
@@ -364,6 +370,7 @@ interface RawSeason {
     vote_average?: number
     vote_count?: number
     still_path?: string | null
+    guest_stars?: { id: number }[]
   }[]
 }
 
@@ -378,7 +385,8 @@ export function parseSeason(tvId: number, raw: RawSeason): SeasonDetails {
       overview: e.overview ?? '',
       voteAverage: e.vote_count ? (e.vote_average ?? null) : null,
       voteCount: e.vote_count ?? 0,
-      stillPath: e.still_path ?? null
+      stillPath: e.still_path ?? null,
+      ...(e.guest_stars?.length ? { guestStars: e.guest_stars.map((g) => g.id) } : {})
     }))
     .sort((a, b) => a.number - b.number)
   return { tvId, number: raw.season_number ?? episodes[0]?.season ?? 0, name: raw.name ?? '', episodes }
@@ -440,6 +448,7 @@ interface RawTitleCredit {
   poster_path?: string | null
   genre_ids?: number[]
   character?: string
+  credit_id?: string
   job?: string
   episode_count?: number
   order?: number
@@ -455,7 +464,7 @@ export function refFromRaw(raw: RawTitleCredit, fallback?: MediaType): TitleRef 
 }
 
 interface RawCredits {
-  cast?: { id: number; name: string; profile_path?: string | null; character?: string; roles?: { character?: string; episode_count?: number }[]; total_episode_count?: number; order?: number }[]
+  cast?: { id: number; name: string; profile_path?: string | null; character?: string; credit_id?: string; roles?: { character?: string; episode_count?: number; credit_id?: string }[]; total_episode_count?: number; order?: number }[]
   crew?: { id: number; name: string; profile_path?: string | null; job?: string; jobs?: { job?: string }[] }[]
 }
 
@@ -473,7 +482,8 @@ export function parseCredits(raw: RawCredits): Credits {
       // Shows list each part separately; the one with the most episodes comes first.
       const roles = [...(c.roles ?? [])].sort((a, b) => (b.episode_count ?? 0) - (a.episode_count ?? 0))
       const role = c.character || roles.map((r) => r.character?.trim() ?? '').filter(Boolean).join(' / ')
-      return { id: c.id, name: c.name, profilePath: c.profile_path ?? null, role, ...(c.total_episode_count ? { episodes: c.total_episode_count } : {}) }
+      const creditIds = [c.credit_id, ...roles.map((r) => r.credit_id)].filter((x): x is string => !!x)
+      return { id: c.id, name: c.name, profilePath: c.profile_path ?? null, role, ...(c.total_episode_count ? { episodes: c.total_episode_count } : {}), ...(creditIds.length ? { creditIds } : {}) }
     })
   return { directors, cast: fullCast.slice(0, 12), fullCast }
 }
@@ -504,19 +514,39 @@ export function parsePerson(raw: RawPerson): PersonDetails {
     ...(raw.tv_credits?.cast ?? []).filter((c) => acting(c) && (c.episode_count ?? 0) >= 3).map((c) => ({ c, type: 'tv' as const }))
   ]
   // Who they played in each; someone with two parts in one title gets both ("Ellie / Abby").
-  const parts = new Map<string, string[]>()
+  const parts = new Map<string, { names: string[]; episodes: number; creditIds: string[] }>()
   for (const { c, type } of credits) {
     const key = titleKey(type, c.id)
-    const names = parts.get(key) ?? []
+    const part = parts.get(key) ?? { names: [], episodes: 0, creditIds: [] }
     const character = (c.character ?? '').trim()
-    if (character && !names.includes(character)) names.push(character)
-    parts.set(key, names)
+    if (character && !part.names.includes(character)) part.names.push(character)
+    if (type === 'tv') part.episodes += c.episode_count ?? 0
+    if (type === 'tv' && c.credit_id) part.creditIds.push(c.credit_id)
+    parts.set(key, part)
   }
   const acted = unique(credits.map(({ c, type }) => refFromRaw(c, type))).map((r) => {
-    const role = parts.get(r.key)?.join(' / ')
-    return role ? { ...r, role } : r
+    const part = parts.get(r.key)
+    if (!part) return r
+    return { ...r, ...(part.names.length ? { role: part.names.join(' / ') } : {}), ...(part.episodes ? { roleEpisodes: part.episodes } : {}), ...(part.creditIds.length ? { creditIds: part.creditIds } : {}) }
   })
   return { id: raw.id, name: raw.name ?? 'Unknown', profilePath: raw.profile_path ?? null, knownFor: raw.known_for_department ?? '', directed, acted }
+}
+
+interface RawCredit {
+  media?: {
+    episodes?: { season_number?: number; episode_number?: number; name?: string; air_date?: string | null }[]
+    seasons?: { season_number?: number }[]
+  }
+}
+
+/** The episodes a part covers, in order (or just its seasons when TMDB doesn't list episodes). */
+export function parseCreditEpisodes(raw: RawCredit): PartEpisodes {
+  const episodes = (raw.media?.episodes ?? [])
+    .filter((e) => e.season_number != null && e.episode_number != null)
+    .map((e) => ({ season: e.season_number!, number: e.episode_number!, name: e.name || `Episode ${e.episode_number}`, airDate: e.air_date || null }))
+    .sort((a, b) => a.season - b.season || a.number - b.number)
+  const seasons = [...new Set((raw.media?.seasons ?? []).map((s) => s.season_number).filter((n): n is number => n != null))].sort((a, b) => a - b)
+  return { episodes, seasons }
 }
 
 interface RawCollection {

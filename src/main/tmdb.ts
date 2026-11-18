@@ -2,7 +2,7 @@ import { errorText, report } from './health'
 import { net, safeStorage } from 'electron'
 import { cached, CACHE_TTL } from '@core/cache'
 import { createTmdb, TmdbError, type Tmdb } from '@core/tmdb'
-import type { CollectionDetails, Credits, MediaType, PersonDetails, PersonResult, Provider, SearchResult, SeasonDetails, TitleDetails, TitleRef, TmdbListDetails, WatchProviders } from '@core/types'
+import type { CollectionDetails, Credits, MediaType, PartEpisodes, PersonDetails, PersonResult, Provider, SearchResult, SeasonDetails, TitleDetails, TitleRef, TmdbListDetails, WatchProviders } from '@core/types'
 import { expandGuide, guideById, guideRefs, type Guide, type GuideTitleInfo } from '@core/guides'
 import { releaseOrder, sourceOf, findList, refOf } from '@core/lists'
 import type { Library } from '@core/types'
@@ -117,7 +117,7 @@ export async function trending(): Promise<Fetched<SearchResult[]>> {
 }
 
 export async function season(tvId: number, n: number, refresh = false): Promise<Fetched<SeasonDetails>> {
-  const r = await cached(fileCache, `season:${tvId}:${n}`, CACHE_TTL.season, () => tmdb().season(tvId, n), { force: refresh, shouldServeStale: serveStaleUnlessKeyProblem })
+  const r = await cached(fileCache, `season2:${tvId}:${n}`, CACHE_TTL.season, () => tmdb().season(tvId, n), { force: refresh, shouldServeStale: serveStaleUnlessKeyProblem })
   return { data: r.data, stale: r.source === 'stale', savedAt: r.savedAt }
 }
 
@@ -198,11 +198,50 @@ async function keep<T>(key: string, ttl: number, job: () => Promise<T>, refresh 
   return { data: r.data, stale: r.source === 'stale', savedAt: r.savedAt }
 }
 
-// "v2": saved copies from before parts played and the full cast were kept are fetched again.
-export const credits = (type: MediaType, id: number): Promise<Fetched<Credits>> => keep(`credits2:${type}:${id}`, CACHE_TTL.credits, () => tmdb().credits(type, id))
-export const person = (id: number, refresh = false): Promise<Fetched<PersonDetails>> => keep(`person2:${id}`, CACHE_TTL.person, () => tmdb().person(id), refresh)
+// "v3": saved copies from before parts played, the full cast and part ids were kept are fetched again.
+export const credits = (type: MediaType, id: number): Promise<Fetched<Credits>> => keep(`credits3:${type}:${id}`, CACHE_TTL.credits, () => tmdb().credits(type, id))
+export const person = (id: number, refresh = false): Promise<Fetched<PersonDetails>> => keep(`person3:${id}`, CACHE_TTL.person, () => tmdb().person(id), refresh)
 export const collection = (id: number, refresh = false): Promise<Fetched<CollectionDetails>> => keep(`collection:${id}`, CACHE_TTL.collection, () => tmdb().collection(id), refresh)
 export const tmdbList = (id: number, refresh = false): Promise<Fetched<TmdbListDetails>> => keep(`list:${id}`, CACHE_TTL.list, () => tmdb().list(id), refresh)
+
+/**
+ * Which episodes of a show someone was in. TMDB lists them on the part itself for most guest and
+ * recurring parts; when it doesn't, the seasons are searched for them as a guest star; failing
+ * that, only the seasons are known (usual for the main cast).
+ */
+export async function partEpisodes(tvId: number, personId: number, creditIds: string[]): Promise<PartEpisodes> {
+  const found: PartEpisodes = { episodes: [], seasons: [] }
+  for (const id of [...new Set(creditIds)].slice(0, 6)) {
+    try {
+      const part = (await keep(`credit:${id}`, CACHE_TTL.credits, () => tmdb().credit(id))).data
+      found.episodes.push(...part.episodes)
+      found.seasons.push(...part.seasons)
+    } catch {
+      // Look in the seasons instead.
+    }
+  }
+  if (!found.episodes.length) {
+    const numbers = found.seasons.length ? found.seasons : (await details('tv', tvId)).data.seasons.map((s) => s.number).filter((n) => n > 0)
+    for (let i = 0; i < numbers.length; i += 4) {
+      await Promise.all(
+        numbers.slice(i, i + 4).map(async (n) => {
+          try {
+            for (const e of (await season(tvId, n)).data.episodes) {
+              if (e.guestStars?.includes(personId)) found.episodes.push({ season: e.season, number: e.number, name: e.name, airDate: e.airDate })
+            }
+          } catch {
+            // Skip a season TMDB won't give us.
+          }
+        })
+      )
+    }
+  }
+  const seen = new Set<string>()
+  const episodes = found.episodes
+    .filter((e) => !seen.has(`${e.season}:${e.number}`) && !!seen.add(`${e.season}:${e.number}`))
+    .sort((a, b) => a.season - b.season || a.number - b.number)
+  return { episodes, seasons: [...new Set(found.seasons)].sort((a, b) => a - b) }
+}
 
 /** A hand-made guide laid out season by season, with posters and air dates from TMDB. */
 async function guideItems(g: Guide): Promise<TitleRef[]> {

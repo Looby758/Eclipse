@@ -6,8 +6,8 @@ import { customListsWith, listIdFor, listsOf } from '@core/lists'
 import { imageUrl } from '@core/tmdb'
 import type { Credits, TitleDetails, TitleRef } from '@core/types'
 import { useApp } from '../store/app'
-import { plural } from '@core/format'
 import Poster from './Poster'
+import PartEpisodes from './PartEpisodes'
 
 /**
  * On a title page: who made it and who's in it (each opens their filmography), the film series
@@ -91,15 +91,10 @@ export default function TitleLinks({ details: d }: { details: TitleDetails }): R
                         {face ? <img src={face} alt="" loading="lazy" draggable={false} /> : <span className="person-initial">{p.name.slice(0, 1)}</span>}
                         <span className="person-text">
                           <span className="person-name">{p.name}</span>
-                          {(p.role || p.episodes) && (
-                            <span className="person-role">
-                              {p.role}
-                              {p.role && p.episodes ? ' · ' : ''}
-                              {p.episodes ? plural(p.episodes, 'episode', 'episodes') : ''}
-                            </span>
-                          )}
+                          {p.role && <span className="person-role">{p.role}</span>}
                         </span>
                       </button>
+                      {d.type === 'tv' && !!p.episodes && <PartEpisodes tvId={d.id} personId={p.id} creditIds={p.creditIds ?? []} count={p.episodes} />}
                     </li>
                   )
                 })}
