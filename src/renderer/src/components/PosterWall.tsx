@@ -203,7 +203,7 @@ function usePointerLift(ref: React.RefObject<HTMLDivElement | null>, enabled: bo
     const queue = (): void => {
       if (!frame) frame = requestAnimationFrame(update)
     }
-    // Over the dial, buttons, pills or the Waiting for you column the wall stays as it is (while peeking they're faded
+    // Over the dial, buttons, pills or the Home column the wall stays as it is (while peeking they're faded
     // out and can't be pointed at, so everything counts as the wall).
     const OVER = '.spot-center, .spot-pills, .spot-waiting, button, a, input, select'
     const overUi = (t: EventTarget | null): boolean => !peek && t instanceof Element && !!t.closest(OVER)

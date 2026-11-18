@@ -245,6 +245,8 @@ export interface Library {
   catchUpDismissed?: string[]
   /** Recommendations you said "Not for me" to, by title key. */
   recsHidden?: string[]
+  /** Eclipse on your phone (Phase 45): ids of the phone's changes already folded in (the phone then tidies them away). */
+  phoneApplied?: string[]
 }
 
 /** A title taken off your library while clearing out the watchlist, kept whole so it can be put back. */

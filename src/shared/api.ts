@@ -7,9 +7,13 @@ import type { YearReview } from '@core/year'
 import type { CatchUp } from '@core/catchup'
 import type { WeekSoFar } from '@core/week'
 import type { Recommendation } from '@core/recommend'
+import type { PhoneConflict } from '@core/phone'
 import type { NowPlaying, Recognised, Suggestion, UnknownShow } from '@core/watching'
 import type { CollectionDetails, Credits, ListSource, PartEpisodes, PersonDetails, PersonResult, TitleRef, TmdbListDetails } from '@core/types'
 import type { Library, MediaType, PlannedTime, Preferences, Provider, SearchResult, SeasonDetails, TitleDetails, TitleKey, TitleSnapshot, WatchProviders, WatchStatus } from '@core/types'
+
+/** A clash between your phone and this computer, with a plain-words line (Phase 45). */
+export type PhoneAsk = PhoneConflict & { text: string }
 
 type Item = { key: TitleKey; type: MediaType; id: number; title: TitleSnapshot }
 
@@ -268,6 +272,12 @@ export interface EclipseApi {
   onNoticingChanged(callback: () => void): () => void
   /** Changes a saved moment's note (empty clears it), or deletes the moment with null. */
   editMoment(key: TitleKey, index: number, note: string | null): Promise<Library>
+
+  /** Phase 45: changes from your phone that clash with this computer, waiting for you to choose. */
+  phoneAsks(): Promise<PhoneAsk[]>
+  /** Keep the phone's change, or this computer's. Returns what's still waiting. */
+  resolvePhoneAsk(id: string, choice: 'phone' | 'computer'): Promise<PhoneAsk[]>
+  onPhoneAsks(callback: (asks: PhoneAsk[]) => void): () => void
 
   remoteStatus(): Promise<RemoteStatus>
   setRemote(on: boolean): Promise<RemoteStatus>

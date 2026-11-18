@@ -31,6 +31,7 @@ import { guardStatus, readOnlyReason, startGuard, stopGuard, takeOver } from './
 import { remember, undoTarget } from './undo'
 import { loginStatus, markAsked, setStartAtLogin, startedHidden } from './login'
 import { backupFor, dailyBackup, listBackups } from './backups'
+import { foldFromPhone, phoneAsks, resolveAsk, startPhone } from './phone'
 import { errorText, healthStatus, log, onHealthChanged, recentLog, report } from './health'
 
 // Window background, matching --bg in src/renderer/src/styles/theme.css so there's no flash on start.
@@ -122,7 +123,19 @@ function reopenLibrary(): void {
     readOnlyReason
   )
   dailyBackup(isDirectory(dataFolder) ? dataFolder : null)
-  startGuard(isDirectory(dataFolder) ? dataFolder : null, (s) => mainWindow?.webContents.send('guard:changed', s))
+  startGuard(isDirectory(dataFolder) ? dataFolder : null, (s) => {
+    mainWindow?.webContents.send('guard:changed', s)
+    // Phase 45: changes from the phone wait while this copy is read-only.
+    foldFromPhone()
+  })
+  startPhone(
+    isDirectory(dataFolder) ? dataFolder : null,
+    (asks, libraryChanged) => {
+      if (libraryChanged) broadcastLibrary()
+      mainWindow?.webContents.send('phone:asks', asks)
+    },
+    readOnlyReason
+  )
 }
 
 /** Runs a TMDB call and turns errors into a plain message for the window. */
@@ -325,6 +338,12 @@ function setupIpc(): void {
     return noticingStatus()
   })
   ipcMain.handle('moments:edit', (_e, key: string, index: number, note: string | null) => saveLibrary(editMoment(getLibrary(), key, Number(index), typeof note === 'string' ? note : null)))
+  ipcMain.handle('phone:asks', () => phoneAsks())
+  ipcMain.handle('phone:resolve', (_e, id: string, choice: 'phone' | 'computer') => {
+    const asks = resolveAsk(String(id), choice)
+    broadcastLibrary()
+    return asks
+  })
   ipcMain.handle('remote:status', () => remoteStatus())
   ipcMain.handle('remote:set', (_e, on: boolean) => setRemote(!!on, sendRemote))
   ipcMain.handle('remote:newCode', () => newRemoteCode())
