@@ -2,7 +2,7 @@ import { app, shell } from 'electron'
 import { createServer, type Server } from 'http'
 import { join } from 'path'
 import { fromExtension } from '@core/watching'
-import { addExtensionItem } from './nowplaying'
+import { addExtensionItem, removeExtensionItem } from './nowplaying'
 
 /**
  * The Eclipse extension for Chrome (extension/ in the repository, shipped with the app): while a
@@ -30,7 +30,8 @@ export function startExtensionLink(onUpdate: () => void): void {
     // The popup's "Connected?" check says only that Eclipse is here (Chrome may not label it).
     if (req.method === 'GET' && req.url === '/hello' && (!req.headers.origin || fromExtensionOrigin(req.headers.origin))) return send(200, { ok: true, app: 'Eclipse' })
     if (!fromExtensionOrigin(req.headers.origin)) return send(403, { ok: false })
-    if (req.method !== 'POST' || req.url !== '/playing') return send(404, { ok: false })
+    if (req.method !== 'POST' || (req.url !== '/playing' && req.url !== '/gone')) return send(404, { ok: false })
+    const gone = req.url === '/gone'
     let body = ''
     req.setEncoding('utf8')
     req.on('data', (chunk: string) => {
@@ -40,7 +41,14 @@ export function startExtensionLink(onUpdate: () => void): void {
     req.on('end', () => {
       let item = null
       try {
-        item = fromExtension(JSON.parse(body))
+        const parsed = JSON.parse(body)
+        // A tab was closed or went elsewhere: it isn't playing any more.
+        if (gone) {
+          if (typeof parsed?.url === 'string') removeExtensionItem(parsed.url)
+          onUpdate()
+          return send(200, { ok: true })
+        }
+        item = fromExtension(parsed)
       } catch {
         // Not JSON: ignored below.
       }

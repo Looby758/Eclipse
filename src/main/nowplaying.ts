@@ -170,6 +170,10 @@ export function stopNowPlaying(): void {
 // while a player is open, so one older than 30 seconds means the tab was closed.
 const fromExtension = new Map<string, { at: number; item: NowPlaying; named?: string }>()
 
+export function removeExtensionItem(url: string): void {
+  fromExtension.delete(url)
+}
+
 export function addExtensionItem(item: NowPlaying): void {
   const key = item.url ?? item.app
   // The player hides the episode line with its controls: keep the last one named on this page.
