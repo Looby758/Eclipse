@@ -2,6 +2,7 @@ import { ArrowDown, ArrowUp, Check, Copy, GripVertical, Pencil, Plus, RefreshCw,
 import { useState } from 'react'
 import { findList, isItemSeen, itemKey, progressOf, sourceOf } from '@core/lists'
 import { isRowSeenUndated, localDate, preferencesOf } from '@core/library'
+import { seenSome } from '@core/knownfrom'
 import { onMyServices, type AvailabilityFilter as Filter, passesFilter, FILTER_LABELS } from '@core/providers'
 import { formatShortDay, stingerShort } from '@core/format'
 import { imageUrl } from '@core/tmdb'
@@ -14,8 +15,9 @@ import Poster from './Poster'
 import ProgressBar from './ProgressBar'
 import AvailabilityFilter from './AvailabilityFilter'
 import Credits from './Credits'
+import PartEpisodes from './PartEpisodes'
 
-type Show = 'all' | 'left'
+type Show = 'all' | 'left' | 'seen'
 
 /**
  * One list: a person's films, a film series, a watch-order guide, a TMDB list or your own.
@@ -59,7 +61,11 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
     )
   }
 
-  const rows = progress.released.filter((i) => (show === 'all' || !isItemSeen(library, i)) && (filter === 'any' || (!isItemSeen(library, i) && passesFilter(filter, map[i.key]))))
+  // "Seen" also counts shows you're part-way through, so an actor's page answers "what have I seen them in?".
+  const seenAny = (i: TitleRef): boolean => isItemSeen(library, i) || (!i.season && seenSome(library, i.key))
+  const rows = progress.released.filter((i) =>
+    show === 'seen' ? seenAny(i) : (show === 'all' || !isItemSeen(library, i)) && (filter === 'any' || (!isItemSeen(library, i) && passesFilter(filter, map[i.key])))
+  )
   const numberOf = new Map(items.map((i, n) => [itemKey(i), n + 1]))
   const label = (r: TitleRef): string => (r.season ? `${r.name}, season ${r.season}` : r.name)
   const follow = async (): Promise<void> => {
@@ -86,10 +92,12 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
     const pos = own ? items.findIndex((i) => itemKey(i) === itemKey(r)) : -1
     const ticked = r.season && !seen ? Object.keys(entry?.episodes ?? {}).filter((k) => parseEpisodeKey(k)?.season === r.season).length : 0
     const canDrag = own && show === 'all' && filter === 'any'
+    // An actor's show: "12 episodes", opening to which ones.
+    const part = source?.kind === 'person' && r.type === 'tv' && !r.season && !!r.roleEpisodes
     return (
       <li
         key={itemKey(r)}
-        className={`list-row ${seen ? 'seen' : ''} ${next ? 'next' : ''} ${dragFrom === pos && canDrag ? 'dragging' : ''}`}
+        className={`list-row ${part ? 'with-part' : ''} ${seen ? 'seen' : ''} ${next ? 'next' : ''} ${dragFrom === pos && canDrag ? 'dragging' : ''}`}
         draggable={canDrag}
         onDragStart={() => setDragFrom(pos)}
         onDragOver={(e) => canDrag && e.preventDefault()}
@@ -110,6 +118,7 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
             <span className="list-meta">
               {r.season ? `Season ${r.season}` : r.type === 'movie' ? 'Film' : 'Show'}
               {r.year ? ` · ${r.year}` : ''}
+              {r.role ? <span className="list-role"> · as {r.role}</span> : ''}
               {r.season ? (ticked ? ` · ${ticked} of ${r.episodes ?? '?'} episodes` : '') : entry && !seen ? ` · ${STATUS_LABELS[entry.status]}` : ''}
               {next ? ' · Up next' : ''}
               {r.type === 'movie' && stingerShort(films[r.key]?.stingers) && <span className="stinger-chip">{stingerShort(films[r.key]?.stingers)}</span>}
@@ -152,6 +161,7 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
             </span>
           )}
         </span>
+        {part && source?.kind === 'person' && <PartEpisodes tvId={r.id} personId={source.personId} creditIds={r.creditIds ?? []} count={r.roleEpisodes} />}
       </li>
     )
   }
@@ -257,9 +267,9 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
             </div>
           )}
           <div className="segmented" role="radiogroup" aria-label="Show">
-            {(['all', 'left'] as const).map((s) => (
+            {(['all', 'left', 'seen'] as const).map((s) => (
               <button key={s} role="radio" aria-checked={show === s} className={show === s ? 'on' : ''} onClick={() => setShow(s)}>
-                {s === 'all' ? 'Everything' : 'What’s left'}
+                {s === 'all' ? 'Everything' : s === 'left' ? 'What’s left' : 'Seen'}
               </button>
             ))}
           </div>
@@ -273,12 +283,14 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
             ))}
           </div>
         )}
-        <AvailabilityFilter value={filter} onChange={setFilter} checking={checking && filter !== 'any'} />
+        {show !== 'seen' && <AvailabilityFilter value={filter} onChange={setFilter} checking={checking && filter !== 'any'} />}
       </div>
 
       {own && !items.length && <p className="muted">Nothing on this list yet. Open any film or show and add it from “Your lists” on its page.</p>}
       {rows.length === 0 && items.length > 0 && (
-        <p className="muted">{show === 'left' && filter === 'any' ? 'You’ve seen everything that’s out.' : `Nothing left that’s ${FILTER_LABELS[filter].toLowerCase()}.`}</p>
+        <p className="muted">
+          {show === 'seen' ? 'You haven’t seen any of these yet.' : show === 'left' && filter === 'any' ? 'You’ve seen everything that’s out.' : `Nothing left that’s ${FILTER_LABELS[filter].toLowerCase()}.`}
+        </p>
       )}
       <ol className="list-rows">{rows.map(row)}</ol>
 

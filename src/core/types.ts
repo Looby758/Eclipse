@@ -15,7 +15,7 @@ export function parseTitleKey(key: string): { type: MediaType; id: number } | nu
   return m ? { type: m[1] as MediaType, id: Number(m[2]) } : null
 }
 
-/** One search result (people are left out: Phase 1 only searches films and shows). */
+/** One film or show search result (people are searched separately, see PersonResult). */
 export interface SearchResult {
   key: TitleKey
   type: MediaType
@@ -295,6 +295,11 @@ export interface TitleRef {
   episodes?: number
   /** Watch orders: the parts of the order it belongs to (e.g. "The Defenders"). */
   sections?: string[]
+  /** On an actor's list: the part they played (e.g. "Kim Wexler"). */
+  role?: string
+  /** On an actor's list (shows): how many episodes they were in, and TMDB's ids for the part. */
+  roleEpisodes?: number
+  creditIds?: string[]
 }
 
 export type ListSource =
@@ -325,11 +330,36 @@ export interface PersonRef {
   profilePath: string | null
   /** e.g. "Director" or the character played. */
   role: string
+  /** Shows: how many episodes they were in. */
+  episodes?: number
+  /** TMDB's ids for their part(s), to look up which episodes they were in. */
+  creditIds?: string[]
+}
+
+/** Which episodes of a show someone was in, from TMDB. */
+export interface PartEpisodes {
+  episodes: { season: number; number: number; name: string; airDate: string | null }[]
+  /** When TMDB only knows the seasons (usual for the main cast). */
+  seasons: number[]
 }
 
 export interface Credits {
   directors: PersonRef[]
+  /** The main cast (the first 12). */
   cast: PersonRef[]
+  /** Everyone who was ever in it, main cast first (for "Full cast"). */
+  fullCast?: PersonRef[]
+}
+
+/** A person found by search. */
+export interface PersonResult {
+  id: number
+  name: string
+  profilePath: string | null
+  /** e.g. "Acting" or "Directing". */
+  knownFor: string
+  /** A few titles they're best known for, e.g. ["The Walking Dead", "The Mitchells vs. the Machines"]. */
+  knownTitles: string[]
 }
 
 export interface PersonDetails {
@@ -371,6 +401,8 @@ export interface Episode {
   voteAverage: number | null
   voteCount: number
   stillPath: string | null
+  /** TMDB ids of the guest stars in it (to find which episodes someone was in). */
+  guestStars?: number[]
 }
 
 export interface SeasonDetails {

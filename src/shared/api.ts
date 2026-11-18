@@ -9,7 +9,7 @@ import type { WeekSoFar } from '@core/week'
 import type { Recommendation } from '@core/recommend'
 import type { PhoneConflict } from '@core/phone'
 import type { NowPlaying, Recognised, Suggestion, UnknownShow } from '@core/watching'
-import type { CollectionDetails, Credits, ListSource, PersonDetails, TitleRef, TmdbListDetails } from '@core/types'
+import type { CollectionDetails, Credits, ListSource, PartEpisodes, PersonDetails, PersonResult, TitleRef, TmdbListDetails } from '@core/types'
 import type { Library, MediaType, PlannedTime, Preferences, Provider, SearchResult, SeasonDetails, TitleDetails, TitleKey, TitleSnapshot, WatchProviders, WatchStatus } from '@core/types'
 
 /** A clash between your phone and this computer, with a plain-words line (Phase 45). */
@@ -156,6 +156,8 @@ export interface EclipseApi {
   clearCache(): Promise<void>
 
   search(query: string): Promise<Result<Fetched<SearchResult[]>>>
+  /** Actors and directors whose name matches. */
+  searchPeople(query: string): Promise<Result<Fetched<PersonResult[]>>>
   details(type: MediaType, id: number, refresh?: boolean): Promise<Result<Fetched<TitleDetails>>>
   /** This week's trending titles (saved for a day), to fill the poster wall. */
   trending(): Promise<Result<Fetched<SearchResult[]>>>
@@ -174,6 +176,8 @@ export interface EclipseApi {
   /** Cast you know from other things you've watched. */
   knownFrom(type: MediaType, id: number): Promise<Result<KnownFrom[]>>
   person(id: number): Promise<Result<Fetched<PersonDetails>>>
+  /** Which episodes of a show someone was in (or just the seasons, when that's all TMDB knows). */
+  partEpisodes(tvId: number, personId: number, creditIds: string[]): Promise<Result<PartEpisodes>>
   collection(id: number): Promise<Result<Fetched<CollectionDetails>>>
   tmdbList(id: number): Promise<Result<Fetched<TmdbListDetails>>>
   /** Everything in a list (person, collection, guide, TMDB list or your own), in its order. */

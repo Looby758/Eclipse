@@ -13,6 +13,7 @@ const api: EclipseApi = {
   clearCache: () => ipcRenderer.invoke('cache:clear'),
 
   search: (query) => ipcRenderer.invoke('tmdb:search', query),
+  searchPeople: (query) => ipcRenderer.invoke('tmdb:searchPeople', query),
   details: (type, id, refresh) => ipcRenderer.invoke('tmdb:details', type, id, refresh),
   trending: () => ipcRenderer.invoke('tmdb:trending'),
   season: (tvId, n, refresh) => ipcRenderer.invoke('tmdb:season', tvId, n, refresh),
@@ -24,6 +25,7 @@ const api: EclipseApi = {
   credits: (type, id) => ipcRenderer.invoke('tmdb:credits', type, id),
   knownFrom: (type, id) => ipcRenderer.invoke('tmdb:knownFrom', type, id),
   person: (id) => ipcRenderer.invoke('tmdb:person', id),
+  partEpisodes: (tvId, personId, creditIds) => ipcRenderer.invoke('tmdb:partEpisodes', tvId, personId, creditIds),
   collection: (id) => ipcRenderer.invoke('tmdb:collection', id),
   tmdbList: (id) => ipcRenderer.invoke('tmdb:list', id),
   openList: (id, refresh) => ipcRenderer.invoke('lists:open', id, refresh),

@@ -287,7 +287,7 @@ Export this doc as Markdown and save it in the project as `PLAN.md`. Then start 
 - Done: TMDB key in Settings, checked with TMDB then stored encrypted with Electron safeStorage, like Orbit's keys. Accepts the API Key or the Read Access Token.
 - Done: data folder picker; library saved as `library.json` there, reloaded automatically when Google Drive syncs a change in. A file that can't be read is backed up before anything replaces it.
 - Done: TMDB cache as JSON files in the app's own folder (details weekly, searches daily, "Refresh from TMDB" on demand); shows saved copies when offline.
-- Done: search (films and shows), title pages (poster, backdrop, runtime, genres, seasons, next episode, collection) and the four statuses. Marking something Watched records the date.
+- Done: search (films and shows; people added later), title pages (poster, backdrop, runtime, genres, seasons, next episode, collection) and the four statuses. Marking something Watched records the date.
 - Done: TMDB credit footer; dark and light mode (Settings → Appearance).
 - Decisions: Eclipse is standalone for now; `src/core` has no Electron or UI code so it could move into Orbit. Curated watch orders: Marvel and Star Wars first. No plans to sell. Posters aren't saved for offline use yet (details are).
 - Design: you asked for sleek and futuristic, alive rather than flat, poster-heavy, dark and light, no browns, dark greens or oranges, and its own look (not Orbit's). From six drafts you picked **C · Drift** for both screens: a slowly moving, tilted wall of your posters behind everything, a "Pick up …?" home, a floating dock (Tonight, Library, Settings, search), and pages as sheets that slide up, lit in each poster's colour. Fonts: Sora for headings, Inter for everything else (bundled, so they work offline). All of it lives in `src/renderer/src/styles/theme.css`.
@@ -468,6 +468,16 @@ You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls
 - **Google sign-in:** a second sign-in client (*Web application*) in Orbit's Google Cloud project, with only the `drive.file` permission: the page can see just the folder and `library.json` you pick with Google's file picker, and the file it makes itself. No client secret anywhere. It goes back to Google quietly when the hour-long sign-in runs out.
 - **Hosting:** GitHub Pages, built by *Actions → Phone page* whenever main changes. Only the page is online. Your library, your changes and the TMDB key stay on the phone (and the page keeps a copy of your library so it opens with no signal).
 - Decisions: the phone can't remove titles (only change their status), so nothing is lost by a slip of the thumb. Recommendations use today's scoring; when phase 43 lands, its learning should read *Not for me* and *Interested* from the phone too. Setup steps (Google Cloud, GitHub Pages, the iPhone) are in `phone/README.md`.
+
+**Actor pages and finding people (built, waiting for you to try it)**
+
+- Talked through 18 Nov 2026: when I open an actor it's mostly "what else have I seen them in", and I want to know who they played. In big shows like The Walking Dead the person I'm after is too far down the cast to find.
+- Done: an actor's page shows who they played on every row ("Show · 2015 · as Enid"). Next to *Everything* and *What's left* there's a new **Seen** button, which shows only what you've watched (or are part-way through) with them in it.
+- Done: *Where you know them from* now shows posters of the things you've seen them in, with the part they played printed under each one ("as Kim Wexler"). Click the poster to open that title, or the person to open their page. It also says who they play in the title you're on.
+- Done: search finds people too. A **People** section sits above the films and shows, with each person's photo and what they're known for. Click to open their page (a director opens their films).
+- Done: **Full cast** on every title page lists everyone who was ever in it, with who they played and, for shows, how many episodes. It has a box to find someone by name or part.
+- Done (after you tried it): a show's part says how many episodes ("5 episodes"), on the actor's page and in the full cast. Click it for which ones: season, episode, title and year, ticked if you've seen it. TMDB usually lists them on the part; when it doesn't, Eclipse looks for them as a guest star season by season. For some main cast TMDB only knows the seasons, and it says so.
+- Decisions: cast, filmographies and seasons saved before this are fetched again once, so the parts and episodes show up straight away.
 
 **Future ideas**
 
