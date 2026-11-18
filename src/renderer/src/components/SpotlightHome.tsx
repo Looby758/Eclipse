@@ -124,7 +124,7 @@ export default function SpotlightHome(): React.JSX.Element {
         <TonightDial evenings={ev} minutesEach={each} count={pick ? fits : 0} now={now}>
           {pick ? (
             <button className="spot-poster" onClick={open} aria-label={`Open ${pick.title.name}`}>
-              <Poster path={pick.title.posterPath} type={pick.type} name={pick.title.name} size="w342" />
+              <Poster path={pick.title.posterPath} type={pick.type} id={pick.id} name={pick.title.name} size="w342" />
             </button>
           ) : (
             <Sparkles size={40} className="spot-empty-icon" />

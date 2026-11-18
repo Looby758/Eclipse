@@ -70,6 +70,10 @@
   --logo-crescent-2: #8fe3ff;
   --logo-play: #ffffff;
 
+  /* Phase 55: the ring round the poster you picked */
+  --poster-pick: #8fe3ff;
+  --poster-pick-on: #0b0d1f;
+
   /* Text */
   --text-strong: #ffffff;
   --text: #f1effc;

@@ -40,6 +40,11 @@ const api: EclipseApi = {
   moveInList: (id, from, to) => ipcRenderer.invoke('lists:move', id, from, to),
   setWatchSoon: (ref, on) => ipcRenderer.invoke('soon:set', ref, on),
   moveWatchSoon: (from, to) => ipcRenderer.invoke('soon:move', from, to),
+  posterOptions: (type, id) => ipcRenderer.invoke('posters:list', type, id),
+  setPoster: (key, path) => ipcRenderer.invoke('posters:set', key, path),
+  setFavourite: (ref, on) => ipcRenderer.invoke('favourites:set', ref, on),
+  moveFavourite: (from, to) => ipcRenderer.invoke('favourites:move', from, to),
+  comingSoon: () => ipcRenderer.invoke('shelf:comingSoon'),
 
   getLibrary: () => ipcRenderer.invoke('library:get'),
   setStatus: (item, status) => ipcRenderer.invoke('library:setStatus', item, status),

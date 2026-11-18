@@ -5,6 +5,8 @@ import type { TitleRef } from './types'
 import { normalizeLists, normalizeWatchSoon, refOf } from './lists'
 import { normalizeLinks, normalizeMoments } from './watching'
 import { normalizeTaste } from './taste'
+import { normalizePosters } from './posters'
+import { normalizeFavourites } from './favourites'
 
 export type LibraryItem = { key: TitleKey; type: MediaType; id: number; title: TitleSnapshot }
 
@@ -360,7 +362,13 @@ export function normalizeLibrary(raw: unknown): Library {
   const rawHidden = raw && typeof raw === 'object' ? (raw as { recsHidden?: unknown }).recsHidden : undefined
   const rawTaste = raw && typeof raw === 'object' ? (raw as { recsTaste?: unknown }).recsTaste : undefined
   const rawApplied = raw && typeof raw === 'object' ? (raw as { phoneApplied?: unknown }).phoneApplied : undefined
+  const rawPosters = raw && typeof raw === 'object' ? (raw as { posters?: unknown }).posters : undefined
+  const rawFavourites = raw && typeof raw === 'object' ? (raw as { favourites?: unknown }).favourites : undefined
   const finish = (): Library => {
+    const posters = normalizePosters(rawPosters)
+    if (posters) lib.posters = posters
+    const favourites = normalizeFavourites(rawFavourites)
+    if (favourites) lib.favourites = favourites
     const taste = normalizeTaste(rawTaste)
     if (taste) lib.recsTaste = taste
     if (Array.isArray(rawApplied)) {

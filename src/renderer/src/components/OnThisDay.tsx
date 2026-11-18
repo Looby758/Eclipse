@@ -34,7 +34,7 @@ export default function OnThisDay(): React.JSX.Element | null {
               {firstOfYear && <div className="otd-when">{agoLabel(m.yearsAgo, nearby)}</div>}
               <button className="otd-item" onClick={() => go({ name: 'title', type: m.type, id: m.id })}>
                 <span className="otd-poster">
-                  <Poster path={m.title.posterPath} type={m.type} name={m.title.name} size="w92" />
+                  <Poster path={m.title.posterPath} type={m.type} id={m.id} name={m.title.name} size="w92" />
                 </span>
                 <span className="otd-text">
                   <span className="otd-line">{sentence(m)}</span>

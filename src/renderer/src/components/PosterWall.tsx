@@ -1,5 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { imageUrl } from '@core/tmdb'
+import { posterFor } from '@core/posters'
 import { OWN_ENOUGH, WALL_COLUMNS, WALL_PER_COLUMN, wallPosters } from '../lib/wall'
 import type { MediaType, SearchResult } from '@core/types'
 import { useApp } from '../store/app'
@@ -37,9 +38,9 @@ function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: b
   const own = useMemo(
     () =>
       Object.values(library.entries)
-        .filter((e) => e.title.posterPath)
+        .filter((e) => posterFor(library, e.key, e.title.posterPath))
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-        .map((e) => e.title.posterPath!),
+        .map((e) => posterFor(library, e.key, e.title.posterPath)!),
     [library]
   )
   const needTrending = hasKey && new Set(own).size < OWN_ENOUGH
@@ -72,7 +73,10 @@ function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: b
   // Which title each poster belongs to, so clicking a poster on Spotlight Home opens its page.
   const titles = useMemo(() => {
     const map = new Map<string, TitleRef>()
-    for (const e of Object.values(library.entries)) if (e.title.posterPath && !map.has(e.title.posterPath)) map.set(e.title.posterPath, { type: e.type, id: e.id })
+    for (const e of Object.values(library.entries)) {
+      const path = posterFor(library, e.key, e.title.posterPath)
+      if (path && !map.has(path)) map.set(path, { type: e.type, id: e.id })
+    }
     for (const t of recTitles) if (t.posterPath && !map.has(t.posterPath)) map.set(t.posterPath, { type: t.type, id: t.id })
     for (const t of trendingTitles) if (t.posterPath && !map.has(t.posterPath)) map.set(t.posterPath, { type: t.type, id: t.id })
     return map

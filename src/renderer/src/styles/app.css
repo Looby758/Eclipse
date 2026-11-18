@@ -1018,3 +1018,20 @@ select:hover { border-color: var(--accent); }
 .st-bare-hint { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 10; padding: 8px 16px; border-radius: 99px; background: rgba(12, 13, 28, 0.55); color: #fff; font-size: 13px; backdrop-filter: blur(14px); pointer-events: none; animation: st-hint 3.2s ease both; }
 @keyframes st-hint { 0% { opacity: 0; } 12%, 70% { opacity: 1; } 100% { opacity: 0; } }
 :root[data-still] .st-bare-hint { animation: none; opacity: 0.9; }
+
+/* Phase 55: choose your own posters */
+.lifted-poster { position: relative; }
+.poster-change { position: absolute; left: 50%; bottom: 10px; transform: translate(-50%, 6px); display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--frost-line); background: rgba(10, 10, 24, 0.7); color: #fff; font-size: var(--text-xs); font-weight: 600; cursor: pointer; opacity: 0; white-space: nowrap; transition: opacity var(--fast), transform var(--fast) var(--ease); }
+.lifted-poster:hover .poster-change, .poster-change:focus-visible { opacity: 1; transform: translate(-50%, 0); }
+.title-body .card h2 { margin: 0; font-size: var(--text-lg); }
+.row.spread { justify-content: space-between; align-items: center; }
+.poster-picker { display: grid; gap: 12px; }
+.poster-picker > p { margin: 0; }
+.poster-picker > .btn { justify-self: start; }
+.poster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 10px; }
+.poster-option { position: relative; padding: 0; border: 0; border-radius: 10px; overflow: hidden; aspect-ratio: 2 / 3; background: var(--glass-soft); cursor: pointer; box-shadow: 0 0 0 1px var(--line); transition: transform var(--fast) var(--ease), box-shadow var(--fast); }
+.poster-option img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.poster-option:hover:not(:disabled) { transform: translateY(-2px); }
+.poster-option.on { box-shadow: 0 0 0 3px var(--poster-pick), 0 8px 22px rgba(0, 0, 0, 0.35); }
+.poster-option-tick { position: absolute; top: 6px; right: 6px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--poster-pick); color: var(--poster-pick-on); }
+.poster-option-tag { position: absolute; left: 6px; bottom: 6px; padding: 2px 7px; border-radius: 999px; background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 10px; font-weight: 600; }

@@ -25,6 +25,8 @@ import { acceptSuggestion, changeDiscord, dismissSuggestion, notMine, noticingSt
 import { discordStatus, setupDiscord, stopDiscord } from './discord'
 import { showExtensionFolder } from './extension'
 import { editMoment } from '@core/watching'
+import { orderPosters, setPoster } from '@core/posters'
+import { moveFavourite, setFavourite } from '@core/favourites'
 import { CATCH_UP_ID, dismissCatchUp } from '@core/catchup'
 import { answerRecommendation } from '@core/recommend'
 import { newRemoteCode, remoteStatus, setRemote, setupRemote, stopRemote } from './remote'
@@ -299,6 +301,16 @@ function setupIpc(): void {
   ipcMain.handle('lists:setIn', (_e, id: string, ref: TitleRef, inList: boolean) => saveLibrary(setInList(getLibrary(), id, ref, inList)))
   ipcMain.handle('lists:move', (_e, id: string, from: number, to: number) => saveLibrary(moveInList(getLibrary(), id, from, to)))
   ipcMain.handle('soon:set', (_e, ref: TitleRef, on: boolean) => saveLibrary(setWatchSoon(getLibrary(), ref, on)))
+  ipcMain.handle('posters:list', (_e, type: 'movie' | 'tv', id: number) =>
+    attempt(async () => {
+      const [options, d] = await Promise.all([tmdb.posters(type, id), tmdb.details(type, id)])
+      return orderPosters(options.data, d.data.posterPath)
+    })
+  )
+  ipcMain.handle('posters:set', (_e, key: string, path: string | null) => saveLibrary(setPoster(getLibrary(), String(key), typeof path === 'string' ? path : null)))
+  ipcMain.handle('favourites:set', (_e, ref: TitleRef, on: boolean) => saveLibrary(setFavourite(getLibrary(), ref, !!on)))
+  ipcMain.handle('favourites:move', (_e, from: number, to: number) => saveLibrary(moveFavourite(getLibrary(), Number(from), Number(to))))
+  ipcMain.handle('shelf:comingSoon', () => attempt(() => tmdb.comingSoonList(getLibrary())))
   ipcMain.handle('soon:move', (_e, from: number, to: number) => saveLibrary(moveWatchSoon(getLibrary(), from, to)))
   ipcMain.handle('library:setFinishBy', (_e, key: string, day: string | null) => saveLibrary(setFinishBy(getLibrary(), key, day)))
   ipcMain.handle('library:snooze', (_e, key: string, until: string | null) => saveLibrary(snoozeTitle(getLibrary(), key, until)))

@@ -164,7 +164,7 @@ export default function ClearOutSheet(): React.JSX.Element {
       {entry && (
         <div className="clearout-card">
           <div className="clearout-poster">
-            <Poster path={entry.title.posterPath} type={entry.type} name={entry.title.name} size="w342" />
+            <Poster path={entry.title.posterPath} type={entry.type} id={entry.id} name={entry.title.name} size="w342" />
           </div>
           <div className="clearout-body">
             <h1>{entry.title.name}</h1>

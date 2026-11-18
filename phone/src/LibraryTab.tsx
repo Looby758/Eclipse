@@ -59,10 +59,11 @@ export default function LibraryTab(): React.JSX.Element {
 }
 
 function Row({ entry, showStatus, providers }: { entry: LibraryEntry; showStatus: boolean; providers: boolean }): React.JSX.Element {
+  const chosen = usePhone((s) => s.view.posters?.[entry.key])
   return (
     <li className="row">
       <button className="row-main" onClick={() => openTitle(entry.type, entry.id)}>
-        <Poster path={entry.title.posterPath} name={entry.title.name} size="w92" className="row-poster" />
+        <Poster path={chosen ?? entry.title.posterPath} name={entry.title.name} size="w92" className="row-poster" />
         <span className="row-text">
           <b>{entry.title.name}</b>
           <span className="sub">

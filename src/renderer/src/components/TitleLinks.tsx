@@ -125,7 +125,7 @@ export default function TitleLinks({ details: d }: { details: TitleDetails }): R
                     {titles.map((t) => (
                       <button key={t.key} className="known-title" onClick={() => go({ name: 'title', type: t.type, id: t.id })} title={`Open ${t.name}`}>
                         <span className="known-poster">
-                          <Poster path={t.posterPath} type={t.type} name={t.name} size="w92" />
+                          <Poster path={t.posterPath} type={t.type} id={t.id} name={t.name} size="w92" />
                         </span>
                         <span className="known-name">{t.name}</span>
                         {t.role && <span className="known-role">as {t.role}</span>}

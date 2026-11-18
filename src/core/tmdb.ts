@@ -1,4 +1,5 @@
 import type { Trait } from './types'
+import type { PosterOption } from './posters'
 import type { CollectionDetails, Credits, Episode, MediaType, NextEpisode, PartEpisodes, PersonDetails, PersonRef, PersonResult, Provider, SearchResult, Season, SeasonDetails, TitleDetails, TitleRef, TmdbListDetails, WatchProviders } from './types'
 import { titleKey } from './types'
 
@@ -82,6 +83,8 @@ export interface Tmdb {
   similar(type: MediaType, id: number): Promise<SearchResult[]>
   /** What recommendations learn from: its creators, network, main cast and keywords. */
   traits(type: MediaType, id: number): Promise<Trait[]>
+  /** Every poster TMDB has for a title in English or with no text (phase 55: choose your own). */
+  posters(type: MediaType, id: number): Promise<PosterOption[]>
 }
 
 export function createTmdb({ key, fetch, language = 'en-GB' }: TmdbOptions): Tmdb {
@@ -199,6 +202,11 @@ export function createTmdb({ key, fetch, language = 'en-GB' }: TmdbOptions): Tmd
       }
     },
 
+    async posters(type, id) {
+      const raw = await get<{ posters?: RawImage[] }>(`/${type}/${id}/images`, { include_image_language: 'en,null' })
+      return parsePosters(raw.posters ?? [])
+    },
+
     async details(type, id) {
       // Keywords say whether a film has a scene during or after the credits; videos give its trailer; images its logo.
       const raw = await get<RawDetails>(`/${type}/${id}`, { language, append_to_response: type === 'movie' ? 'keywords,videos,release_dates,images' : 'keywords,videos,images', include_video_language: 'en,null', include_image_language: 'en,null' })
@@ -299,6 +307,21 @@ interface RawDetails {
 }
 
 /** The best logo: English first, then one with no text language, highest voted within each. */
+interface RawImage {
+  file_path?: string
+  iso_639_1?: string | null
+  vote_average?: number
+  vote_count?: number
+  width?: number
+  height?: number
+}
+
+export function parsePosters(raw: RawImage[]): PosterOption[] {
+  return raw
+    .filter((p): p is RawImage & { file_path: string } => typeof p.file_path === 'string' && !p.file_path.endsWith('.svg'))
+    .map((p) => ({ path: p.file_path, language: p.iso_639_1 || null, votes: (p.vote_average ?? 0) * Math.min(1, (p.vote_count ?? 0) / 3 + 0.25), width: p.width ?? 0, height: p.height ?? 0 }))
+}
+
 export function pickLogo(images: RawDetails['images']): string | null {
   const logos = (images?.logos ?? []).filter((l) => l.file_path && !l.file_path.endsWith('.svg'))
   const best = (lang: string | null): string | null =>
