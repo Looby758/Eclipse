@@ -20,8 +20,8 @@ interface Tile {
 type TitleRef = { type: MediaType; id: number }
 
 /**
- * The slowly moving, tilted wall of posters behind every screen: your library, topped up with
- * this week's trending titles while it's small. Each column drifts up or down and holds two copies
+ * The slowly moving, tilted wall of posters behind every screen: your library with recommendations
+ * for you mixed in, topped up with this week's trending titles while it's small. Each column drifts up or down and holds two copies
  * of its posters so it loops smoothly. Decoration only: it can't be clicked and screen readers skip it.
  */
 export default function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: boolean }): React.JSX.Element {
@@ -31,6 +31,7 @@ export default function PosterWall({ rows = false, alive = false }: { rows?: boo
   const go = useApp((s) => s.go)
   const [trendingTitles, setTrendingTitles] = useState<SearchResult[]>([])
   const trending = useMemo(() => trendingTitles.map((t) => t.posterPath!).filter(Boolean), [trendingTitles])
+  const [recTitles, setRecTitles] = useState<SearchResult[]>([])
 
   const own = useMemo(
     () =>
@@ -49,20 +50,39 @@ export default function PosterWall({ rows = false, alive = false }: { rows?: boo
     })
   }, [needTrending])
 
+  // Recommendations for you (the same ones Search shows), mixed in among your own posters. Worked
+  // out again when something is watched or started, not on every library change.
+  const seeds = Object.values(library.entries).filter((e) => e.status === 'watched' || e.status === 'watching').length
+  useEffect(() => {
+    if (!hasKey || !seeds) return
+    let live = true
+    window.api.recommendations().then((r) => {
+      if (live && r.ok) setRecTitles(r.value.filter((t) => t.posterPath))
+    })
+    return () => {
+      live = false
+    }
+  }, [hasKey, seeds])
+  const recs = useMemo(() => {
+    const hidden = new Set(library.recsHidden ?? [])
+    return recTitles.filter((t) => !library.entries[t.key] && !hidden.has(t.key)).map((t) => t.posterPath!)
+  }, [recTitles, library])
+
   // Which title each poster belongs to, so clicking a poster on Spotlight Home opens its page.
   const titles = useMemo(() => {
     const map = new Map<string, TitleRef>()
     for (const e of Object.values(library.entries)) if (e.title.posterPath && !map.has(e.title.posterPath)) map.set(e.title.posterPath, { type: e.type, id: e.id })
+    for (const t of recTitles) if (t.posterPath && !map.has(t.posterPath)) map.set(t.posterPath, { type: t.type, id: t.id })
     for (const t of trendingTitles) if (t.posterPath && !map.has(t.posterPath)) map.set(t.posterPath, { type: t.type, id: t.id })
     return map
-  }, [library, trendingTitles])
+  }, [library, recTitles, trendingTitles])
   usePointerLift(rowsRef, rows && alive, (path) => {
     const ref = titles.get(path)
     if (ref) go({ name: 'title', type: ref.type, id: ref.id })
   })
 
   const columns = useMemo(() => {
-    const posters = wallPosters(own, trending)
+    const posters = wallPosters(own, trending, undefined, recs)
     const cols: Tile[][] = []
     for (let c = 0; c < WALL_COLUMNS; c++) {
       const col: Tile[] = []
@@ -73,11 +93,11 @@ export default function PosterWall({ rows = false, alive = false }: { rows?: boo
       cols.push([...col, ...col.map((t) => ({ ...t, key: `${t.key}b` }))])
     }
     return cols
-  }, [own, trending])
+  }, [own, trending, recs])
 
   // Spotlight Home: flat rows drifting sideways, alternate rows the other way.
   const lines = useMemo(() => {
-    const posters = wallPosters(own, trending, ROWS * PER_ROW)
+    const posters = wallPosters(own, trending, ROWS * PER_ROW, recs)
     return Array.from({ length: ROWS }, (_, r) => {
       const row: Tile[] = Array.from({ length: PER_ROW }, (_, k) => {
         const path = posters[r + k * ROWS]
@@ -85,7 +105,7 @@ export default function PosterWall({ rows = false, alive = false }: { rows?: boo
       })
       return [...row, ...row.map((t) => ({ ...t, key: `${t.key}b` }))]
     })
-  }, [own, trending])
+  }, [own, trending, recs])
 
   const tile = (t: Tile): React.JSX.Element =>
     t.url ? (
