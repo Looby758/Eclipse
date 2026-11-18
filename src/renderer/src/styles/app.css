@@ -1008,3 +1008,13 @@ select:hover { border-color: var(--accent); }
 }
 @media (prefers-reduced-motion: reduce) { .st-bg img, .st-bar.nx { animation: none; } }
 :root[data-still] .st-bg img, :root[data-still] .st-bar.nx, :root[data-still] .st-info, :root[data-still] .st-drawer, :root[data-still] .st-scrim { animation: none; }
+
+/* "Just the picture": the UI fades away, the picture stays (and keeps drifting), unshaded. */
+.st-page, .stitle > .spot-pills, .corner, .st-bg::after { transition: opacity 0.45s var(--ease); }
+.stitle.bare .st-page, .stitle.bare > .spot-pills { opacity: 0; pointer-events: none; }
+:root[data-bare] .corner { opacity: 0; pointer-events: none; }
+.stitle.bare .st-bg::after { opacity: 0; }
+.stitle.bare { cursor: zoom-out; overflow: hidden; }
+.st-bare-hint { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 10; padding: 8px 16px; border-radius: 99px; background: rgba(12, 13, 28, 0.55); color: #fff; font-size: 13px; backdrop-filter: blur(14px); pointer-events: none; animation: st-hint 3.2s ease both; }
+@keyframes st-hint { 0% { opacity: 0; } 12%, 70% { opacity: 1; } 100% { opacity: 0; } }
+:root[data-still] .st-bare-hint { animation: none; opacity: 0.9; }

@@ -1,4 +1,4 @@
-import { Bookmark, Check, ChevronDown, CircleCheck, CirclePause, CirclePlay, ExternalLink, Hourglass, Plus, Popcorn, RefreshCw, X } from 'lucide-react'
+import { Bookmark, Check, ChevronDown, CircleCheck, CirclePause, CirclePlay, ExternalLink, Hourglass, Image, Plus, Popcorn, RefreshCw, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { formatDate, formatRuntime, plural, stingerLine } from '@core/format'
 import { activeEntry, currentRewatch, localDate, nextEpisodeFor, preferencesOf, watchCount } from '@core/library'
@@ -10,6 +10,7 @@ import { isWatchSoon } from '@core/watchsoon'
 import { serviceNameOf } from '@core/watching'
 import { episodeKey, STATUS_LABELS, WATCH_STATUSES, type MediaType, type SeasonDetails, type TitleDetails, type WatchProviders, type WatchStatus } from '@core/types'
 import { useApp } from '../store/app'
+import { isTyping } from '../lib/keys'
 import { itemOf } from '../lib/item'
 import { Pills } from './SpotlightHome'
 import RatingBars from './RatingBars'
@@ -47,6 +48,28 @@ export default function SpotlightTitle({ type, id }: { type: MediaType; id: numb
   const [panel, setPanel] = useState<Panel | null>(null)
   const [focus, setFocus] = useState<EpisodeFocus | null>(null)
   const [busy, setBusy] = useState(false)
+  // "Just the picture": everything fades away but the (still slowly drifting) picture. P switches it, and any click or key brings it all back.
+  const [bare, setBare] = useState(false)
+  useEffect(() => {
+    if (bare) document.documentElement.dataset.bare = ''
+    else delete document.documentElement.dataset.bare
+    const key = (e: KeyboardEvent): void => {
+      if (bare) {
+        if (e.ctrlKey || e.metaKey || e.altKey) return
+        e.preventDefault()
+        e.stopImmediatePropagation()
+        setBare(false)
+      } else if (e.key.toLowerCase() === 'p' && !e.ctrlKey && !e.metaKey && !e.altKey && !isTyping(e.target) && !document.querySelector('.st-drawer')) {
+        e.preventDefault()
+        setBare(true)
+      }
+    }
+    window.addEventListener('keydown', key, true)
+    return () => {
+      window.removeEventListener('keydown', key, true)
+      delete document.documentElement.dataset.bare
+    }
+  }, [bare])
   const library = useApp((s) => s.library)
   const setLibrary = useApp((s) => s.setLibrary)
   const raw = library.entries[`${type}:${id}`]
@@ -168,7 +191,16 @@ export default function SpotlightTitle({ type, id }: { type: MediaType; id: numb
   ]
 
   return (
-    <div className="stitle">
+    <div
+      className={`stitle ${bare ? 'bare' : ''}`}
+      onClickCapture={(e) => {
+        if (!bare) return
+        e.stopPropagation()
+        e.preventDefault()
+        setBare(false)
+      }}
+    >
+      {bare && <div className="st-bare-hint">Click anywhere or press any key to bring everything back</div>}
       <div className="st-bg" aria-hidden>
         {backdrop && <img src={backdrop} alt="" draggable={false} />}
       </div>
@@ -202,6 +234,11 @@ export default function SpotlightTitle({ type, id }: { type: MediaType; id: numb
                   </button>
                 ))}
               <SoonChip details={d} />
+              {backdrop && (
+                <button className="st-chip" onClick={() => setBare(true)} title="Just the picture (P)">
+                  <Image size={13} /> Just the picture
+                </button>
+              )}
             </div>
           </div>
           <div className="st-right">
