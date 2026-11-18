@@ -120,6 +120,7 @@
     return last
   }
 
+  const episodeLines = new Map()
   function texts(v) {
     const out = []
     const add = (t) => {
@@ -150,6 +151,13 @@
         if (out.length >= 12) break
       }
     }
+    // The episode lines go with the page's address (Disney+ gives each episode its own): when the
+    // player hides them (controls tucked away, the end-of-episode screen), keep using the last ones
+    // seen on this address rather than saying nothing.
+    const here = location.href.split('?')[0]
+    const named = out.filter((t) => EPISODE.test(t))
+    if (named.length) episodeLines.set(here, named)
+    else for (const t of episodeLines.get(here) || []) add(t)
     return out.filter(Boolean).slice(0, 12)
   }
 
@@ -212,10 +220,11 @@
   function where(v) {
     const ui = fromControls()
     if (ui && ui.duration > 60 && ui.position >= 0 && ui.position <= ui.duration + 5) {
-      anchor = { v, offset: ui.position - v.currentTime, duration: ui.duration }
+      anchor = { v, url: location.href.split('?')[0], offset: ui.position - v.currentTime, duration: ui.duration }
       return { position: ui.position, duration: ui.duration, from: 'player' }
     }
-    if (anchor && anchor.v === v) return { position: Math.max(0, Math.min(anchor.duration, v.currentTime + anchor.offset)), duration: anchor.duration, from: 'player' }
+    // The last reading counts only for the same episode: the next one can reuse the same video.
+    if (anchor && anchor.v === v && anchor.url === location.href.split('?')[0]) return { position: Math.max(0, Math.min(anchor.duration, v.currentTime + anchor.offset)), duration: anchor.duration, from: 'player' }
     const finite = (n) => (Number.isFinite(n) ? n : null)
     return { position: finite(v.currentTime), duration: finite(v.duration), from: 'video' }
   }

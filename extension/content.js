@@ -18,7 +18,8 @@
   setInterval(() => {
     const r = report()
     if (!r) return
-    const state = `${r.paused}|${r.ended}`
+    // A new episode, a pause or a restart goes to Eclipse straight away; otherwise every 10 seconds.
+    const state = `${r.paused}|${r.ended}|${r.url}|${r.texts.join('|')}`
     const changed = state !== lastState
     lastState = state
     if (!changed && (r.paused || Date.now() - lastSent < 9500)) return
