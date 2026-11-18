@@ -27,6 +27,7 @@ import Logo from './components/Logo'
 import UndoBar from './components/UndoBar'
 import StartAsk from './components/StartAsk'
 import PhoneAsk from './components/PhoneAsk'
+import ZoomLayer from './components/ZoomLayer'
 import { useHomeStyle } from './lib/homeStyle'
 import { handleArrows, isTyping } from './lib/keys'
 import { useStartAsk } from './lib/startAsk'
@@ -138,6 +139,7 @@ export default function App(): React.JSX.Element {
           <UndoBar />
           <StartAsk />
           <PhoneAsk />
+          <ZoomLayer />
         </>
       )}
     </div>

@@ -1035,3 +1035,13 @@ select:hover { border-color: var(--accent); }
 .poster-option.on { box-shadow: 0 0 0 3px var(--poster-pick), 0 8px 22px rgba(0, 0, 0, 0.35); }
 .poster-option-tick { position: absolute; top: 6px; right: 6px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--poster-pick); color: var(--poster-pick-on); }
 .poster-option-tag { position: absolute; left: 6px; bottom: 6px; padding: 2px 7px; border-radius: 999px; background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 10px; font-weight: 600; }
+
+/* Phase 56: opening a poster zooms into it */
+.zoom-layer { position: fixed; inset: 0; pointer-events: none; z-index: 60; }
+.zoom-ghost { position: fixed; object-fit: cover; box-shadow: var(--zoom-shadow); will-change: left, top, width, height, opacity; }
+/* While it grows, the page underneath comes up a beat later, through the poster. */
+:root.zooming .stitle .st-page, :root.zooming .title-sheet { animation: zoom-page-in 520ms var(--ease) both; }
+@keyframes zoom-page-in { 0%, 45% { opacity: 0; } 100% { opacity: 1; } }
+/* Keep the poster wall still: a plain fade. */
+:root.page-fade .stitle, :root.page-fade .sheet { animation: zoom-fade 240ms ease-out both !important; }
+@keyframes zoom-fade { from { opacity: 0; } }

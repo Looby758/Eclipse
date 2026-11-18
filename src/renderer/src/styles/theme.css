@@ -73,6 +73,8 @@
   /* Phase 55: the ring round the poster you picked */
   --poster-pick: #8fe3ff;
   --poster-pick-on: #0b0d1f;
+  /* Phase 56: the poster that grows into its title page */
+  --zoom-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
 
   /* Text */
   --text-strong: #ffffff;
