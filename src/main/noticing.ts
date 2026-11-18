@@ -172,7 +172,7 @@ async function onPlaying(): Promise<void> {
   // Prefer a media session that's playing, then any media session, then browser windows.
   // The Chrome extension first, playing or paused: it names the episode. Then a media session
   // that's playing, then any media session, then browser windows (which only name the show).
-  const order = (n: NowPlaying): number => (n.app.startsWith('Chrome extension') ? -1 : n.position != null && n.status === 'playing' ? 0 : n.position != null ? 1 : 2)
+  const order = (n: NowPlaying): number => (n.app.startsWith('Chrome extension') ? (n.status === 'playing' ? -2 : -1) : n.position != null && n.status === 'playing' ? 0 : n.position != null ? 1 : 2)
   const now = [...report.items].sort((a, b) => order(a) - order(b)).map((n) => ({ n, r: recognise(n, lib, d, today, new Date()) })).find((x) => x.r)
   const next = now?.r ?? null
   if (!next) void noticeUnknown(report.items, lib)
