@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createTmdb, imageUrl, isReadAccessToken, parseCreditEpisodes, parseCredits, parseDetails, parsePeopleSearch, parsePerson, parseSearch, TmdbError } from './tmdb'
+import { createTmdb, imageUrl, isReadAccessToken, parseCreditEpisodes, parseCredits, parseDetails, parsePeopleSearch, parsePerson, parseSearch, parseTraits, TmdbError } from './tmdb'
 
 const reply = (status: number, body: unknown = {}) => ({ ok: status >= 200 && status < 300, status, json: async () => body })
 
@@ -201,5 +201,29 @@ describe('which episodes someone was in', () => {
   it('keeps episode counts and part ids on an actor’s shows', () => {
     const p = parsePerson({ id: 1, tv_credits: { cast: [{ id: 1402, name: 'The Walking Dead', character: 'Enid', episode_count: 5, credit_id: 'abc' }] } })
     expect(p.acted[0]).toMatchObject({ role: 'Enid', roleEpisodes: 5, creditIds: ['abc'] })
+  })
+})
+
+describe('traits for recommendations that learn', () => {
+  it('takes a show’s creators, network, main cast and keywords', () => {
+    const traits = parseTraits('tv', {
+      created_by: [{ id: 1, name: 'Eric Kripke' }],
+      networks: [{ id: 71, name: 'The WB' }, { id: 72, name: 'The CW' }, { id: 73, name: 'Extra' }],
+      aggregate_credits: { cast: [{ id: 5, name: 'Jensen Ackles', total_episode_count: 327 }, { id: 6, name: 'Jared Padalecki', total_episode_count: 327 }] },
+      keywords: { results: [{ id: 9, name: 'demon' }] }
+    })
+    expect(traits.map((t) => t.id)).toEqual(['creator:1', 'network:71', 'network:72', 'cast:5', 'cast:6', 'keyword:9'])
+  })
+  it('takes a film’s directors and writers and its first studios', () => {
+    const traits = parseTraits('movie', {
+      production_companies: [{ id: 3, name: 'Legendary' }],
+      credits: { crew: [{ id: 7, name: 'Denis Villeneuve', job: 'Director' }, { id: 7, name: 'Denis Villeneuve', job: 'Screenplay' }, { id: 8, name: 'Someone', job: 'Editor' }], cast: [] },
+      keywords: { keywords: [{ id: 2, name: 'desert' }] }
+    })
+    expect(traits).toEqual([
+      { id: 'creator:7', name: 'Denis Villeneuve' },
+      { id: 'network:3', name: 'Legendary' },
+      { id: 'keyword:2', name: 'desert' }
+    ])
   })
 })

@@ -1,6 +1,6 @@
 import { localDate, setEpisodes, setStatus, type LibraryItem } from './library'
-import { hideRecommendation } from './recommend'
-import { STATUS_LABELS, UNDATED, parseEpisodeKey, parseTitleKey, type Library, type WatchStatus, WATCH_STATUSES } from './types'
+import { answerRecommendation, hideRecommendation } from './recommend'
+import { STATUS_LABELS, UNDATED, parseEpisodeKey, parseTitleKey, type Library, type Trait, type WatchStatus, WATCH_STATUSES } from './types'
 
 /**
  * Eclipse on your phone (Phase 45). The phone page reads library.json from Google Drive but never
@@ -155,10 +155,27 @@ function describe(change: PhoneChange): string {
   return 'said Not for me'
 }
 
-/** Applies one change the phone's way, with no questions. */
-function applyPhone(library: Library, change: PhoneChange): Library {
-  if (change.kind === 'notForMe') return hideRecommendation(library, change.key)
-  if (change.kind === 'status') return setStatus(library, change.item, change.status, new Date(change.at))
+/**
+ * The phone's answers recommendations learn from (phase 43): Not for me, and adding something new
+ * to Want to watch (Interested). Their titles' traits are fetched by the computer before folding in.
+ */
+export function learnableKeys(changes: PhoneChange[]): string[] {
+  const keys = changes.map((c) => (c.kind === 'notForMe' ? c.key : c.kind === 'status' && c.status === 'want' && c.was === null ? c.item.key : null))
+  return [...new Set(keys.filter((k): k is string => !!k))]
+}
+
+/** Applies one change the phone's way, with no questions. With `traits` for its title, an answer also teaches recommendations. */
+function applyPhone(library: Library, change: PhoneChange, traits: Record<string, Trait[]> = {}): Library {
+  if (change.kind === 'notForMe') {
+    const t = traits[change.key]
+    return t ? answerRecommendation(library, change.key, false, t) : hideRecommendation(library, change.key)
+  }
+  if (change.kind === 'status') {
+    const t = traits[change.item.key]
+    const isNew = change.status === 'want' && change.was === null && !library.entries[change.item.key]
+    const lib = setStatus(library, change.item, change.status, new Date(change.at))
+    return isNew && t ? answerRecommendation(lib, change.item.key, true, t) : lib
+  }
   if (!change.watched) return library.entries[change.item.key] ? setEpisodes(library, change.item, change.keys, false, new Date(change.at)) : library
   // A day already there is kept by setEpisodes, so clear the ones the phone dated differently first.
   const ticks = ticksOf(library, change.item.key)
@@ -190,7 +207,7 @@ function conflictOf(library: Library, change: PhoneChange): PhoneConflict | null
  * Folds the phone's changes into the library, oldest first. Ones already folded in are skipped.
  * Clashes are left out (and not marked as folded in) so they can be asked about.
  */
-export function foldPhone(library: Library, changes: PhoneChange[]): { library: Library; conflicts: PhoneConflict[]; applied: number } {
+export function foldPhone(library: Library, changes: PhoneChange[], traits: Record<string, Trait[]> = {}): { library: Library; conflicts: PhoneConflict[]; applied: number } {
   const done = new Set(library.phoneApplied ?? [])
   let lib = library
   let applied = 0
@@ -202,15 +219,15 @@ export function foldPhone(library: Library, changes: PhoneChange[]): { library: 
       conflicts.push(conflict)
       continue
     }
-    lib = markApplied(applyPhone(lib, change), change.id)
+    lib = markApplied(applyPhone(lib, change, traits), change.id)
     applied++
   }
   return { library: lib, conflicts, applied }
 }
 
 /** Settles one clash: the phone's way, or keep the computer's (the phone's change is then dropped). */
-export function resolvePhone(library: Library, change: PhoneChange, choice: PhoneChoice): Library {
-  return markApplied(choice === 'phone' ? applyPhone(library, change) : library, change.id)
+export function resolvePhone(library: Library, change: PhoneChange, choice: PhoneChoice, traits: Record<string, Trait[]> = {}): Library {
+  return markApplied(choice === 'phone' ? applyPhone(library, change, traits) : library, change.id)
 }
 
 /** The phone's changes the computer hasn't folded in yet. */

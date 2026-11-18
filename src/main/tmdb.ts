@@ -5,14 +5,14 @@ import { createTmdb, TmdbError, type Tmdb } from '@core/tmdb'
 import type { CollectionDetails, Credits, MediaType, PartEpisodes, PersonDetails, PersonResult, Provider, SearchResult, SeasonDetails, TitleDetails, TitleRef, TmdbListDetails, WatchProviders } from '@core/types'
 import { expandGuide, guideById, guideRefs, type Guide, type GuideTitleInfo } from '@core/guides'
 import { releaseOrder, sourceOf, findList, refOf } from '@core/lists'
-import type { Library } from '@core/types'
+import type { Library, Trait } from '@core/types'
 import { parseTitleKey } from '@core/types'
 import { followed, seasonsToCheck, upcomingReleases, type ReleaseEvent } from '@core/calendar'
 import { localDate, preferencesOf } from '@core/library'
 import { knownFrom, type KnownFrom } from '@core/knownfrom'
 import { catchUps, type CatchUp } from '@core/catchup'
 import { weekStart } from '@core/time'
-import { recommend, seedsOf, type Recommendation, type Seed } from '@core/recommend'
+import { applyTaste, recommend, seedsOf, SIMILAR_WEIGHT, type Recommendation, type Seed } from '@core/recommend'
 import { weekSoFar, type WeekSoFar } from '@core/week'
 import type { Fetched, ListView } from '@shared/api'
 import { loadSettings, saveSettings } from './settings'
@@ -167,25 +167,59 @@ export async function detailsMany(keys: string[]): Promise<Record<string, TitleD
   return out
 }
 
-/** Recommendations for Search: TMDB's lists for your strongest titles, added up (each list saved for a week). */
+/**
+ * Recommendations for Search and the poster wall: TMDB's "recommended" and "similar" lists for your
+ * strongest titles, added up (each list saved for a week), then raised or lowered by what your
+ * Interested and Not for me answers have taught it.
+ */
 export async function recommendationsFor(library: Library, now = new Date()): Promise<Recommendation[]> {
   const seeds = seedsOf(library, now)
   const lists: { seed: Seed; results: SearchResult[] }[] = []
   for (let i = 0; i < seeds.length; i += 5) {
     await Promise.all(
-      seeds.slice(i, i + 5).map(async (seed) => {
+      seeds.slice(i, i + 5).flatMap((seed) => {
         const t = parseTitleKey(seed.key)
-        if (!t) return
+        if (!t) return []
+        const fetchList = async (source: 'recs' | 'similar'): Promise<void> => {
+          try {
+            const job = (): Promise<SearchResult[]> => (source === 'recs' ? tmdb().recommendations(t.type, t.id) : tmdb().similar(t.type, t.id))
+            const r = await cached(fileCache, `${source}:${seed.key}`, CACHE_TTL.credits, job, { shouldServeStale: serveStaleUnlessKeyProblem })
+            lists.push({ seed: source === 'recs' ? seed : { ...seed, weight: seed.weight * SIMILAR_WEIGHT }, results: r.data })
+          } catch {
+            // Skipped until it can be fetched.
+          }
+        }
+        return [fetchList('recs'), fetchList('similar')]
+      })
+    )
+  }
+  const taste = library.recsTaste
+  const ranked = recommend(library, lists, 90)
+  if (!taste || !Object.keys(taste.weights).length) return ranked.slice(0, 40)
+  // Once it has learnt something, the strongest candidates' traits are fetched (saved for a week) so
+  // your answers can move them up or down.
+  const traits: Record<string, Trait[]> = {}
+  const top = ranked.slice(0, 60)
+  for (let i = 0; i < top.length; i += 8) {
+    await Promise.all(
+      top.slice(i, i + 8).map(async (r) => {
         try {
-          const r = await cached(fileCache, `recs:${seed.key}`, CACHE_TTL.credits, () => tmdb().recommendations(t.type, t.id), { shouldServeStale: serveStaleUnlessKeyProblem })
-          lists.push({ seed, results: r.data })
+          traits[r.key] = await traitsOf(r.key)
         } catch {
-          // Skipped until it can be fetched.
+          // Ranked without learning until it can be fetched.
         }
       })
     )
   }
-  return recommend(library, lists)
+  return applyTaste(ranked, traits, taste, 40)
+}
+
+/** A title's creators, network, main cast and keywords, for learning from answers (saved for a week). */
+export async function traitsOf(key: string): Promise<Trait[]> {
+  const t = parseTitleKey(key)
+  if (!t) return []
+  const r = await cached(fileCache, `traits:${key}`, CACHE_TTL.credits, () => tmdb().traits(t.type, t.id), { shouldServeStale: serveStaleUnlessKeyProblem })
+  return r.data
 }
 
 export async function services(region: string): Promise<Fetched<Provider[]>> {

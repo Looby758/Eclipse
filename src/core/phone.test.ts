@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { emptyLibrary, normalizeLibrary, setEpisodes, setStatus, startRewatch, type LibraryItem } from './library'
-import { conflictText, foldPhone, normalizePhoneFile, pendingChanges, phoneView, resolvePhone, type PhoneChange } from './phone'
+import { conflictText, foldPhone, learnableKeys, normalizePhoneFile, pendingChanges, phoneView, resolvePhone, type PhoneChange } from './phone'
 
 const andor: LibraryItem = { key: 'tv:83867', type: 'tv', id: 83867, title: { name: 'Andor', year: 2022, posterPath: '/a.jpg' } }
 const dune: LibraryItem = { key: 'movie:438631', type: 'movie', id: 438631, title: { name: 'Dune', year: 2021, posterPath: '/d.jpg' } }
@@ -80,6 +80,20 @@ describe('folding in what you did on your phone', () => {
   it('hides recommendations you said Not for me to', () => {
     const { library } = foldPhone(emptyLibrary(), [{ id: 'i', at: at('2026-11-12'), kind: 'notForMe', key: 'movie:11' }])
     expect(library.recsHidden).toEqual(['movie:11'])
+  })
+
+  it('teaches recommendations from the phone’s Not for me and Interested answers', () => {
+    const changes: PhoneChange[] = [
+      { id: 'k', at: at('2026-11-12'), kind: 'notForMe', key: 'movie:11' },
+      { id: 'l', at: at('2026-11-12', '21:01'), kind: 'status', item: dune, status: 'want', was: null },
+      { id: 'm', at: at('2026-11-12', '21:02'), kind: 'status', item: andor, status: 'watching', was: 'want' }
+    ]
+    expect(learnableKeys(changes)).toEqual(['movie:11', 'movie:438631'])
+    const traits = { 'movie:11': [{ id: 'creator:1', name: 'George Lucas' }], 'movie:438631': [{ id: 'creator:2', name: 'Denis Villeneuve' }] }
+    const { library } = foldPhone(emptyLibrary(), changes, traits)
+    expect(library.recsHidden).toEqual(['movie:11'])
+    expect(library.entries['movie:438631'].status).toBe('want')
+    expect(library.recsTaste).toMatchObject({ yes: 1, no: 1, weights: { 'creator:1': { w: -0.6 }, 'creator:2': { w: 0.6 } } })
   })
 
   it('keeps the folded-in ids through a save and reload', () => {

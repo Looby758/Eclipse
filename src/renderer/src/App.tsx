@@ -10,6 +10,7 @@ import { HomeCredit } from './components/Credits'
 import GuardBanner from './components/GuardBanner'
 import HomeNotes from './components/HomeNotes'
 import ClearOutSheet from './components/ClearOutSheet'
+import PicksSheet from './components/PicksSheet'
 import ServicesSheet from './components/ServicesSheet'
 import RepairSheet from './components/RepairSheet'
 import YearSheet from './components/YearSheet'
@@ -121,6 +122,7 @@ export default function App(): React.JSX.Element {
           {view.name === 'lists' && <ListsSheet />}
           {view.name === 'soon' && <WatchSoonSheet />}
           {view.name === 'clearout' && <ClearOutSheet />}
+          {view.name === 'picks' && <PicksSheet />}
           {view.name === 'services' && <ServicesSheet />}
           {view.name === 'repair' && <RepairSheet />}
           {view.name === 'year' && <YearSheet key={view.year ?? 'now'} year={view.year} />}

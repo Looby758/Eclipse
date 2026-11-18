@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import { exportFiles } from '@core/export'
 import { toIcs } from '@core/calendar'
 import { moveWatchSoon, setWatchSoon } from '@core/watchsoon'
-import { dropTitle, restoreDropped, setFrom, endWatchWith, planWatchWith, startWatchWith, tickWith, endRewatch, localDate, markRowSeen, settleSeenShows, markSeenBefore, preferencesOf, removeRewatch, setEpisodes, startRewatch, setFinishBy, snoozeTitle, setNote, setPreferences, setStatus, setWatchedOn } from '@core/library'
+import { type LibraryItem, dropTitle, restoreDropped, setFrom, endWatchWith, planWatchWith, startWatchWith, tickWith, endRewatch, localDate, markRowSeen, settleSeenShows, markSeenBefore, preferencesOf, removeRewatch, setEpisodes, startRewatch, setFinishBy, snoozeTitle, setNote, setPreferences, setStatus, setWatchedOn } from '@core/library'
 import { TmdbError } from '@core/tmdb'
 import { createList, followList, moveInList, removeList, renameList, setInList } from '@core/lists'
 import { UNDATED, type Library, type TitleRef } from '@core/types'
@@ -25,7 +25,7 @@ import { acceptSuggestion, dismissSuggestion, notMine, noticingStatus, scanHisto
 import { showExtensionFolder } from './extension'
 import { editMoment } from '@core/watching'
 import { CATCH_UP_ID, dismissCatchUp } from '@core/catchup'
-import { hideRecommendation } from '@core/recommend'
+import { answerRecommendation } from '@core/recommend'
 import { newRemoteCode, remoteStatus, setRemote, setupRemote, stopRemote } from './remote'
 import { guardStatus, readOnlyReason, startGuard, stopGuard, takeOver } from './guard'
 import { remember, undoTarget } from './undo'
@@ -126,7 +126,7 @@ function reopenLibrary(): void {
   startGuard(isDirectory(dataFolder) ? dataFolder : null, (s) => {
     mainWindow?.webContents.send('guard:changed', s)
     // Phase 45: changes from the phone wait while this copy is read-only.
-    foldFromPhone()
+    void foldFromPhone()
   })
   startPhone(
     isDirectory(dataFolder) ? dataFolder : null,
@@ -318,7 +318,18 @@ function setupIpc(): void {
     })
   )
   ipcMain.handle('recs:list', () => attempt(() => tmdb.recommendationsFor(getLibrary())))
-  ipcMain.handle('recs:hide', (_e, key: string) => (/^(movie|tv):\d+$/.test(String(key)) ? saveLibrary(hideRecommendation(getLibrary(), String(key))) : getLibrary()))
+  // Interested (adds it to Want to watch) or Not for me (hides it); either way it learns from the
+  // title's creators, network, cast and keywords. Undo puts everything back as it was.
+  ipcMain.handle('recs:answer', async (_e, item: LibraryItem, answer: 'yes' | 'no') => {
+    const key = String(item?.key)
+    if (!/^(movie|tv):\d+$/.test(key) || (answer !== 'yes' && answer !== 'no')) return getLibrary()
+    const traits = await tmdb.traitsOf(key).catch(() => [])
+    const yes = answer === 'yes'
+    return change((lib) => {
+      const learnt = answerRecommendation(lib, key, yes, traits)
+      return yes && !learnt.entries[key] ? setStatus(learnt, item, 'want') : learnt
+    })
+  })
   ipcMain.handle('week:budget', () => attempt(() => tmdb.weekBudget(getLibrary())))
   ipcMain.handle('catchup:list', () => attempt(() => tmdb.catchUpList(getLibrary())))
   ipcMain.handle('catchup:dismiss', (_e, id: string) => (CATCH_UP_ID.test(String(id)) ? saveLibrary(dismissCatchUp(getLibrary(), String(id))) : getLibrary()))
