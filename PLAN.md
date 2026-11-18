@@ -255,7 +255,7 @@ From a conversation about how I actually use Eclipse day to day: mostly ticking 
     - **No clashes:** the phone never rewrites `library.json`. Its ticks and additions go into a separate file in the same Drive folder (e.g. `from-phone.json`). When Eclipse on the PC or Mac next opens, or sees that file sync in, it folds them into the library and empties it. If something conflicts (an episode ticked on both with different days, a title removed on the computer but ticked on the phone), it asks me rather than guessing.
     - **Google sign-in:** reuses the Google Cloud project Orbit already uses, with a second sign-in client added for the web page (a desktop app's client secret can't go in a web page, since anyone could read it). Only the Drive data folder is needed. I sign in once on the phone; Google may ask again now and then.
     - **Hosting:** the page itself (no data) on GitHub Pages, free. My library goes straight from Drive to the phone. The TMDB key is entered once on the phone and kept there.
-    *Needs:* nothing new; 43 for recommendations on the phone. Replaces 23 for looking things up away from home; 23 stays for the sofa.
+    *(Built.)* *Needs:* nothing new; 43 for recommendations on the phone. Replaces 23 for looking things up away from home; 23 stays for the sofa.
 
 ## Open questions
 
@@ -450,6 +450,14 @@ You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls
 - Phase 31, **play next**: from history and Mac tab addresses Eclipse learns each show's page on its service and the last episode address. Up next and the title page get **Continue on NOW** (or Disney+ …). It opens the show's page (or the last episode if that's all it knows): the services' addresses for the *next* episode can't be worked out in advance, so this is as close as it gets.
 - Decisions: all three switches are off until you turn them on, and are per computer. Suggestions and what you said no to live in the app's own folder (`noticing.json`); moments and learnt links are in the library so both computers see them. Nothing is ever ticked without you pressing Tick it. No new npm packages: history is read with the database reader built into Electron.
 
+
+**Phase 45: Eclipse on your phone (built, waiting for the Google setup and for you to try it)**
+
+- A small page at **https://looby758.github.io/Eclipse/**, saved to the iPhone home screen. Three tabs: **Library** (Watching, Want to watch, Watched, a box to find things by name, which of your services has each one, and a one-tap tick of the next episode), **Search** (TMDB, with **+** to add to Want to watch) and **For you** (recommendations one at a time: **Not for me**, **Skip**, **Interested**). Tapping anything opens its page: status, *Up next* with **Tick it**, where to watch, the trailer, and every season's episodes to tick (ticking one further on offers to tick the ones before it too).
+- **No clashes:** the phone only reads `library.json`. Its changes go into `from-phone.json` in the same Drive folder. Eclipse on the computer adds them when it opens and whenever that file syncs in, and marks them as done in the library (`phoneApplied`); the phone then tidies them out of its own file. So each file has only one writer. Clashes wait for you on the computer: "Your phone and this computer disagree", with the two choices (an episode ticked on both on different days, a title removed here but ticked or changed on the phone, or a status changed on both). Read-only copies (the two-computer guard) leave it for the other computer. *Is everything working?* has a "Changes from your phone" line.
+- **Google sign-in:** a second sign-in client (*Web application*) in Orbit's Google Cloud project, with only the `drive.file` permission: the page can see just the folder and `library.json` you pick with Google's file picker, and the file it makes itself. No client secret anywhere. It goes back to Google quietly when the hour-long sign-in runs out.
+- **Hosting:** GitHub Pages, built by *Actions → Phone page* whenever main changes. Only the page is online. Your library, your changes and the TMDB key stay on the phone (and the page keeps a copy of your library so it opens with no signal).
+- Decisions: the phone can't remove titles (only change their status), so nothing is lost by a slip of the thumb. Recommendations use today's scoring; when phase 43 lands, its learning should read *Not for me* and *Interested* from the phone too. Setup steps (Google Cloud, GitHub Pages, the iPhone) are in `phone/README.md`.
 
 **Future ideas**
 

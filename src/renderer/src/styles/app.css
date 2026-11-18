@@ -741,6 +741,7 @@ select option:checked { background-color: var(--accent); color: #ffffff; }
 
 /* Phase 38: the one-time "start with your computer?" question */
 .start-ask { position: fixed; left: 50%; bottom: 112px; transform: translateX(-50%); z-index: 61; width: min(680px, calc(100vw - 40px)); display: flex; flex-wrap: wrap; align-items: center; gap: 14px 16px; padding: 18px 20px; border-radius: var(--radius-lg); border: 1px solid var(--line); background: var(--menu-bg); color: var(--menu-text); box-shadow: var(--shadow); }
+.phone-ask { z-index: 62; }
 .start-ask-icon { color: var(--accent); flex-shrink: 0; }
 .start-ask-text { flex: 1 1 360px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .start-ask-text span { color: var(--text-muted); font-size: var(--text-sm); }

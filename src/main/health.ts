@@ -7,7 +7,7 @@ import { join } from 'path'
  * in plain words, and problems go into a small log file in the app's own folder (not synced).
  */
 
-export type JobId = 'save' | 'backup' | 'sync' | 'tmdb' | 'services' | 'history' | 'playing' | 'updates'
+export type JobId = 'save' | 'backup' | 'sync' | 'phone' | 'tmdb' | 'services' | 'history' | 'playing' | 'updates'
 
 export interface JobState {
   id: JobId
@@ -22,6 +22,7 @@ const LABELS: Record<JobId, string> = {
   save: 'Saving your library',
   backup: 'Daily backup',
   sync: 'Changes from your other computer',
+  phone: 'Changes from your phone',
   tmdb: 'TMDB (titles, posters, episodes)',
   services: 'Daily services check',
   history: 'Browser history check',
@@ -70,7 +71,7 @@ export function healthStatus(off: Partial<Record<JobId, string | false>> = {}): 
     const j = jobs.get(id)
     const why = off[id]
     if (why) return { id, label: LABELS[id], at: j?.at ?? null, ok: true, detail: why }
-    return j ?? { id, label: LABELS[id], at: null, ok: true, detail: id === 'sync' ? 'Nothing new from another computer since Eclipse opened' : 'Not run yet since Eclipse opened' }
+    return j ?? { id, label: LABELS[id], at: null, ok: true, detail: id === 'sync' ? 'Nothing new from another computer since Eclipse opened' : id === 'phone' ? 'Nothing new from your phone since Eclipse opened' : 'Not run yet since Eclipse opened' }
   })
 }
 
