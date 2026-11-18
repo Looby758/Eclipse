@@ -1,5 +1,5 @@
 import { spawn, execFile, type ChildProcess } from 'child_process'
-import type { NowPlaying } from '@core/watching'
+import { parseEpisode, type NowPlaying } from '@core/watching'
 
 /**
  * Phase 28: what's playing. Windows keeps track of what's playing for its media keys and volume
@@ -171,7 +171,11 @@ export function stopNowPlaying(): void {
 const fromExtension = new Map<string, { at: number; item: NowPlaying }>()
 
 export function addExtensionItem(item: NowPlaying): void {
-  fromExtension.set(item.url ?? item.app, { at: Date.now(), item })
+  const key = item.url ?? item.app
+  // The player hides the episode line with its controls: keep the last one named on this page.
+  const before = fromExtension.get(key)?.item
+  const kept = !parseEpisode(item.title) && before && parseEpisode(before.title) ? { ...item, title: `${item.title} · ${before.title}` } : item
+  fromExtension.set(key, { at: Date.now(), item: kept })
 }
 
 /**
