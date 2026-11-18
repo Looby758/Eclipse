@@ -238,6 +238,19 @@ From a review of what the app still needs now that most of the plan is built. Th
 
 Turned down in this review: refreshing shows that are airing every day, with a "new episode is out" notification.
 
+### From talking it through (agreed 18 Nov 2026)
+
+From a conversation about how I actually use Eclipse day to day: mostly ticking episodes and looking for something new, and I talk about shows with friends on Discord all the time. Numbered after the others so nothing else moves.
+
+43. **Recommendations that learn from my no's.** The current *Recommended for you* goes by genre, so The Walking Dead brings up apocalypse films and shows that are nothing like it. What I like about a show (The Walking Dead, Shadowhunters) isn't its genre or its topic, and tags don't capture it either: plenty of monster-hunting shows would be nothing like Shadowhunters. So instead of guessing up front, it learns:
+    - Candidates come from TMDB's "similar" and "recommended" lists for what I've watched, rated highly or finished, as now.
+    - A full-screen mode shows them one at a time with the trailer, like *Clear out the watchlist*, with **Interested** (adds it to Want to watch), **Not for me** and **Skip**, plus keyboard shortcuts.
+    - Each *Not for me* lowers the score of anything sharing its creators, network, main cast or TMDB keywords; each *Interested* raises them. It starts out fairly generic and gets sharper after a couple of sessions.
+    - Every pick says why it's there ("Because of The Walking Dead and Shadowhunters, and you liked other shows from The CW"), so I can tell when it's guessing.
+    - What I've said no to, and the learnt weights, are saved in the library so both computers agree. Free, local, no AI.
+    *Needs:* nothing new (replaces the recommendations already in Search and on the poster wall).
+44. **Discord status while I watch.** While something of mine is playing, Discord shows "Watching The Walking Dead · S9 E4" on my profile, like it does for games, and clears it when I stop. It talks to the Discord app on the same computer, so it's free and nothing goes online from Eclipse. Sometimes I don't want people to know what I'm watching, so it must be quick to switch on and off: a toggle in the tray / menu bar menu and on Home, as well as in Settings. Off by default, per computer. *Needs:* 28 (what's playing).
+
 ## Open questions
 
 - [ ] **Combining with Orbit:** what would joining them look like? A tab inside Orbit, Orbit's daily notes showing what I watched that day, or just a shared look? This doesn't need answering now, but it affects how strictly `src/core` stays separate.
@@ -436,3 +449,4 @@ You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls
 
 - Added to the plan (17 Nov 2026): future ideas from a brainstorm, listed under Future ideas as candidate phases 12 to 32. Group A (12 to 26) stand on their own; Group B (27 to 31) is the chain about noticing what I watch, in order; Group C (32, Apple TV) waits until I have a TV. Calendar-aware planning is a maybe. I mostly watch on the computer for now (an Apple TV and iPhone later).
 - Added to the plan (17 Nov 2026): from a review of what the app still needs, candidate phases 36 to 41 under *Safety and everyday comfort*: undo and a check before removing, daily backups, starting with the computer (only after asking), an "Is everything working?" panel, finding things in the library, and calmer screens and keyboard use; then 42, a quick welcome for someone new (for sharing with a friend). Turned down: daily refresh of airing shows with new-episode notifications.
+- Added to the plan (18 Nov 2026): candidate phases 43 (recommendations that learn from my no's, replacing the genre-based ones) and 44 (Discord status while I watch, quick to switch on and off), from a conversation about how I use Eclipse day to day.
