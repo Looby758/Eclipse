@@ -13,8 +13,10 @@ export const TMDB_SITE = 'https://www.themoviedb.org'
 
 export type PosterSize = 'w92' | 'w185' | 'w342' | 'w500' | 'w780' | 'original'
 export type BackdropSize = 'w780' | 'w1280' | 'original'
+/** Episode pictures. */
+export type StillSize = 'w300'
 
-export function imageUrl(path: string | null | undefined, size: PosterSize | BackdropSize = 'w342'): string | null {
+export function imageUrl(path: string | null | undefined, size: PosterSize | BackdropSize | StillSize = 'w342'): string | null {
   return path ? `${TMDB_IMAGES}/${size}${path}` : null
 }
 
@@ -198,8 +200,8 @@ export function createTmdb({ key, fetch, language = 'en-GB' }: TmdbOptions): Tmd
     },
 
     async details(type, id) {
-      // Keywords say whether a film has a scene during or after the credits; videos give its trailer.
-      const raw = await get<RawDetails>(`/${type}/${id}`, { language, append_to_response: type === 'movie' ? 'keywords,videos,release_dates' : 'keywords,videos', include_video_language: 'en,null' })
+      // Keywords say whether a film has a scene during or after the credits; videos give its trailer; images its logo.
+      const raw = await get<RawDetails>(`/${type}/${id}`, { language, append_to_response: type === 'movie' ? 'keywords,videos,release_dates,images' : 'keywords,videos,images', include_video_language: 'en,null', include_image_language: 'en,null' })
       return parseDetails(type, raw)
     }
   }
@@ -293,6 +295,17 @@ interface RawDetails {
   keywords?: { keywords?: { id: number; name: string }[]; results?: { id: number; name: string }[] }
   release_dates?: { results?: { iso_3166_1?: string; release_dates?: { type?: number; release_date?: string }[] }[] }
   videos?: { results?: { site?: string; type?: string; key?: string; official?: boolean; iso_639_1?: string | null }[] }
+  images?: { logos?: { file_path?: string; iso_639_1?: string | null; vote_average?: number }[] }
+}
+
+/** The best logo: English first, then one with no text language, highest voted within each. */
+export function pickLogo(images: RawDetails['images']): string | null {
+  const logos = (images?.logos ?? []).filter((l) => l.file_path && !l.file_path.endsWith('.svg'))
+  const best = (lang: string | null): string | null =>
+    logos
+      .filter((l) => (l.iso_639_1 ?? null) === lang)
+      .sort((a, b) => (b.vote_average ?? 0) - (a.vote_average ?? 0))[0]?.file_path ?? null
+  return best('en') ?? best(null)
 }
 
 /** TMDB's keywords for a scene during the credits and one after them. */
@@ -369,6 +382,8 @@ export function parseDetails(type: MediaType, raw: RawDetails): TitleDetails {
     collection: movie && raw.belongs_to_collection ? { id: raw.belongs_to_collection.id, name: raw.belongs_to_collection.name } : null,
     stingers: movie && raw.keywords ? stingersOf(raw.keywords.keywords ?? raw.keywords.results ?? []) : null,
     trailer: raw.videos ? pickTrailer(raw.videos) : null,
+    logoPath: raw.images ? pickLogo(raw.images) : null,
+    keywords: (raw.keywords?.keywords ?? raw.keywords?.results ?? []).map((k) => k.name.toLowerCase()),
     ...(movie && raw.release_dates ? { releases: releasesOf(raw.release_dates) } : {})
   }
 }

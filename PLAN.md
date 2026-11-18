@@ -479,6 +479,16 @@ You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls
 - Done (after you tried it): a show's part says how many episodes ("5 episodes"), on the actor's page and in the full cast. Click it for which ones: season, episode, title and year, ticked if you've seen it. TMDB usually lists them on the part; when it doesn't, Eclipse looks for them as a guest star season by season. For some main cast TMDB only knows the seasons, and it says so.
 - Decisions: cast, filmographies and seasons saved before this are fetched again once, so the parts and episodes show up straight away.
 
+**Spotlight title pages (built, waiting for you to try it)**
+
+- Talked through 18 Nov 2026 over four rounds of drafts (in the project's designs folder); you picked *All on one screen* and said build it.
+- Done: with the Spotlight look, a film or show's page is now the show's own picture filling the window, with its logo, "Pick up The Walking Dead?" and the next episode, **Tick it**, and a status drop-down (Want to watch, Watching, Watched, Stopped, Remove). Top right: "169 / 177 episodes watched, about 6 hours to go" and the service it's on.
+- Done: every episode as a bar, as tall as its TMDB rating, lit once watched, with the seasons under them and "You are here". Hovering shows the episode, but its picture only once you've seen it and its name only up to where you've got to. Click a bar or a season to open it in Episodes.
+- Done: the cast along the bottom (each opens their page), ringed with "Also in …" when you know them from something you've watched or started.
+- Done: the same universe (The Walking Dead and its spin-offs, a film series, Star Wars, Marvel and so on) as cards with your progress, in release order. Only titles already in your library ever show, so a spin-off is never given away, and the row hides when there's nothing else.
+- Done: everything else (episodes, note, watch with someone, finish it by, moments, rewatches, where to watch, full details) opens in a frosted panel from the small pills. The Classic look keeps the old page.
+- Decisions: TMDB details saved before this are fetched again once, to get each title's logo and keywords.
+
 **Future ideas**
 
 - Added to the plan (17 Nov 2026): future ideas from a brainstorm, listed under Future ideas as candidate phases 12 to 32. Group A (12 to 26) stand on their own; Group B (27 to 31) is the chain about noticing what I watch, in order; Group C (32, Apple TV) waits until I have a TV. Calendar-aware planning is a maybe. I mostly watch on the computer for now (an Apple TV and iPhone later).

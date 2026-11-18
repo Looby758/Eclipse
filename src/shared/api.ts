@@ -1,6 +1,7 @@
 import type { ImportSummary } from '@core/sequel'
 import type { ReleaseEvent } from '@core/calendar'
 import type { KnownFrom } from '@core/knownfrom'
+import type { UniverseItem } from '@core/universe'
 import type { ServiceHistory } from '@core/services'
 import type { Batch, RepairChoice } from '@core/repair'
 import type { YearReview } from '@core/year'
@@ -187,6 +188,8 @@ export interface EclipseApi {
   credits(type: MediaType, id: number): Promise<Result<Fetched<Credits>>>
   /** Cast you know from other things you've watched. */
   knownFrom(type: MediaType, id: number): Promise<Result<KnownFrom[]>>
+  /** Other titles in your library from the same universe (spin-offs, film series, franchises), with this one, in release order. */
+  universe(type: MediaType, id: number): Promise<Result<{ name: string; items: UniverseItem[] }>>
   person(id: number): Promise<Result<Fetched<PersonDetails>>>
   /** Which episodes of a show someone was in (or just the seasons, when that's all TMDB knows). */
   partEpisodes(tvId: number, personId: number, creditIds: string[]): Promise<Result<PartEpisodes>>
