@@ -261,7 +261,7 @@ From a conversation about how I actually use Eclipse day to day: mostly ticking 
 48. **Theme tunes** *(now part of 46, decided 19 Nov 2026).* A show's theme plays only in the send-off when I finish it: not on show pages and not on Home. It comes from Plex's free theme library (by the show's TheTVDB number), is downloaded once and kept, and is faded out before it ends, since Plex's versions are often cut off mid-phrase. *Needs:* nothing new.
 49. **Franchises as a star map** *(possible, to discuss further).* The Walking Dead, Marvel, Star Wars and the other watch orders drawn as constellations: each series, season or film a star, linked by story, lit once I've seen it, with the next one glowing. A more fun way to see a watch order, and fits the Eclipse name. Still to decide: where it lives (a view on Lists, or on each watch order), how big universes like Marvel stay readable, and what it looks like (drafts). *Needs:* 7 (watch orders).
 50. **Premiere night.** On the day a season I've been waiting for comes out, Home turns into that show: the poster wall fills with its posters and artwork (never anything from inside an episode), and a countdown runs to the UK release time, then "It's out" with one click to start. *Needs:* 34 (Spotlight).
-51. **An opening for Eclipse.** A couple of seconds of intro when the app launches: the Halo-blue eclipse rises and my posters fly into the wall, like a studio logo before a film. Any key or click skips it, it's skipped when Eclipse starts quietly in the tray, and *Keep the poster wall still* (41) turns it off. *Needs:* 34.
+51. **An opening for Eclipse.** A couple of seconds of intro when the app launches: the Halo-blue eclipse rises and my posters fly into the wall, like a studio logo before a film. Any key or click skips it, it's skipped when Eclipse starts quietly in the tray, and *Keep the poster wall still* (41) turns it off. *(Built.)* *Needs:* 34.
 52. **A shelf of everything I've finished.** A room with box sets on shelves, one for every show and film I've completed. Pull one out and it opens to my dates, hours, who I watched it with and its credits (46). Like a DVD collection, but it's my history. *Needs:* nothing new; shares the credits with 46.
 53. **Milestones.** Quiet moments, not badges or points: "That was your 1,000th episode" with a soft flare in the halo, or "100 hours of The Walking Dead". Shown once, as a small note. *Needs:* nothing new.
 54. **Sound design.** A soft click when I tick an episode, a richer chime for finishing a season, a low swell when the credits roll (46). Off by default, with one switch in Settings → Appearance. *Needs:* nothing new.
@@ -527,6 +527,12 @@ You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls
 - Done: the same universe (The Walking Dead and its spin-offs, a film series, Star Wars, Marvel and so on) as cards with your progress, in release order. Only titles already in your library ever show, so a spin-off is never given away, and the row hides when there's nothing else.
 - Done: everything else (episodes, note, watch with someone, finish it by, moments, rewatches, where to watch, full details) opens in a frosted panel from the small pills. The Classic look keeps the old page.
 - Decisions: TMDB details saved before this are fetched again once, to get each title's logo and keywords.
+
+**Phase 51: an opening for Eclipse (built, waiting for you to try it)**
+
+- Done: when Eclipse opens, a dark curtain with the Halo-blue eclipse rising in the middle: the moon slides aside to show the crescent, the play button and ECLIPSE come in. Then the curtain lifts and your posters fly out of the eclipse into their places on the wall, the middle ones first, and Home fades up as the eclipse goes. About two and a half seconds.
+- Done: any key or click skips it straight to Home, and does nothing else (Escape doesn't go back, a click doesn't open a poster).
+- Done: it plays once per launch. Not when Eclipse starts quietly in the tray (even when you open the window from the tray later), not when the window is reopened from the tray or the Mac's dock, not during the welcome or setup, and not with *Keep the poster wall still* or the computer's reduce-animations setting. The Settings description for that switch now mentions it.
 
 **Future ideas**
 

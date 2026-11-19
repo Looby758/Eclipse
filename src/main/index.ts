@@ -358,6 +358,12 @@ function setupIpc(): void {
   ipcMain.handle('week:budget', () => attempt(() => tmdb.weekBudget(getLibrary())))
   ipcMain.handle('catchup:list', () => attempt(() => tmdb.catchUpList(getLibrary())))
   ipcMain.handle('catchup:dismiss', (_e, id: string) => (CATCH_UP_ID.test(String(id)) ? saveLibrary(dismissCatchUp(getLibrary(), String(id))) : getLibrary()))
+  // Phase 51: the opening plays for the first window of a launch only.
+  ipcMain.handle('opening:take', () => {
+    const play = !openingTaken
+    openingTaken = true
+    return play
+  })
   ipcMain.handle('tray:get', () => trayOn())
   ipcMain.handle('tray:set', (_e, on: boolean) => setTray(!!on))
   ipcMain.handle('discord:status', () => discordStatus())
@@ -500,6 +506,9 @@ function createWindow(): BrowserWindow {
   return win
 }
 
+/** Phase 51: the opening has played (or been passed over) this launch. */
+let openingTaken = false
+
 /** Opens the window, or brings it to the front (from the tray, or the dock on a Mac). */
 function showWindow(): void {
   if (mainWindow) {
@@ -522,6 +531,8 @@ app.whenReady().then(() => {
   reopenLibrary()
   setupIpc()
   const hidden = startedHidden()
+  // Started quietly in the tray: no opening, even when the window is opened from there later.
+  if (hidden) openingTaken = true
   if (hidden) {
     // Started with the computer: stay in the tray, and wait for Google Drive to bring the data folder.
     waitForDataFolder()

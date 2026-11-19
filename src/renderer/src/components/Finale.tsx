@@ -408,7 +408,7 @@ function FinaleScreen({ titleKey }: { titleKey: string }): React.JSX.Element {
               <div className="acts">
                 <button className="fn-btn pri" onClick={() => picture('copy')}>{copied === 'copy' ? 'Copied. Paste it into Discord' : 'Copy image'}</button>
                 <button className="fn-btn" onClick={() => picture('save')}>{copied === 'save' ? 'Saved' : 'Save image'}</button>
-                <button className={`fn-btn fav ${fav ? 'on' : ''}`} aria-pressed={fav} onClick={toggleFav}>{fav ? '♥ In your favourites' : '♡ Add to favourites'}</button>
+                <button className={`fn-btn fn-fav ${fav ? 'on' : ''}`} aria-pressed={fav} onClick={toggleFav}>{fav ? '♥ In your favourites' : '♡ Add to favourites'}</button>
                 <button className="fn-btn" onClick={() => setRun((n) => n + 1)}>Watch again</button>
                 <button className="fn-btn" onClick={close}>Close</button>
               </div>
