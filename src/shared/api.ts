@@ -161,6 +161,11 @@ export const GITHUB_REPO = 'Looby758/Eclipse'
 
 export interface EclipseApi {
   status(): Promise<AppStatus>
+  /**
+   * Phase 51: whether this window should play the opening. True once per launch, for the first
+   * window only, and never when Eclipse started quietly in the tray (opening it from there later skips it).
+   */
+  takeOpening(): Promise<boolean>
   pickDataFolder(): Promise<AppStatus>
   /** Phase 42: an Eclipse folder in Documents, for keeping it on this computer. */
   useDefaultDataFolder(): Promise<AppStatus>
