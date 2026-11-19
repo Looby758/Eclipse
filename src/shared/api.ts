@@ -161,6 +161,11 @@ export const GITHUB_REPO = 'Looby758/Eclipse'
 
 export interface EclipseApi {
   status(): Promise<AppStatus>
+  /**
+   * Phase 51: whether this window should play the opening. True once per launch, for the first
+   * window only, and never when Eclipse started quietly in the tray (opening it from there later skips it).
+   */
+  takeOpening(): Promise<boolean>
   pickDataFolder(): Promise<AppStatus>
   /** Phase 42: an Eclipse folder in Documents, for keeping it on this computer. */
   useDefaultDataFolder(): Promise<AppStatus>
@@ -219,6 +224,10 @@ export interface EclipseApi {
   /** Phase 58: hangs a title on the favourites wall (at the end) or takes it down. */
   setFavourite(ref: TitleRef, on: boolean): Promise<Library>
   moveFavourite(from: number, to: number): Promise<Library>
+  /** Phase 46: a show's theme tune (an MP3), downloaded once and kept, or null when there isn't one. */
+  finaleTheme(tvId: number): Promise<Uint8Array | null>
+  /** Phase 46: the finale as it looks now, copied to the clipboard or saved as a PNG. */
+  finaleImage(how: 'copy' | 'save', name: string): Promise<{ done: boolean; path?: string }>
   /** Phase 59: announced seasons and films you're waiting for, soonest first, for the shelf. */
   comingSoon(): Promise<Result<ComingSoon[]>>
   /** Phase 52: the back of a finished box set: your dates, hours, who with, and its credits. */

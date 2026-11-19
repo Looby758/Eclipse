@@ -238,6 +238,9 @@ async function keep<T>(key: string, ttl: number, job: () => Promise<T>, refresh 
 /** Phase 55: a title's other posters and backgrounds, for "Change poster" and "Change background" (saved for a week, like details). */
 export const images = (type: MediaType, id: number): Promise<Fetched<TitleImages>> => keep(`images:${type}:${id}`, CACHE_TTL.details, () => tmdb().images(type, id))
 
+/** Phase 46: a show's TheTVDB number, to find its theme tune. It never changes, so it's kept for a long time. */
+export const tvdbId = (id: number): Promise<Fetched<number | null>> => keep(`tvdb:${id}`, CACHE_TTL.credits, () => tmdb().tvdbId(id))
+
 // "v3": saved copies from before parts played, the full cast and part ids were kept are fetched again.
 export const credits = (type: MediaType, id: number): Promise<Fetched<Credits>> => keep(`credits3:${type}:${id}`, CACHE_TTL.credits, () => tmdb().credits(type, id))
 export const person = (id: number, refresh = false): Promise<Fetched<PersonDetails>> => keep(`person3:${id}`, CACHE_TTL.person, () => tmdb().person(id), refresh)

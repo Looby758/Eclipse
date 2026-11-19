@@ -1236,6 +1236,34 @@ select:hover { border-color: var(--accent); }
 .poster-grid.wide { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
 .poster-grid.wide .poster-option { aspect-ratio: 16 / 9; }
 
+/* Phase 51: the opening. A dark curtain with the Halo-blue eclipse rising, then posters fly out of it into the wall. */
+.opening-layer { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; pointer-events: auto; cursor: default; }
+.opening-curtain { position: absolute; inset: 0; background: radial-gradient(circle at 50% 46%, var(--logo-tile-1), var(--logo-tile-2) 55%, #05060f); animation: opening-lift 0.6s var(--ease) var(--o-fly) both; }
+.opening-mark { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2.4vmin; animation: opening-rise var(--o-rise) cubic-bezier(0.16, 0.8, 0.24, 1) both; }
+.opening-eclipse { width: min(36vmin, 280px); height: auto; overflow: visible; filter: drop-shadow(0 0 30px rgba(63, 91, 255, 0.45)); }
+.opening-moon { transform-box: view-box; animation: opening-moon 1s cubic-bezier(0.3, 0.6, 0.2, 1) 0.2s both; }
+.opening-corona { transform-box: fill-box; transform-origin: center; animation: opening-corona 1.6s var(--ease) 0.35s both; }
+.opening-play { transform-box: fill-box; transform-origin: center; animation: opening-play 0.5s var(--ease) 0.85s both; }
+.opening-word { font-family: var(--font-display); font-weight: 600; font-size: clamp(16px, 3.2vmin, 26px); color: #e8ecff; letter-spacing: 0.42em; margin-right: -0.42em; text-shadow: 0 0 24px rgba(143, 227, 255, 0.45), 0 1px 14px rgba(5, 6, 15, 0.85); animation: opening-word 1.1s var(--ease) 0.45s both; }
+.opening-layer.settle .opening-mark { animation: opening-out var(--o-reveal) var(--ease) both; }
+.opening-layer.skip .opening-mark, .opening-layer.skip .opening-curtain { animation: opening-gone var(--o-skip) ease-out both; }
+@keyframes opening-lift { to { opacity: 0; } }
+@keyframes opening-rise { from { transform: translateY(16vh) scale(0.9); opacity: 0; } 35% { opacity: 1; } to { transform: none; opacity: 1; } }
+@keyframes opening-moon { from { transform: translate(4px, -4px); } }
+@keyframes opening-corona { from { transform: scale(0.6); opacity: 0; } 45% { transform: scale(1.15); opacity: 1; } to { transform: scale(1); opacity: 0.7; } }
+@keyframes opening-play { from { transform: scale(0.4); opacity: 0; } }
+@keyframes opening-word { from { letter-spacing: 1.1em; margin-right: -1.1em; opacity: 0; } }
+@keyframes opening-out { to { transform: scale(0.82); opacity: 0; } }
+@keyframes opening-gone { to { opacity: 0; } }
+
+/* Posters flying out of the eclipse to their place in the wall, the middle ones first. */
+.wall .wall-tile.flying { animation: opening-fly var(--o-flight, 0.95s) cubic-bezier(0.14, 0.72, 0.22, 1) var(--fly-delay, 0ms) both; }
+@keyframes opening-fly { from { transform: translate(var(--fly-x), var(--fly-y)) scale(0.16) rotate(var(--fly-turn)); opacity: 0; } 22% { opacity: 1; } to { transform: none; opacity: 1; } }
+
+/* Home waits behind the curtain, then fades up as the eclipse goes. */
+.app.opening-hide > :not(.wall):not(.veil):not(.opening-layer) { opacity: 0; pointer-events: none; }
+.app.opening-reveal > :not(.wall):not(.veil):not(.opening-layer) { transition: opacity var(--o-reveal-app, 0.65s) var(--ease); }
+
 /* Your rating: five stars filled by halves (ten steps, out of 10). */
 .stars-wrap { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .stars { display: inline-flex; gap: 2px; border-radius: 8px; outline: 0; }
