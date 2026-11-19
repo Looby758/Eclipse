@@ -301,8 +301,11 @@ const shortDate = (day: string): string => {
   return `${d} ${m.slice(0, 3)} ${y}`
 }
 
+/** One empty list for an empty wall: a new [] on every read would make the page re-render forever (and go black). */
+const NO_FAVOURITES: TitleRef[] = []
+
 function FavouritesWall(): React.JSX.Element {
-  const favourites = useApp((s) => s.library.favourites ?? [])
+  const favourites = useApp((s) => s.library.favourites ?? NO_FAVOURITES)
   const setLibrary = useApp((s) => s.setLibrary)
   const go = useApp((s) => s.go)
   const [dragFrom, setDragFrom] = useState<number | null>(null)
