@@ -1183,3 +1183,44 @@ select:hover { border-color: var(--accent); }
 /* "Change background": wide pictures in two or three columns */
 .poster-grid.wide { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
 .poster-grid.wide .poster-option { aspect-ratio: 16 / 9; }
+
+/* ---- Phase 47: my own heatmap (reactions) ---- */
+.r-cry { --react: hsl(212 82% 54%); }
+.r-fire { --react: hsl(16 92% 54%); }
+.r-laugh { --react: hsl(42 94% 50%); }
+.r-sleep { --react: hsl(228 10% 52%); }
+.r-wow { --react: hsl(282 74% 60%); }
+.react-row { display: inline-flex; gap: 4px; }
+.react-btn { width: 36px; height: 36px; display: grid; place-items: center; padding: 0; border-radius: 10px; border: 1px solid transparent; background: var(--glass-soft); font-size: 19px; line-height: 1; cursor: pointer; transition: transform var(--fast) var(--ease), background var(--fast), opacity var(--fast); }
+.react-btn:hover, .react-btn:focus-visible { transform: scale(1.18); background: var(--glass-hover); outline: none; }
+.react-btn.on { border-color: var(--accent); background: var(--glass-hover); transform: scale(1.08); }
+.react-btn.other { opacity: 0.45; }
+.react-btn:disabled { cursor: default; }
+.react-ask { position: fixed; left: 50%; bottom: 168px; transform: translateX(-50%); z-index: 61; display: flex; align-items: center; gap: 14px; max-width: calc(100vw - 40px); padding: 8px 8px 8px 16px; border-radius: 16px; border: 1px solid var(--line); background: var(--menu-bg); color: var(--menu-text); box-shadow: var(--shadow); animation: undo-in var(--fast) var(--ease); }
+.react-ask-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; font-size: var(--text-sm); }
+.react-ask-text span { color: var(--text-muted); font-size: var(--text-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+.react-ask.done { padding: 10px 18px; }
+.react-ask.done .react-ask-text { flex-direction: row; align-items: center; gap: 10px; font-weight: 500; }
+.react-thanks { font-size: 22px; animation: react-pop 0.5s var(--ease); }
+@keyframes react-pop { 0% { transform: scale(0.4); } 60% { transform: scale(1.35); } 100% { transform: scale(1); } }
+.episode-felt { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; margin: 10px 0 2px; }
+.timeline-dot .dot-felt { font-size: 17px; line-height: 1; }
+.heat-toggle { display: inline-flex; padding: 2px; border-radius: 999px; border: 1px solid var(--line); background: var(--glass-soft); }
+.heat-toggle button { height: 24px; padding: 0 11px; border: 0; border-radius: 999px; background: none; color: var(--text-muted); font: 600 var(--text-xs) var(--font-display); cursor: pointer; }
+.heat-toggle button.on { background: var(--accent-gradient); color: var(--on-accent); }
+.heat-cell.mine { font-size: 17px; text-shadow: none; }
+.heat-cell.mine[class*='r-'] { background: var(--react); }
+.heat-cell.mine-seen { background: var(--heat-few); color: var(--text-muted); text-shadow: none; }
+.heat-cell.differs { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--text-strong); }
+.heat-swatch { display: inline-grid; place-items: center; width: 20px; height: 18px; border-radius: 5px; background: var(--react); font-size: 12px; }
+.heat-key.differs-key::before { content: ''; margin: 0 4px 0 3px; width: 10px; height: 10px; border-radius: 3px; box-shadow: 0 0 0 1px var(--bg), 0 0 0 3px var(--text-strong); }
+.heat-differ { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: var(--text-sm); }
+.heat-differ li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.st-head .heat-toggle { margin-right: auto; }
+.st-bar.mine { background: rgba(255, 255, 255, 0.1); }
+.st-bar.mine.w { background: rgba(255, 255, 255, 0.3); }
+.st-bar.mine[class*='r-'] { background: var(--react); opacity: 1; }
+.st-bar.mine.differs { box-shadow: 0 0 0 1.5px #fff; }
+.st-tip-felt { display: block; margin-top: 2px; }
+@media (prefers-reduced-motion: reduce) { .react-ask, .react-thanks { animation: none; } }
+:root[data-still] .react-ask, :root[data-still] .react-thanks { animation: none; }

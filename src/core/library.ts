@@ -1,4 +1,4 @@
-import type { Dropped, JustTonight, Library, LibraryEntry, MediaType, Preferences, Rewatch, TitleDetails, TitleKey, TitleSnapshot, WatchSlot, WatchStatus } from './types'
+import type { Dropped, JustTonight, Library, LibraryEntry, MediaType, Preferences, Reaction, Rewatch, TitleDetails, TitleKey, TitleSnapshot, WatchSlot, WatchStatus } from './types'
 import type { PlannedTime } from './types'
 import { DEFAULT_PREFERENCES, UNDATED, WATCH_STATUSES, episodeKey, parseEpisodeKey, parseTitleKey } from './types'
 import type { TitleRef } from './types'
@@ -7,6 +7,7 @@ import { normalizeLinks, normalizeMoments } from './watching'
 import { normalizeTaste } from './taste'
 import { normalizePosters } from './posters'
 import { normalizeFavourites } from './favourites'
+import { cleanReactions, dropUnticked } from './reactions'
 
 export type LibraryItem = { key: TitleKey; type: MediaType; id: number; title: TitleSnapshot }
 
@@ -99,7 +100,7 @@ export function setEpisodes(library: Library, item: LibraryItem, keys: string[],
         }
         const r: Rewatch = { ...rewatch, episodes }
         if (!Object.keys(episodes).length) delete r.episodes
-        return { ...e, rewatches: (e.rewatches ?? []).map((x) => (x === rewatch ? r : x)) }
+        return { ...e, rewatches: (e.rewatches ?? []).map((x) => (x === rewatch ? dropUnticked(r) : x)) }
       },
       now
     )
@@ -122,7 +123,7 @@ export function setEpisodes(library: Library, item: LibraryItem, keys: string[],
       const next: LibraryEntry = { ...e, episodes }
       if (!Object.keys(episodes).length) delete next.episodes
       if (watched && (e.status === 'want' || e.status === 'stopped')) next.status = 'watching'
-      return next
+      return dropUnticked(next)
     },
     now
   )
@@ -422,6 +423,7 @@ export function normalizeLibrary(raw: unknown): Library {
       ...(typeof e.from === 'string' && e.from.trim() ? { from: e.from.trim().slice(0, 80) } : {}),
       ...(typeof e.rating === 'number' && e.rating >= 0 && e.rating <= 10 ? { rating: e.rating } : {}),
       ...(cleanEpisodes(e.episodes) ?? {}),
+      ...withReactions(e.reactions, cleanEpisodes(e.episodes)?.episodes),
       ...(e.seenBefore === true ? { seenBefore: true } : {}),
       ...cleanRewatches(e.rewatches),
       title: {
@@ -450,10 +452,15 @@ function cleanRewatches(raw: unknown): { rewatches?: Rewatch[] } {
     // Only one of your own rewatches can still be going (and one per person you watch with).
     if (!done && out.some((o) => !o.finishedOn && o.with === who)) continue
     const planned = who && !done && x.planned && typeof x.planned === 'object' && isPlannedAt(x.planned.at) ? { at: x.planned.at, ...(x.planned.weekly === true ? { weekly: true } : {}) } : undefined
-    out.push({ startedOn: x.startedOn, ...(done ? { finishedOn: done } : {}), ...(cleanEpisodes(x.episodes) ?? {}), ...(who ? { with: who } : {}), ...(planned ? { planned } : {}) })
+    out.push({ startedOn: x.startedOn, ...(done ? { finishedOn: done } : {}), ...(cleanEpisodes(x.episodes) ?? {}), ...withReactions(x.reactions, cleanEpisodes(x.episodes)?.episodes), ...(who ? { with: who } : {}), ...(planned ? { planned } : {}) })
   }
   out.sort((a, b) => (a.finishedOn ? 0 : 1) - (b.finishedOn ? 0 : 1) || a.startedOn.localeCompare(b.startedOn))
   return out.length ? { rewatches: out } : {}
+}
+
+function withReactions(raw: unknown, episodes: Record<string, string> | undefined): { reactions?: Record<string, Reaction> } {
+  const reactions = cleanReactions(raw, episodes)
+  return reactions ? { reactions } : {}
 }
 
 function cleanEpisodes(raw: unknown): { episodes: Record<string, string> } | null {
@@ -717,7 +724,7 @@ export function tickWith(library: Library, key: string, index: number, keys: str
       }
       const next: Rewatch = { ...w, episodes }
       if (!Object.keys(episodes).length) delete next.episodes
-      return { ...e, rewatches: (e.rewatches ?? []).map((x, i) => (i === index ? next : x)) }
+      return { ...e, rewatches: (e.rewatches ?? []).map((x, i) => (i === index ? dropUnticked(next) : x)) }
     },
     now
   )
