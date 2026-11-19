@@ -75,6 +75,7 @@
   --poster-pick-on: #0b0d1f;
   /* Phase 56: the poster that grows into its title page */
   --zoom-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+  --zoom-veil: rgba(4, 4, 14, 0.82);
   /* Phase 57: the journey ribbon */
   --journey-h: 34px;
   --journey-track: rgba(255, 255, 255, 0.06);
@@ -89,14 +90,22 @@
   --wrap-edge: rgba(255, 255, 255, 0.45);
   --sticker-bg: #ffffff;
   --sticker-text: #121428;
-  /* The favourites wall (phase 58): frames on a gallery wall */
-  --gallery-wall: radial-gradient(ellipse at 50% 0%, rgba(143, 227, 255, 0.1), transparent 60%), rgba(255, 255, 255, 0.03);
-  --frame: linear-gradient(145deg, #2b2f52, #10122a);
-  --frame-mat: #f3f1ea;
-  --frame-wire: rgba(255, 255, 255, 0.25);
-  --frame-shadow: 0 18px 40px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.15);
-  --plaque: linear-gradient(180deg, #d9dcef, #aab0d4);
-  --plaque-text: #14172e;
+  /* The favourites wall (phase 58): a hall of fame, always a dark gallery whatever the mode */
+  --hall-wall: radial-gradient(ellipse 80% 50% at 50% 0%, #1b2152 0%, #0c0f26 55%, #05060f 100%);
+  --hall-texture: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 7px);
+  --hall-floor: linear-gradient(180deg, transparent, rgba(63, 91, 255, 0.12) 40%, rgba(143, 227, 255, 0.08));
+  --hall-beam: linear-gradient(180deg, rgba(200, 235, 255, 0.35), rgba(143, 227, 255, 0.08) 55%, transparent);
+  --hall-title: linear-gradient(100deg, #ffffff 10%, #8fe3ff 55%, #3f5bff 100%);
+  --hall-accent: #8fe3ff;
+  --hall-text: #f2f4ff;
+  --hall-muted: #a3a9d6;
+  --hall-medal: radial-gradient(circle at 35% 30%, #ffffff, #8fe3ff 45%, #3f5bff);
+  --frame: linear-gradient(135deg, #dfe6ff 0%, #8fa2ff 18%, #3f5bff 40%, #1a2160 55%, #8fe3ff 78%, #e8f7ff 100%);
+  --frame-mat: #0a0c1c;
+  --frame-shadow: 0 24px 50px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  --frame-shadow-lift: 0 34px 70px rgba(0, 0, 0, 0.8), 0 0 40px rgba(143, 227, 255, 0.35);
+  --plaque: linear-gradient(180deg, #eef2ff, #b9c4f2 55%, #8e9ad6);
+  --plaque-text: #10132e;
   --fav: #ff7ab8;
   /* Phase 60: ticking (the ink in a dot, the progress ring) */
   --ink: radial-gradient(circle, #ffffff, var(--cyan) 45%, var(--accent) 80%);
@@ -183,9 +192,6 @@
     --shelf-plank-shadow: 0 8px 16px rgba(40, 50, 110, 0.2);
     --box-shadow: 0 10px 22px rgba(40, 50, 110, 0.25);
     --box-shadow-lift: 0 22px 40px rgba(40, 50, 110, 0.32);
-    --gallery-wall: radial-gradient(ellipse at 50% 0%, rgba(10, 156, 204, 0.08), transparent 60%), rgba(40, 30, 120, 0.04);
-    --frame-shadow: 0 18px 36px rgba(40, 50, 110, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
-    --frame-wire: rgba(40, 30, 120, 0.25);
     --fav: #d43a8a;
     --glass-hover: rgba(40, 30, 120, 0.09);
     --sheet: rgba(255, 255, 255, 0.93);
@@ -247,9 +253,6 @@
     --shelf-plank-shadow: 0 8px 16px rgba(40, 50, 110, 0.2);
     --box-shadow: 0 10px 22px rgba(40, 50, 110, 0.25);
     --box-shadow-lift: 0 22px 40px rgba(40, 50, 110, 0.32);
-    --gallery-wall: radial-gradient(ellipse at 50% 0%, rgba(10, 156, 204, 0.08), transparent 60%), rgba(40, 30, 120, 0.04);
-    --frame-shadow: 0 18px 36px rgba(40, 50, 110, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
-    --frame-wire: rgba(40, 30, 120, 0.25);
     --fav: #d43a8a;
   --glass-hover: rgba(40, 30, 120, 0.09);
   --sheet: rgba(255, 255, 255, 0.93);

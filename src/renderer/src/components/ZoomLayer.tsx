@@ -12,8 +12,8 @@ import { useApp, type View } from '../store/app'
  * title page straight after, the poster image inside what was clicked is the one that grows.
  */
 
-const GROW_MS = 460
-const SHRINK_MS = 380
+const GROW_MS = 1400
+const SHRINK_MS = 950
 /** A click only counts as opening the page if the page opens this soon after it. */
 const CLICK_WINDOW_MS = 600
 
@@ -62,22 +62,35 @@ export default function ZoomLayer(): React.JSX.Element {
     const ghost = (src: string, from: DOMRect | null, to: DOMRect | null, radius: string, ms: number, done: () => void): void => {
       const el = host.current
       if (!el) return
+      const growing = !!from && !to
+      // A dark veil over everything else, so the eye follows the poster.
+      const veil = document.createElement('div')
+      veil.className = 'zoom-veil'
       const img = document.createElement('img')
       img.className = 'zoom-ghost'
       img.alt = ''
       img.src = src
-      el.appendChild(img)
+      el.append(veil, img)
       const full = { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight }
       const a = from ?? full
       const b = to ?? full
-      const frame = (r: { left: number; top: number; width: number; height: number }, rad: string, opacity: number): Keyframe => ({ left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px`, borderRadius: rad, opacity })
-      const growing = !!from && !to
+      type Box = { left: number; top: number; width: number; height: number }
+      const lifted = (r: Box): Box => ({ left: r.left - r.width * 0.04, top: r.top - r.height * 0.04, width: r.width * 1.08, height: r.height * 1.08 })
+      const frame = (r: Box, rad: string, opacity: number, offset: number, easing = 'cubic-bezier(0.65, 0, 0.35, 1)'): Keyframe => ({ left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px`, borderRadius: rad, opacity, offset, easing })
       const anim = img.animate(
         growing
-          ? [frame(a, radius, 1), { ...frame(b, '0px', 1), offset: 0.72 }, frame(b, '0px', 0)]
-          : [frame(a, '0px', 0.15), { ...frame(b, radius, 1), offset: 0.8 }, frame(b, radius, 0)],
-        { duration: ms, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)', fill: 'forwards' }
+          ? [
+              // Lift off the page, hold a beat, sweep out to fill the window, then dissolve into the page.
+              frame(a, radius, 1, 0, 'ease-out'),
+              frame(lifted(a), radius, 1, 0.14),
+              frame(lifted(a), radius, 1, 0.22),
+              frame(b, '0px', 1, 0.7, 'ease-in'),
+              frame(b, '0px', 0, 1)
+            ]
+          : [frame(a, '0px', 0, 0, 'ease-out'), frame(a, '0px', 1, 0.18), frame(lifted(b), radius, 1, 0.78, 'ease-out'), frame(b, radius, 1, 0.9), frame(b, radius, 0, 1)],
+        { duration: ms, fill: 'forwards' }
       )
+      veil.animate(growing ? [{ opacity: 0 }, { opacity: 1, offset: 0.3 }, { opacity: 1, offset: 0.7 }, { opacity: 0 }] : [{ opacity: 0.9 }, { opacity: 0.9, offset: 0.2 }, { opacity: 0 }], { duration: ms, fill: 'forwards' })
       if (growing) {
         // Swap in the bigger picture once it has loaded, so the full-window frame isn't blurry.
         const big = new Image()
@@ -86,6 +99,7 @@ export default function ZoomLayer(): React.JSX.Element {
       }
       const finish = (): void => {
         img.remove()
+        veil.remove()
         done()
       }
       anim.onfinish = finish

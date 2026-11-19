@@ -139,7 +139,9 @@ function FavouritesWall(): React.JSX.Element {
 
   if (!favourites.length) {
     return (
-      <div className="fav-empty">
+      <div className="hall fav-empty">
+        <span className="hall-kicker">Your all-time favourites</span>
+        <h2 className="hall-title">Hall of fame</h2>
         <Heart size={28} />
         <p>Your hall of fame. Open a film or show you love and press <b>Favourite</b>, and it hangs here as a framed poster.</p>
         <p className="muted small">Up to {FAVOURITES_MAX}. Drag them into your own order.</p>
@@ -148,13 +150,19 @@ function FavouritesWall(): React.JSX.Element {
   }
 
   return (
-    <>
-      <p className="muted small">Drag a frame to move it, or use the arrows. Up to {FAVOURITES_MAX}.</p>
+    <div className="hall">
+      <header className="hall-head">
+        <span className="hall-kicker">Your all-time favourites</span>
+        <h2>Hall of fame</h2>
+        <span className="hall-sub">
+          {plural(favourites.length, 'title')} · drag a frame to change the order
+        </span>
+      </header>
       <ol className="fav-wall">
         {favourites.map((r, i) => (
           <li
             key={r.key}
-            className={`fav ${dragFrom === i ? 'dragging' : ''} ${over === i && dragFrom !== null && dragFrom !== i ? 'over' : ''}`}
+            className={`fav ${i === 0 ? 'first' : ''} ${dragFrom === i ? 'dragging' : ''} ${over === i && dragFrom !== null && dragFrom !== i ? 'over' : ''}`}
             draggable
             onDragStart={(e) => {
               setDragFrom(i)
@@ -176,20 +184,27 @@ function FavouritesWall(): React.JSX.Element {
               setOver(null)
             }}
           >
-            <button className="fav-frame" onClick={() => go({ name: 'title', type: r.type, id: r.id })} title={`Open ${r.name}`}>
+            <span className="fav-beam" aria-hidden />
+            <span className="fav-glow" aria-hidden>
+              <Poster path={r.posterPath} type={r.type} id={r.id} name="" size="w185" />
+            </span>
+            <button className="fav-frame" onClick={() => go({ name: 'title', type: r.type, id: r.id })} onMouseMove={tilt} onMouseLeave={untilt} title={`Open ${r.name}`}>
               <span className="fav-mat">
-                <Poster path={r.posterPath} type={r.type} id={r.id} name={r.name} size="w342" />
+                <Poster path={r.posterPath} type={r.type} id={r.id} name={r.name} size={i === 0 ? 'w500' : 'w342'} />
+                <span className="fav-glare" aria-hidden />
               </span>
+              {i === 0 && <span className="fav-medal">No. 1</span>}
             </button>
             <span className="fav-plaque">
+              <em>No. {i + 1}</em>
               <b>{r.name}</b>
               {r.year ? <span>{r.year}</span> : null}
             </span>
             <span className="fav-tools">
-              <button aria-label={`Move ${r.name} earlier`} disabled={i === 0} onClick={() => move(i, i - 1)}>
+              <button aria-label={`Move ${r.name} up the wall`} disabled={i === 0} onClick={() => move(i, i - 1)}>
                 <ChevronLeft size={15} />
               </button>
-              <button aria-label={`Move ${r.name} later`} disabled={i === favourites.length - 1} onClick={() => move(i, i + 1)}>
+              <button aria-label={`Move ${r.name} down the wall`} disabled={i === favourites.length - 1} onClick={() => move(i, i + 1)}>
                 <ChevronRight size={15} />
               </button>
               <button aria-label={`Take ${r.name} off the wall`} onClick={() => remove(r)}>
@@ -199,8 +214,26 @@ function FavouritesWall(): React.JSX.Element {
           </li>
         ))}
       </ol>
-    </>
+      <div className="hall-floor" aria-hidden />
+    </div>
   )
+}
+
+/** The frame under the mouse leans towards it a little, and its glass catches the light. */
+const tilt = (e: React.MouseEvent<HTMLElement>): void => {
+  const root = document.documentElement
+  if (root.hasAttribute('data-still') || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  const el = e.currentTarget
+  const r = el.getBoundingClientRect()
+  const x = (e.clientX - r.left) / r.width - 0.5
+  const y = (e.clientY - r.top) / r.height - 0.5
+  el.style.setProperty('--rx', `${(-y * 8).toFixed(2)}deg`)
+  el.style.setProperty('--ry', `${(x * 10).toFixed(2)}deg`)
+  el.style.setProperty('--gx', `${((x + 0.5) * 100).toFixed(0)}%`)
+  el.style.setProperty('--gy', `${((y + 0.5) * 100).toFixed(0)}%`)
+}
+const untilt = (e: React.MouseEvent<HTMLElement>): void => {
+  for (const v of ['--rx', '--ry', '--gx', '--gy']) e.currentTarget.style.removeProperty(v)
 }
 
 /** Favourite, on a title page: hangs it on the wall or takes it down. */

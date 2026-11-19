@@ -1037,11 +1037,12 @@ select:hover { border-color: var(--accent); }
 .poster-option-tag { position: absolute; left: 6px; bottom: 6px; padding: 2px 7px; border-radius: 999px; background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 10px; font-weight: 600; }
 
 /* Phase 56: opening a poster zooms into it */
-.zoom-layer { position: fixed; inset: 0; pointer-events: none; z-index: 60; }
+.zoom-layer { position: fixed; inset: 0; pointer-events: none; z-index: 200; }
 .zoom-ghost { position: fixed; object-fit: cover; box-shadow: var(--zoom-shadow); will-change: left, top, width, height, opacity; }
+.zoom-veil { position: fixed; inset: 0; background: var(--zoom-veil); opacity: 0; }
 /* While it grows, the page underneath comes up a beat later, through the poster. */
-:root.zooming .stitle .st-page, :root.zooming .title-sheet { animation: zoom-page-in 520ms var(--ease) both; }
-@keyframes zoom-page-in { 0%, 45% { opacity: 0; } 100% { opacity: 1; } }
+:root.zooming .stitle .st-page, :root.zooming .title-sheet { animation: zoom-page-in 1500ms var(--ease) both; }
+@keyframes zoom-page-in { 0%, 68% { opacity: 0; transform: translateY(14px); } 100% { opacity: 1; transform: none; } }
 /* Keep the poster wall still: a plain fade. */
 :root.page-fade .stitle, :root.page-fade .sheet { animation: zoom-fade 240ms ease-out both !important; }
 @keyframes zoom-fade { from { opacity: 0; } }
@@ -1095,25 +1096,53 @@ select:hover { border-color: var(--accent); }
 :root[data-still] .box-wrap-off { animation: none; opacity: 0; }
 @media (prefers-reduced-motion: reduce) { .box-wrap-off { animation: none; opacity: 0; } }
 
-/* Phase 58: the favourites wall, framed posters in a gallery */
-.fav-wall { list-style: none; margin: 18px 0 0; padding: 30px 26px; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 38px 30px; border-radius: var(--radius-lg); background: var(--gallery-wall); box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.35); }
-.fav { position: relative; display: grid; justify-items: center; gap: 10px; cursor: grab; }
-.fav.dragging { opacity: 0.4; }
-.fav.over .fav-frame { transform: scale(1.04); box-shadow: 0 0 0 3px var(--cyan), var(--frame-shadow); }
-/* A wire from the top of the wall. */
-.fav::before { content: ''; position: absolute; top: -26px; left: 50%; width: 1px; height: 26px; background: var(--frame-wire); }
-.fav-frame { display: block; width: 100%; padding: 10px; border: 0; border-radius: 4px; background: var(--frame); box-shadow: var(--frame-shadow); cursor: pointer; transition: transform var(--fast) var(--ease), box-shadow var(--fast); }
-.fav-frame:hover, .fav-frame:focus-visible { transform: translateY(-3px); }
-.fav-mat { display: block; padding: 8px; background: var(--frame-mat); box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.3); }
-.fav-mat .poster { display: block; width: 100%; aspect-ratio: 2 / 3; object-fit: cover; }
-.fav-plaque { display: grid; justify-items: center; padding: 4px 12px; border-radius: 4px; background: var(--plaque); color: var(--plaque-text); font-size: var(--text-xs); text-align: center; max-width: 100%; }
-.fav-plaque b { font-size: var(--text-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-.fav-tools { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; opacity: 0; transition: opacity var(--fast); }
+/* Phase 58: the favourites wall, a hall of fame. Always a dark room, like a gallery at night,
+   with a beam of light on each frame, the poster's own colour glowing on the wall behind it,
+   polished Halo-blue frames, engraved plaques, and your No. 1 hung big. */
+.hall { position: relative; margin-top: 8px; padding: 34px 34px 70px; border-radius: var(--radius-lg); overflow: hidden; isolation: isolate; color: var(--hall-text); background: var(--hall-wall); box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.7), 0 20px 60px rgba(0, 0, 0, 0.35); }
+.hall::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--hall-texture); opacity: 0.6; pointer-events: none; }
+.hall-head { display: grid; justify-items: center; gap: 4px; margin-bottom: 34px; text-align: center; }
+.hall-kicker { font-size: 11px; font-weight: 700; letter-spacing: 0.32em; text-transform: uppercase; color: var(--hall-accent); }
+.hall-head h2, .hall-title { margin: 0; font: 600 44px/1.1 var(--font-display); letter-spacing: -0.02em; background: var(--hall-title); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 4px 24px rgba(143, 227, 255, 0.25)); }
+.hall-sub { font-size: var(--text-sm); color: var(--hall-muted); }
+.hall-floor { position: absolute; left: 0; right: 0; bottom: 0; height: 60px; z-index: -1; background: var(--hall-floor); }
+.fav-wall { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); grid-auto-flow: dense; gap: 64px 40px; }
+.fav { position: relative; display: grid; justify-items: center; align-content: start; gap: 16px; cursor: grab; padding-top: 30px; }
+.fav.first { grid-column: span 2; grid-row: span 2; padding-top: 10px; }
+.fav.first .fav-frame { width: min(100%, 360px); }
+.fav.dragging { opacity: 0.35; }
+.fav.over .fav-frame { box-shadow: 0 0 0 3px var(--hall-accent), var(--frame-shadow); transform: scale(1.04); }
+/* The beam of light from above, and the pool it makes on the wall. */
+.fav-beam { position: absolute; z-index: -1; top: -64px; left: 50%; width: 150%; height: calc(100% + 40px); transform: translateX(-50%); background: var(--hall-beam); clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%); opacity: 0.55; pointer-events: none; transition: opacity 0.4s; }
+.fav:hover .fav-beam { opacity: 0.9; }
+.fav-glow { position: absolute; z-index: -1; top: 14%; left: 50%; width: 90%; aspect-ratio: 2 / 3; transform: translateX(-50%); filter: blur(46px) saturate(1.6); opacity: 0.55; pointer-events: none; }
+.fav-glow .poster { width: 100%; height: 100%; object-fit: cover; }
+.fav.first .fav-glow { width: 80%; opacity: 0.75; }
+.fav-frame { position: relative; display: block; width: 100%; padding: 12px; border: 0; border-radius: 6px; background: var(--frame); box-shadow: var(--frame-shadow); cursor: pointer; transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform 0.25s var(--ease), box-shadow var(--fast); }
+.fav-frame::before { content: ''; position: absolute; inset: 5px; border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35), inset 0 0 0 3px rgba(0, 0, 0, 0.25); pointer-events: none; }
+.fav-frame:hover, .fav-frame:focus-visible { box-shadow: var(--frame-shadow-lift); }
+.fav.first .fav-frame { padding: 16px; }
+.fav-mat { position: relative; display: block; padding: 10px; background: var(--frame-mat); box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5); overflow: hidden; }
+.fav-mat .poster { display: block; width: 100%; aspect-ratio: 2 / 3; object-fit: cover; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6); }
+/* Light catching the glass. */
+.fav-glare { position: absolute; inset: 0; background: radial-gradient(circle at var(--gx, 30%) var(--gy, 0%), rgba(255, 255, 255, 0.28), transparent 45%), linear-gradient(125deg, rgba(255, 255, 255, 0.1), transparent 40%); pointer-events: none; }
+.fav-medal { position: absolute; top: -18px; right: -18px; display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; font: 700 14px var(--font-display); color: #0b0d1f; background: var(--hall-medal); box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5), 0 0 30px rgba(143, 227, 255, 0.7), 0 8px 20px rgba(0, 0, 0, 0.5); transform: rotate(12deg); }
+.fav-plaque { display: grid; justify-items: center; gap: 1px; padding: 7px 16px 8px; border-radius: 3px; background: var(--plaque); color: var(--plaque-text); text-align: center; max-width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+.fav-plaque em { font-style: normal; font-size: 9px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.7; }
+.fav-plaque b { font: 600 var(--text-sm) var(--font-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.fav-plaque span { font-size: 11px; opacity: 0.75; }
+.fav.first .fav-plaque { padding: 9px 22px 10px; }
+.fav.first .fav-plaque b { font-size: var(--text-lg); }
+.fav-tools { position: absolute; top: 34px; left: 6px; display: flex; gap: 4px; opacity: 0; transition: opacity var(--fast); z-index: 2; }
+.fav.first .fav-tools { top: 14px; }
 .fav:hover .fav-tools, .fav:focus-within .fav-tools { opacity: 1; }
-.fav-tools button { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: 0; background: rgba(0, 0, 0, 0.65); color: #fff; cursor: pointer; }
+.fav-tools button { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: 0; background: rgba(0, 0, 0, 0.7); color: #fff; cursor: pointer; }
 .fav-tools button:disabled { opacity: 0.35; cursor: default; }
-.fav-empty { display: grid; justify-items: center; gap: 6px; padding: 50px 20px; text-align: center; color: var(--text-muted); }
+.fav-empty { display: grid; justify-items: center; gap: 10px; padding: 60px 20px; text-align: center; color: var(--hall-muted); }
 .fav-empty p { margin: 0; max-width: 440px; }
+.fav-empty b { color: var(--hall-text); }
+:root[data-still] .fav-frame { transform: none; }
+@media (max-width: 700px) { .fav.first { grid-column: auto; grid-row: auto; } }
 .fav-toggle.lit { color: var(--fav); border-color: var(--fav); }
 .st-chip.lit svg[fill='currentColor'] { color: var(--fav); }
 
