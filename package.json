@@ -1,7 +1,7 @@
 {
   "name": "eclipse",
   "productName": "Eclipse",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "A personal film and TV tracker",
   "author": "Looby758",
   "main": "./out/main/index.js",
