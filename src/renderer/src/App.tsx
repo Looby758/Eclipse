@@ -1,5 +1,5 @@
 import { ArrowLeft } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { currentView, useApp } from './store/app'
 import PosterWall from './components/PosterWall'
 import Dock from './components/Dock'
@@ -31,6 +31,10 @@ import MilestoneNote from './components/MilestoneNote'
 import StartAsk from './components/StartAsk'
 import PhoneAsk from './components/PhoneAsk'
 import ZoomLayer from './components/ZoomLayer'
+import Finale from './components/Finale'
+import { useFinaleWatcher } from './lib/finale'
+import Opening from './components/Opening'
+import { shouldPlayOpening } from './lib/opening'
 import { useHomeStyle } from './lib/homeStyle'
 import { handleArrows, isTyping } from './lib/keys'
 import { useStartAsk } from './lib/startAsk'
@@ -44,10 +48,17 @@ export default function App(): React.JSX.Element {
   const homeStyle = useHomeStyle((s) => s.style)
   const welcoming = useWelcome((s) => s.step !== null)
   const { setStatus, setLibrary, back, go } = useApp.getState()
+  useFinaleWatcher()
+  // Phase 51: the opening, while it plays ('play'), then while Home fades up ('reveal').
+  const [opening, setOpening] = useState<'off' | 'play' | 'reveal'>('off')
 
   useEffect(() => {
-    window.api.status().then((s) => {
+    Promise.all([window.api.status(), window.api.takeOpening()]).then(([s, fresh]) => {
       startWelcome(s)
+      const setup = useWelcome.getState().step !== null || !s.dataFolder || s.dataFolderMissing || !s.hasKey
+      const still = document.documentElement.hasAttribute('data-still')
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      if (shouldPlayOpening({ fresh, still, reduceMotion, setup })) setOpening('play')
       setStatus(s)
     })
     window.api.getLibrary().then(setLibrary)
@@ -83,13 +94,16 @@ export default function App(): React.JSX.Element {
   const needsSetup = welcoming || !status.dataFolder || status.dataFolderMissing || !status.hasKey
   const onHome = !needsSetup && view.name === 'home'
   const spot = onHome && homeStyle === 'spotlight'
+  const playing = opening !== 'off' && !needsSetup
+  const openingClass = !playing ? '' : opening === 'play' ? 'opening-hide opening-reveal' : 'opening-reveal'
 
   return (
-    <div className={`app ${onHome ? 'on-home' : 'on-page'} ${spot ? 'spot' : ''} ${homeStyle === 'spotlight' ? 'frost' : ''}`}>
+    <div className={`app ${onHome ? 'on-home' : 'on-page'} ${spot ? 'spot' : ''} ${homeStyle === 'spotlight' ? 'frost' : ''} ${openingClass}`}>
       {/* Spotlight's flat drifting rows stay behind every page, so leaving Home doesn't swap the wall. */}
       <PosterWall rows={homeStyle === 'spotlight'} alive={spot} />
       <div className="veil" aria-hidden />
       <div className="drag-strip" aria-hidden />
+      {playing && <Opening onReveal={() => setOpening('reveal')} onDone={() => setOpening('off')} />}
 
       <header className="corner">
         {onHome || needsSetup ? (
@@ -150,6 +164,7 @@ export default function App(): React.JSX.Element {
           <StartAsk />
           <PhoneAsk />
           <ZoomLayer />
+          <Finale />
         </>
       )}
     </div>

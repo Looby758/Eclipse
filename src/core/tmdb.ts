@@ -85,6 +85,8 @@ export interface Tmdb {
   traits(type: MediaType, id: number): Promise<Trait[]>
   /** Every poster and background TMDB has for a title in English or with no text (phase 55: choose your own). */
   images(type: MediaType, id: number): Promise<TitleImages>
+  /** A show's TheTVDB number (null if TMDB doesn't know it), used to find its theme tune (phase 46). */
+  tvdbId(id: number): Promise<number | null>
 }
 
 export function createTmdb({ key, fetch, language = 'en-GB' }: TmdbOptions): Tmdb {
@@ -205,6 +207,11 @@ export function createTmdb({ key, fetch, language = 'en-GB' }: TmdbOptions): Tmd
     async images(type, id) {
       const raw = await get<{ posters?: RawImage[]; backdrops?: RawImage[] }>(`/${type}/${id}/images`, { include_image_language: 'en,null' })
       return { posters: parsePosters(raw.posters ?? []), backdrops: parsePosters(raw.backdrops ?? []) }
+    },
+
+    async tvdbId(id) {
+      const raw = await get<{ tvdb_id?: number | null }>(`/tv/${id}/external_ids`)
+      return typeof raw.tvdb_id === 'number' && raw.tvdb_id > 0 ? raw.tvdb_id : null
     },
 
     async details(type, id) {

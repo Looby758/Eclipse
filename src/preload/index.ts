@@ -4,6 +4,7 @@ import type { EclipseApi } from '@shared/api'
 // IPC channels are named area:action, as in Orbit.
 const api: EclipseApi = {
   status: () => ipcRenderer.invoke('app:status'),
+  takeOpening: () => ipcRenderer.invoke('opening:take'),
   pickDataFolder: () => ipcRenderer.invoke('data:pick'),
   useDefaultDataFolder: () => ipcRenderer.invoke('data:useDefault'),
   revealDataFolder: () => ipcRenderer.invoke('data:reveal'),
@@ -45,8 +46,11 @@ const api: EclipseApi = {
   backdropOptions: (type, id) => ipcRenderer.invoke('backdrops:list', type, id),
   setBackdrop: (key, path) => ipcRenderer.invoke('backdrops:set', key, path),
   setFavourite: (ref, on) => ipcRenderer.invoke('favourites:set', ref, on),
+  finaleTheme: (tvId) => ipcRenderer.invoke('finale:theme', tvId),
+  finaleImage: (how, name) => ipcRenderer.invoke('finale:image', how, name),
   moveFavourite: (from, to) => ipcRenderer.invoke('favourites:move', from, to),
   comingSoon: () => ipcRenderer.invoke('shelf:comingSoon'),
+  boxSet: (key) => ipcRenderer.invoke('shelf:boxSet', key),
 
   getLibrary: () => ipcRenderer.invoke('library:get'),
   setStatus: (item, status) => ipcRenderer.invoke('library:setStatus', item, status),
@@ -60,6 +64,7 @@ const api: EclipseApi = {
   startRewatch: (item) => ipcRenderer.invoke('library:startRewatch', item),
   endRewatch: (key, keep) => ipcRenderer.invoke('library:endRewatch', key, keep),
   removeRewatch: (key, index) => ipcRenderer.invoke('library:removeRewatch', key, index),
+  setRating: (key, rating) => ipcRenderer.invoke('library:setRating', key, rating),
   setNote: (key, note) => ipcRenderer.invoke('library:setNote', key, note),
   dropTitle: (key) => ipcRenderer.invoke('library:drop', key),
   restoreDropped: (key) => ipcRenderer.invoke('library:restore', key),
