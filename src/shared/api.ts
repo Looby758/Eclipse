@@ -9,6 +9,8 @@ import type { CatchUp } from '@core/catchup'
 import type { WeekSoFar } from '@core/week'
 import type { Recommendation } from '@core/recommend'
 import type { PhoneConflict } from '@core/phone'
+import type { PosterOption } from '@core/posters'
+import type { ComingSoon } from '@core/shelf'
 import type { NowPlaying, Recognised, Suggestion, UnknownShow } from '@core/watching'
 import type { CollectionDetails, Credits, ListSource, PartEpisodes, PersonDetails, PersonResult, TitleRef, TmdbListDetails } from '@core/types'
 import type { Library, MediaType, PlannedTime, Preferences, Provider, SearchResult, SeasonDetails, TitleDetails, TitleKey, TitleSnapshot, WatchProviders, WatchStatus } from '@core/types'
@@ -206,6 +208,19 @@ export interface EclipseApi {
   /** Adds a title to Watch soon (at the end) or takes it off. */
   setWatchSoon(ref: TitleRef, on: boolean): Promise<Library>
   moveWatchSoon(from: number, to: number): Promise<Library>
+  /** Phase 55: every poster TMDB has for a title, best first (the default first of all). */
+  posterOptions(type: MediaType, id: number): Promise<Result<PosterOption[]>>
+  /** Uses one of a title's posters everywhere, or goes back to the default with null (Reset). */
+  setPoster(key: TitleKey, path: string | null): Promise<Library>
+  /** Every background TMDB has for a title's page, textless first (the usual one first of all). */
+  backdropOptions(type: MediaType, id: number): Promise<Result<PosterOption[]>>
+  /** Uses one of them on the title's page, or goes back to the usual one with null. */
+  setBackdrop(key: TitleKey, path: string | null): Promise<Library>
+  /** Phase 58: hangs a title on the favourites wall (at the end) or takes it down. */
+  setFavourite(ref: TitleRef, on: boolean): Promise<Library>
+  moveFavourite(from: number, to: number): Promise<Library>
+  /** Phase 59: announced seasons and films you're waiting for, soonest first, for the shelf. */
+  comingSoon(): Promise<Result<ComingSoon[]>>
 
   /** What's coming up from your library: watchlist films, new seasons (or every episode) of shows you follow. */
   calendarPreview(): Promise<Result<ReleaseEvent[]>>

@@ -6,6 +6,7 @@ import { imageUrl } from '@core/tmdb'
 import { episodeKey, type SeasonDetails, type TitleDetails, UNDATED } from '@core/types'
 import { itemOf } from '../lib/item'
 import { useApp } from '../store/app'
+import { useJustTicked } from '../lib/justTicked'
 
 /**
  * A show's seasons as a row of dots you tick off. Ticking saves today's date; the next episode
@@ -59,6 +60,8 @@ export default function EpisodeTimeline({ details, focus }: { details: TitleDeta
     }
   }, [details.id, shown])
 
+  // Phase 60: episodes ticked just now, to ink their dots.
+  const inked = useJustTicked(Object.keys(entry?.episodes ?? {}).filter((k) => k.startsWith(`S${shown}E`)), `${details.key}:${shown}:${rewatching}`)
   if (shown === null) return null
   const info = details.seasons.find((s) => s.number === shown)!
   const season = loaded[shown]
@@ -130,7 +133,7 @@ export default function EpisodeTimeline({ details, focus }: { details: TitleDeta
         {numbers.map((n) => {
           const key = episodeKey(shown, n)
           const watched = !!seen[key]
-          const cls = ['timeline-dot', watched ? 'seen' : '', isNext(n) ? 'next' : '', aired(n) ? '' : 'future', selected === n ? 'picked' : ''].filter(Boolean).join(' ')
+          const cls = ['timeline-dot', watched ? 'seen' : '', isNext(n) ? 'next' : '', aired(n) ? '' : 'future', selected === n ? 'picked' : '', inked.has(key) ? 'inked' : ''].filter(Boolean).join(' ')
           return (
             <li key={n}>
               <button

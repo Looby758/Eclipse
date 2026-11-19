@@ -122,7 +122,7 @@ export default function WatchSoonSheet(): React.JSX.Element {
                 <span className="list-num">{pos + 1}</span>
                 <button className="list-open" onClick={() => go({ name: 'title', type: i.ref.type, id: i.ref.id })}>
                   <span className="list-poster">
-                    <Poster path={i.ref.posterPath} type={i.ref.type} name={i.ref.name} size="w92" />
+                    <Poster path={i.ref.posterPath} type={i.ref.type} id={i.ref.id} name={i.ref.name} size="w92" />
                   </span>
                   <span className="list-text">
                     <span className="list-name">{i.ref.name}</span>

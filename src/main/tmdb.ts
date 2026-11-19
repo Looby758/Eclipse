@@ -1,3 +1,5 @@
+import type { TitleImages } from '@core/posters'
+import { comingSoon, comingSoonCandidates, type ComingSoon } from '@core/shelf'
 import { errorText, report } from './health'
 import { net, safeStorage } from 'electron'
 import { cached, CACHE_TTL } from '@core/cache'
@@ -233,6 +235,9 @@ async function keep<T>(key: string, ttl: number, job: () => Promise<T>, refresh 
   return { data: r.data, stale: r.source === 'stale', savedAt: r.savedAt }
 }
 
+/** Phase 55: a title's other posters and backgrounds, for "Change poster" and "Change background" (saved for a week, like details). */
+export const images = (type: MediaType, id: number): Promise<Fetched<TitleImages>> => keep(`images:${type}:${id}`, CACHE_TTL.details, () => tmdb().images(type, id))
+
 // "v3": saved copies from before parts played, the full cast and part ids were kept are fetched again.
 export const credits = (type: MediaType, id: number): Promise<Fetched<Credits>> => keep(`credits3:${type}:${id}`, CACHE_TTL.credits, () => tmdb().credits(type, id))
 export const person = (id: number, refresh = false): Promise<Fetched<PersonDetails>> => keep(`person3:${id}`, CACHE_TTL.person, () => tmdb().person(id), refresh)
@@ -436,6 +441,12 @@ export async function catchUpList(library: Library, now = new Date()): Promise<C
   const upcoming = Object.values(collections).flatMap((c) => c.parts.filter((p) => !p.date || p.date >= lo).map((p) => p.key))
   Object.assign(details, await detailsMany(upcoming.filter((k) => !details[k])))
   return catchUps({ library, details, collections, now, evenings: prefs, region: prefs.region, skipDays: prefs.catchUpSkipDays, aheadDays: 42 }).filter((c) => c.upcoming.date > today)
+}
+
+/** Phase 59: the seasons and films you're waiting for, for "Coming soon" on the shelf. */
+export async function comingSoonList(library: Library, today = localDate(new Date())): Promise<ComingSoon[]> {
+  const details = await detailsMany(comingSoonCandidates(library))
+  return comingSoon(library, details, today, preferencesOf(library).region)
 }
 
 /**

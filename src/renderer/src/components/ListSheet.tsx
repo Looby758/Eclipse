@@ -111,7 +111,7 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
         <span className="list-num">{numberOf.get(itemKey(r)) ?? index + 1}</span>
         <button className="list-open" onClick={() => go({ name: 'title', type: r.type, id: r.id })}>
           <span className="list-poster">
-            <Poster path={r.posterPath} type={r.type} name={r.name} size="w92" />
+            <Poster path={r.posterPath} type={r.type} id={r.id} name={r.name} size="w92" />
           </span>
           <span className="list-text">
             <span className="list-name">{r.name}</span>
@@ -303,7 +303,7 @@ export default function ListSheet({ id }: { id: string }): React.JSX.Element {
                 <span className="list-num">{numberOf.get(itemKey(r))}</span>
                 <button className="list-open" onClick={() => go({ name: 'title', type: r.type, id: r.id })}>
                   <span className="list-poster">
-                    <Poster path={r.posterPath} type={r.type} name={r.name} size="w92" />
+                    <Poster path={r.posterPath} type={r.type} id={r.id} name={r.name} size="w92" />
                   </span>
                   <span className="list-text">
                     <span className="list-name">{r.name}</span>

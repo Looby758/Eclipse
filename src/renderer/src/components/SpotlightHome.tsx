@@ -1,4 +1,4 @@
-import { Check, Hourglass, Library, ListChecks, Moon, Search, Settings, Sparkles } from 'lucide-react'
+import { Check, Hourglass, Library, LibraryBig, ListChecks, Moon, Search, Settings, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { entriesWith, isTogether, nextEpisodeFor, nextSession, preferencesOf, withTogether } from '@core/library'
 import { sessionLabel } from '../lib/together'
@@ -19,7 +19,8 @@ const NAV: { view: View['name']; label: string; icon: typeof Moon }[] = [
   { view: 'home', label: 'Tonight', icon: Moon },
   { view: 'library', label: 'Library', icon: Library },
   { view: 'soon', label: 'Soon', icon: Hourglass },
-  { view: 'lists', label: 'Lists', icon: ListChecks }
+  { view: 'lists', label: 'Lists', icon: ListChecks },
+  { view: 'shelf', label: 'Shelf', icon: LibraryBig }
 ]
 
 /** Spotlight's navigation: small glass pills in the top right (Home and the Spotlight title page). */
@@ -64,6 +65,8 @@ export default function SpotlightHome(): React.JSX.Element {
   const [skip, setSkip] = useState(0)
   const [details, setDetails] = useState<TitleDetails | null>(null)
   const [busy, setBusy] = useState(false)
+  // Phase 60: the tick mark pops each time Tick it works.
+  const [ticked, setTicked] = useState(0)
   const [now, setNow] = useState(() => new Date())
   const prefs = preferencesOf(library)
 
@@ -124,7 +127,7 @@ export default function SpotlightHome(): React.JSX.Element {
         <TonightDial evenings={ev} minutesEach={each} count={pick ? fits : 0} now={now}>
           {pick ? (
             <button className="spot-poster" onClick={open} aria-label={`Open ${pick.title.name}`}>
-              <Poster path={pick.title.posterPath} type={pick.type} name={pick.title.name} size="w342" />
+              <Poster path={pick.title.posterPath} type={pick.type} id={pick.id} name={pick.title.name} size="w342" />
             </button>
           ) : (
             <Sparkles size={40} className="spot-empty-icon" />
@@ -149,12 +152,13 @@ export default function SpotlightHome(): React.JSX.Element {
                       try {
                         const ep = [episodeKey(next.season, next.episode)]
                         setLibrary(isTogether(pick) ? await window.api.tickWith(pick.key, pick.together.index, ep, true) : await window.api.setEpisodes(itemOf(details!), ep, true))
+                        setTicked((n) => n + 1)
                       } finally {
                         setBusy(false)
                       }
                     }}
                   >
-                    <Check size={17} /> Tick it
+                    <Check key={ticked} size={17} className={ticked ? 'tick-pop' : ''} /> Tick it
                   </button>
                 ) : (
                   <button className="spot-btn pri" onClick={open}>

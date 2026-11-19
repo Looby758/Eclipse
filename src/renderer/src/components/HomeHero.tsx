@@ -91,7 +91,7 @@ export default function HomeHero(): React.JSX.Element {
             {others.map((e) => (
               <button key={isTogether(e) ? `${e.key}:${e.together.index}` : e.key} className="mini-card" onClick={() => go({ name: 'title', type: e.type, id: e.id })}>
                 <span className="mini-poster">
-                  <Poster path={e.title.posterPath} type={e.type} name={e.title.name} size="w92" />
+                  <Poster path={e.title.posterPath} type={e.type} id={e.id} name={e.title.name} size="w92" />
                 </span>
                 <span className="mini-text">
                   <span className="mini-name">{e.title.name}</span>

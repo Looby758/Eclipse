@@ -3,6 +3,7 @@ import { buildHeatmap, type HeatCell } from '@core/heatmap'
 import { localDate } from '@core/library'
 import { imageUrl } from '@core/tmdb'
 import type { LibraryEntry, SeasonDetails } from '@core/types'
+import { useJustTicked } from '../lib/justTicked'
 
 /**
  * The Spotlight title page's "Every episode, by rating": one bar per episode, as tall as its TMDB
@@ -12,6 +13,8 @@ import type { LibraryEntry, SeasonDetails } from '@core/types'
  */
 export default function RatingBars({ seasons, entry, onPick }: { seasons: SeasonDetails[]; entry: LibraryEntry | undefined; onPick: (season: number, episode: number) => void }): React.JSX.Element | null {
   const [hover, setHover] = useState<number | null>(null)
+  // Phase 60: bars lit just now fill up from the bottom.
+  const inked = useJustTicked(Object.keys(entry?.episodes ?? {}), entry?.key ?? '')
   const map = buildHeatmap(seasons, entry, localDate(new Date()))
   const cells = map.rows.flatMap((r) => r.cells)
   if (!cells.length) return null
@@ -45,7 +48,7 @@ export default function RatingBars({ seasons, entry, onPick }: { seasons: Season
           {cells.map((c, i) => (
             <button
               key={`${c.season}:${c.episode}`}
-              className={`st-bar ${c.watched ? 'w' : ''} ${c.next ? 'nx' : ''} ${!c.trusted ? 'dim' : ''} ${labels.some((l) => l.first === i && i > 0) ? 'gap' : ''}`}
+              className={`st-bar ${c.watched ? 'w' : ''} ${c.next ? 'nx' : ''} ${!c.trusted ? 'dim' : ''} ${labels.some((l) => l.first === i && i > 0) ? 'gap' : ''} ${inked.has(`S${c.season}E${c.episode}`) ? 'inked' : ''}`}
               style={{ height: `${height(c)}%` }}
               aria-label={describe(c)}
               onMouseEnter={() => setHover(i)}

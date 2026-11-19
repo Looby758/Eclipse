@@ -1,10 +1,14 @@
-import { ExternalLink, Popcorn, RefreshCw } from 'lucide-react'
+import { ExternalLink, Image as ImageIcon, Popcorn, RefreshCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { formatDate, formatRuntime, plural, stingerLine } from '@core/format'
 import { tmdbPageUrl } from '@core/tmdb'
 import type { MediaType, TitleDetails } from '@core/types'
 import { DEFAULT_GLOW, hsl, posterGlow, type Hsl } from '../lib/posterColour'
 import Poster from './Poster'
+import PosterPicker from './PosterPicker'
+import { FavouriteButton } from './ShelfSheet'
+import JourneyRibbon from './JourneyRibbon'
+import { journeyOf } from '@core/journey'
 import { useApp } from '../store/app'
 import Sheet from './Sheet'
 import StatusPicker from './StatusPicker'
@@ -30,6 +34,8 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
   const [refreshing, setRefreshing] = useState(false)
   const [glow, setGlow] = useState<Hsl>(DEFAULT_GLOW)
   const [focus, setFocus] = useState<EpisodeFocus | null>(null)
+  const chosenPoster = useApp((s) => s.library.posters?.[`${type}:${id}`])
+  const [picking, setPicking] = useState(false)
 
   const load = async (refresh = false): Promise<void> => {
     setRefreshing(refresh)
@@ -47,8 +53,8 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
   }, [type, id])
 
   useEffect(() => {
-    if (details) posterGlow(details.posterPath).then(setGlow)
-  }, [details?.posterPath])
+    if (details) posterGlow(chosenPoster ?? details.posterPath).then(setGlow)
+  }, [details?.posterPath, chosenPoster])
 
   const aurora = (
     <div
@@ -86,7 +92,10 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
         className="title-sheet"
         lifted={
           <div className="lifted-poster" style={{ boxShadow: `0 30px 70px ${hsl(glow, 0.5)}, 0 0 0 1px rgba(255,255,255,.2)` }}>
-            <Poster path={d.posterPath} type={d.type} name={d.name} size="w500" />
+            <Poster path={d.posterPath} type={d.type} id={d.id} name={d.name} size="w500" />
+            <button className="poster-change" onClick={() => setPicking(!picking)}>
+              <ImageIcon size={13} /> Change poster
+            </button>
           </div>
         }
       >
@@ -102,6 +111,7 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
           )}
           <StatusPicker details={d} />
           <WatchSoonToggle details={d} />
+          <FavouriteButton className="btn glass fav-toggle" title={{ key: d.key, type: d.type, id: d.id, name: d.name, year: d.year, posterPath: d.posterPath, date: d.date }} />
           <div className="row" style={{ marginTop: 10 }}>
             <ContinueButton titleKey={d.key} />
           </div>
@@ -111,6 +121,18 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
         </div>
 
         <div className="title-body">
+          <JourneyCard details={d} />
+          {picking && (
+            <section className="card">
+              <div className="row spread">
+                <h2>Change poster</h2>
+                <button className="link-btn" onClick={() => setPicking(false)}>
+                  Done
+                </button>
+              </div>
+              <PosterPicker details={d} />
+            </section>
+          )}
           {stale && <p className="notice">Offline: showing details saved earlier.</p>}
           {error && <p className="error">{error}</p>}
           {d.overview && <p className="overview">{d.overview}</p>}
@@ -177,5 +199,18 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
         </div>
       </Sheet>
     </>
+  )
+}
+
+/** Phase 57: your journey with a show, on the Classic page. */
+function JourneyCard({ details: d }: { details: TitleDetails }): React.JSX.Element | null {
+  const raw = useApp((s) => s.library.entries[d.key])
+  const journey = d.type === 'tv' ? journeyOf(raw, d.seasons) : null
+  if (!journey) return null
+  return (
+    <section className="card">
+      <h2>Your journey</h2>
+      <JourneyRibbon journey={journey} />
+    </section>
   )
 }

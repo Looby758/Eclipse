@@ -14,6 +14,8 @@ import { today } from './LibraryTab'
 export default function TitlePage({ type, id, onBack }: { type: MediaType; id: number; onBack: () => void }): React.JSX.Element {
   const { data: d, error } = useLoad(() => getDetails(type, id), [type, id])
   const raw = usePhone((s) => s.view.entries[`${type}:${id}`])
+  // The poster you chose on the computer (phase 55), if any.
+  const chosen = usePhone((s) => s.view.posters?.[`${type}:${id}`])
   const entry = activeEntry(raw)
   return (
     <div className="page">
@@ -30,7 +32,7 @@ export default function TitlePage({ type, id, onBack }: { type: MediaType; id: n
           <div className="hero">
             {d.backdropPath && <img className="hero-backdrop" src={imageUrl(d.backdropPath, 'w780')!} alt="" />}
             <div className="hero-row">
-              <Poster path={d.posterPath} name={d.name} size="w342" className="hero-poster" />
+              <Poster path={chosen ?? d.posterPath} name={d.name} size="w342" className="hero-poster" />
               <div className="hero-text">
                 <h1>{d.name}</h1>
                 <p className="sub">{[d.year, type === 'tv' ? (d.numberOfSeasons ? `${d.numberOfSeasons} season${d.numberOfSeasons === 1 ? '' : 's'}` : 'Show') : formatRuntime(d.runtime), d.genres.slice(0, 2).join(', ')].filter(Boolean).join(' · ')}</p>

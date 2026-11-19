@@ -9,7 +9,7 @@ export default function TitleCard({ type, id, name, year, posterPath, status, ex
   return (
     <button className="title-card" onClick={() => go({ name: 'title', type, id })} title={name}>
       <div className="title-card-poster">
-        <Poster path={posterPath} type={type} name={name} />
+        <Poster path={posterPath} type={type} id={id} name={name} />
         {status && <span className={`status-badge status-${status}`}>{STATUS_LABELS[status]}</span>}
       </div>
       <div className="title-card-name">{name}</div>

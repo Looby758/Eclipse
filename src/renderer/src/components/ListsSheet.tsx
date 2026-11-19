@@ -27,7 +27,7 @@ function ListCard({ id, name }: { id: string; name: string }): React.JSX.Element
         ) : posters.length ? (
           posters.map((p, i) => (
             <span key={p.key} className="list-card-poster" style={{ ['--i' as string]: i }}>
-              <Poster path={p.posterPath} type={p.type} name={p.name} size="w185" />
+              <Poster path={p.posterPath} type={p.type} id={p.id} name={p.name} size="w185" />
             </span>
           ))
         ) : (

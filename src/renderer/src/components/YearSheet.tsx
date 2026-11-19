@@ -153,7 +153,7 @@ export default function YearSheet({ year: asked }: { year?: number }): React.JSX
               <button key={t.key} className="year-top-item" onClick={() => open(t.key)}>
                 <span className="year-rank">{i + 1}</span>
                 <span className="year-top-poster">
-                  <Poster path={t.posterPath} type={t.type} name={t.name} size="w185" />
+                  <Poster path={t.posterPath} type={t.type} id={Number(t.key.split(":")[1])} name={t.name} size="w185" />
                 </span>
                 <span className="year-top-name">{t.name}</span>
                 <span className="muted small">

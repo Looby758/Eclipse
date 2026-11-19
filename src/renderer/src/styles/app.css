@@ -1018,3 +1018,168 @@ select:hover { border-color: var(--accent); }
 .st-bare-hint { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 10; padding: 8px 16px; border-radius: 99px; background: rgba(12, 13, 28, 0.55); color: #fff; font-size: 13px; backdrop-filter: blur(14px); pointer-events: none; animation: st-hint 3.2s ease both; }
 @keyframes st-hint { 0% { opacity: 0; } 12%, 70% { opacity: 1; } 100% { opacity: 0; } }
 :root[data-still] .st-bare-hint { animation: none; opacity: 0.9; }
+
+/* Phase 55: choose your own posters */
+.lifted-poster { position: relative; }
+.poster-change { position: absolute; left: 50%; bottom: 10px; transform: translate(-50%, 6px); display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--frost-line); background: rgba(10, 10, 24, 0.7); color: #fff; font-size: var(--text-xs); font-weight: 600; cursor: pointer; opacity: 0; white-space: nowrap; transition: opacity var(--fast), transform var(--fast) var(--ease); }
+.lifted-poster:hover .poster-change, .poster-change:focus-visible { opacity: 1; transform: translate(-50%, 0); }
+.title-body .card h2 { margin: 0; font-size: var(--text-lg); }
+.row.spread { justify-content: space-between; align-items: center; }
+.poster-picker { display: grid; gap: 12px; }
+.poster-picker > p { margin: 0; }
+.poster-picker > .btn { justify-self: start; }
+.poster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 10px; }
+.poster-option { position: relative; padding: 0; border: 0; border-radius: 10px; overflow: hidden; aspect-ratio: 2 / 3; background: var(--glass-soft); cursor: pointer; box-shadow: 0 0 0 1px var(--line); transition: transform var(--fast) var(--ease), box-shadow var(--fast); }
+.poster-option img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.poster-option:hover:not(:disabled) { transform: translateY(-2px); }
+.poster-option.on { box-shadow: 0 0 0 3px var(--poster-pick), 0 8px 22px rgba(0, 0, 0, 0.35); }
+.poster-option-tick { position: absolute; top: 6px; right: 6px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--poster-pick); color: var(--poster-pick-on); }
+.poster-option-tag { position: absolute; left: 6px; bottom: 6px; padding: 2px 7px; border-radius: 999px; background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 10px; font-weight: 600; }
+
+/* Phase 56: opening a poster zooms into it */
+.zoom-layer { position: fixed; inset: 0; pointer-events: none; z-index: 200; }
+.zoom-ghost { position: fixed; object-fit: cover; box-shadow: var(--zoom-shadow); will-change: left, top, width, height, opacity; }
+.zoom-veil { position: fixed; inset: 0; background: var(--zoom-veil); opacity: 0; }
+/* While it grows, the page underneath comes up a beat later, through the poster. */
+/* The show's page stays hidden while the poster travels: its picture fades in behind the big
+   poster, then the words come up as the poster melts away. */
+:root.zooming .stitle { animation: zoom-room-in 1400ms linear both; }
+:root.zooming .stitle .st-bg { animation: zoom-bg-in 1400ms linear both; }
+@keyframes zoom-room-in { 0%, 48% { background-color: transparent; } 78%, 100% { background-color: #05060f; } }
+:root.zooming .stitle .st-page, :root.zooming .stitle > .spot-pills, :root.zooming .title-sheet, :root.zooming .corner { animation: zoom-page-in 1400ms var(--ease) both; }
+@keyframes zoom-bg-in { 0%, 48% { opacity: 0; } 78%, 100% { opacity: 1; } }
+@keyframes zoom-page-in { 0%, 80% { opacity: 0; transform: translateY(12px); } 100% { opacity: 1; transform: none; } }
+/* Keep the poster wall still: a plain fade. */
+:root.page-fade .stitle, :root.page-fade .sheet { animation: zoom-fade 240ms ease-out both !important; }
+@keyframes zoom-fade { from { opacity: 0; } }
+
+/* Phase 57: your journey with a show */
+.journey { display: grid; gap: 10px; }
+.journey-summary { margin: 0; color: var(--text-muted); font-size: var(--text-sm); }
+.journey-lanes { display: grid; gap: 8px; }
+.journey-lane, .journey-axis { display: grid; grid-template-columns: 96px minmax(0, 1fr); align-items: center; gap: 10px; }
+.journey-label { font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); display: flex; flex-direction: column; line-height: 1.2; }
+.journey-label small { color: var(--cyan); font-weight: 500; }
+.journey-track { position: relative; height: var(--journey-h); border-radius: 999px; background: var(--journey-track); }
+.journey-axis .journey-track { height: 16px; background: none; }
+.journey-before { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px 0 0 999px; background: repeating-linear-gradient(135deg, transparent 0 6px, var(--journey-hatch) 6px 8px); }
+.journey-year-line { position: absolute; top: -3px; bottom: -3px; width: 1px; background: var(--line); }
+.journey-season { position: absolute; top: 3px; bottom: 3px; min-width: 22px; padding: 0 4px; border: 0; border-radius: 999px; cursor: pointer; font: 700 10px var(--font-ui); color: #fff; overflow: hidden; white-space: nowrap; text-overflow: clip; background: linear-gradient(135deg, hsl(var(--hue) 85% 62%), hsl(calc(var(--hue) + 25) 70% 48%)); box-shadow: 0 2px 10px hsl(var(--hue) 80% 50% / 0.35); transition: transform var(--fast) var(--ease); }
+.journey-season.part { background: linear-gradient(135deg, hsl(var(--hue) 70% 55% / 0.55), hsl(calc(var(--hue) + 25) 60% 45% / 0.45)); box-shadow: inset 0 0 0 1px hsl(var(--hue) 85% 65% / 0.8); }
+.journey-season:hover, .journey-season:focus-visible { transform: scaleY(1.18); z-index: 1; }
+.journey-lane.with .journey-season, .journey-lane.rewatch .journey-season { top: 6px; bottom: 6px; }
+.journey-gap { position: absolute; top: 50%; height: 0; border-top: 1px dashed var(--text-muted); }
+.journey-gap em { position: absolute; left: 50%; top: 5px; transform: translateX(-50%); font-style: normal; font-size: 11px; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+.journey-now { position: absolute; top: -4px; bottom: -4px; width: 2px; border-radius: 2px; background: var(--cyan); box-shadow: 0 0 10px var(--halo); }
+.journey-tick { position: absolute; top: 0; font-size: 11px; color: var(--text-muted); white-space: nowrap; transform: translateX(-2px); }
+.journey-tick.end { left: auto; right: 0; transform: none; }
+.journey-list { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; font-size: var(--text-sm); color: var(--text-muted); }
+.journey-list b { color: var(--text); font-weight: 600; }
+.journey-dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: hsl(var(--hue) 85% 62%); }
+
+/* The shelf (phase 59 with a simple version of 52): box sets standing on shelves */
+.shelf-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 28px 18px; padding-bottom: 8px; }
+.box { position: relative; display: grid; gap: 4px; padding: 0 0 14px; border: 0; background: none; text-align: left; cursor: pointer; color: var(--text); }
+/* The plank each row of boxes stands on. */
+.box::after { content: ''; position: absolute; left: -9px; right: -9px; bottom: 0; height: 8px; border-radius: 3px; background: var(--shelf-plank); box-shadow: var(--shelf-plank-shadow); }
+.box-art { position: relative; display: block; aspect-ratio: 2 / 3; border-radius: 6px 10px 10px 6px; overflow: hidden; box-shadow: var(--box-shadow); transform-origin: bottom center; transition: transform var(--fast) var(--ease), box-shadow var(--fast); }
+/* A box set's spine down the left edge. */
+.box-art::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 7px; z-index: 1; background: linear-gradient(90deg, rgba(0, 0, 0, 0.45), rgba(255, 255, 255, 0.12) 60%, transparent); }
+.box-art .poster { width: 100%; height: 100%; object-fit: cover; display: block; }
+.box:hover .box-art, .box:focus-visible .box-art { transform: translateY(-8px) rotate(-1.5deg); box-shadow: var(--box-shadow-lift); }
+.box-name { font-size: var(--text-sm); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 6px; }
+.box-meta { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px; }
+/* Shrink-wrap: a glossy film over the box, with a crease and a glint that slides across on hover. */
+.box-wrap { position: absolute; inset: 0; z-index: 2; background: var(--wrap-film), linear-gradient(115deg, transparent 30%, var(--wrap-glint) 45%, transparent 58%); background-size: 100% 100%, 250% 100%; background-position: 0 0, 120% 0; box-shadow: inset 0 0 0 1px var(--wrap-edge), inset 0 0 18px rgba(255, 255, 255, 0.18); transition: background-position 0.9s var(--ease); }
+.box-wrap::after { content: ''; position: absolute; left: 12%; right: 30%; top: 22%; height: 1px; transform: rotate(-8deg); background: var(--wrap-edge); opacity: 0.7; }
+.box.wrapped:hover .box-wrap { background-position: 0 0, -40% 0; }
+.box.wrapped .poster { filter: saturate(0.85) brightness(0.92); }
+/* Release day: the wrap peels off. */
+.box-wrap-off { position: absolute; inset: 0; z-index: 2; background: var(--wrap-film); box-shadow: inset 0 0 0 1px var(--wrap-edge); transform-origin: top right; animation: wrap-peel 1.4s var(--ease) 0.3s both; pointer-events: none; }
+@keyframes wrap-peel { 0% { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); opacity: 1; } 60% { clip-path: polygon(0 0, 100% 0, 100% 0, 0 100%); opacity: 0.8; } 100% { clip-path: polygon(0 0, 0 0, 0 0, 0 0); opacity: 0; } }
+.box-sticker { position: absolute; z-index: 3; right: 6px; bottom: 8px; padding: 3px 8px; border-radius: 999px; background: var(--sticker-bg); color: var(--sticker-text); font-size: 10px; font-weight: 700; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35); transform: rotate(-4deg); }
+.box-sticker.out { background: var(--accent-gradient); color: #fff; }
+:root[data-still] .box-wrap-off { animation: none; opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .box-wrap-off { animation: none; opacity: 0; } }
+
+/* Phase 58: the favourites wall, a hall of fame. Always a dark room, like a gallery at night,
+   with a beam of light on each frame, the poster's own colour glowing on the wall behind it,
+   polished Halo-blue frames, engraved plaques, and your No. 1 hung big. */
+.hall { position: relative; margin-top: 8px; padding: 34px 34px 70px; border-radius: var(--radius-lg); overflow: hidden; isolation: isolate; color: var(--hall-text); background: var(--hall-wall); box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.7), 0 20px 60px rgba(0, 0, 0, 0.35); }
+.hall::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--hall-texture); opacity: 0.6; pointer-events: none; }
+.hall-head { display: grid; justify-items: center; gap: 4px; margin-bottom: 34px; text-align: center; }
+.hall-kicker { font-size: 11px; font-weight: 700; letter-spacing: 0.32em; text-transform: uppercase; color: var(--hall-accent); }
+.hall-head h2, .hall-title { margin: 0; font: 600 44px/1.1 var(--font-display); letter-spacing: -0.02em; background: var(--hall-title); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 4px 24px rgba(143, 227, 255, 0.25)); }
+.hall-sub { font-size: var(--text-sm); color: var(--hall-muted); }
+.hall-floor { position: absolute; left: 0; right: 0; bottom: 0; height: 60px; z-index: -1; background: var(--hall-floor); }
+.fav-wall { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); grid-auto-flow: dense; gap: 64px 40px; }
+.fav { position: relative; display: grid; justify-items: center; align-content: start; gap: 16px; cursor: grab; padding-top: 30px; }
+.fav.first { grid-column: span 2; grid-row: span 2; padding-top: 10px; }
+.fav.first .fav-frame { width: min(100%, 360px); }
+.fav.dragging { opacity: 0.35; }
+.fav.over .fav-frame { box-shadow: 0 0 0 3px var(--hall-accent), var(--frame-shadow); transform: scale(1.04); }
+/* The beam of light from above, and the pool it makes on the wall. */
+.fav-beam { position: absolute; z-index: -1; top: -64px; left: 50%; width: 150%; height: calc(100% + 40px); transform: translateX(-50%); background: var(--hall-beam); clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%); opacity: 0.55; pointer-events: none; transition: opacity 0.4s; }
+.fav:hover .fav-beam { opacity: 0.9; }
+.fav-glow { position: absolute; z-index: -1; top: 14%; left: 50%; width: 90%; aspect-ratio: 2 / 3; transform: translateX(-50%); filter: blur(46px) saturate(1.6); opacity: 0.55; pointer-events: none; }
+.fav-glow .poster { width: 100%; height: 100%; object-fit: cover; }
+.fav.first .fav-glow { width: 80%; opacity: 0.75; }
+.fav-frame { position: relative; display: block; width: 100%; padding: 12px; border: 0; border-radius: 6px; background: var(--frame); box-shadow: var(--frame-shadow); cursor: pointer; transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform 0.25s var(--ease), box-shadow var(--fast); }
+.fav-frame::before { content: ''; position: absolute; inset: 5px; border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35), inset 0 0 0 3px rgba(0, 0, 0, 0.25); pointer-events: none; }
+.fav-frame:hover, .fav-frame:focus-visible { box-shadow: var(--frame-shadow-lift); }
+.fav.first .fav-frame { padding: 16px; }
+.fav-mat { position: relative; display: block; padding: 10px; background: var(--frame-mat); box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5); overflow: hidden; }
+.fav-mat .poster { display: block; width: 100%; aspect-ratio: 2 / 3; object-fit: cover; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6); }
+/* Light catching the glass. */
+.fav-glare { position: absolute; inset: 0; background: radial-gradient(circle at var(--gx, 30%) var(--gy, 0%), rgba(255, 255, 255, 0.28), transparent 45%), linear-gradient(125deg, rgba(255, 255, 255, 0.1), transparent 40%); pointer-events: none; }
+.fav-medal { position: absolute; top: -18px; right: -18px; display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; font: 700 14px var(--font-display); color: #0b0d1f; background: var(--hall-medal); box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5), 0 0 30px rgba(143, 227, 255, 0.7), 0 8px 20px rgba(0, 0, 0, 0.5); transform: rotate(12deg); }
+.fav-plaque { display: grid; justify-items: center; gap: 1px; padding: 7px 16px 8px; border-radius: 3px; background: var(--plaque); color: var(--plaque-text); text-align: center; max-width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+.fav-plaque em { font-style: normal; font-size: 9px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.7; }
+.fav-plaque b { font: 600 var(--text-sm) var(--font-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.fav-plaque span { font-size: 11px; opacity: 0.75; }
+.fav.first .fav-plaque { padding: 9px 22px 10px; }
+.fav.first .fav-plaque b { font-size: var(--text-lg); }
+.fav-tools { position: absolute; top: 34px; left: 6px; display: flex; gap: 4px; opacity: 0; transition: opacity var(--fast); z-index: 2; }
+.fav.first .fav-tools { top: 14px; }
+.fav:hover .fav-tools, .fav:focus-within .fav-tools { opacity: 1; }
+.fav-tools button { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: 0; background: rgba(0, 0, 0, 0.7); color: #fff; cursor: pointer; }
+.fav-tools button:disabled { opacity: 0.35; cursor: default; }
+.fav-empty { display: grid; justify-items: center; gap: 10px; padding: 60px 20px; text-align: center; color: var(--hall-muted); }
+.fav-empty p { margin: 0; max-width: 440px; }
+.fav-empty b { color: var(--hall-text); }
+:root[data-still] .fav-frame { transform: none; }
+@media (max-width: 700px) { .fav.first { grid-column: auto; grid-row: auto; } }
+.fav-toggle.lit { color: var(--fav); border-color: var(--fav); }
+.st-chip.lit svg[fill='currentColor'] { color: var(--fav); }
+
+/* Phase 60: ticking feels good. A dot fills like ink, the bar fills up, the ring jumps. */
+.timeline-dot { position: relative; overflow: hidden; }
+.timeline-dot.inked { animation: ink-pop 0.55s var(--ease); }
+.timeline-dot.inked::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: var(--ink); animation: ink-spread 0.6s var(--ease) both; }
+.timeline-dot.inked::after { content: ''; position: absolute; inset: -2px; border-radius: 50%; box-shadow: 0 0 0 2px var(--cyan); animation: ink-ring 0.7s ease-out both; }
+.timeline-dot.inked svg { position: relative; z-index: 1; animation: ink-check 0.45s var(--ease) 0.15s both; }
+@keyframes ink-spread { from { transform: scale(0.1); opacity: 0.95; } 70% { opacity: 0.7; } to { transform: scale(1.4); opacity: 0; } }
+@keyframes ink-pop { 0% { transform: scale(1); } 35% { transform: scale(1.22); } 100% { transform: scale(1); } }
+@keyframes ink-ring { from { transform: scale(0.9); opacity: 0.9; } to { transform: scale(1.7); opacity: 0; } }
+@keyframes ink-check { from { transform: scale(0.3) rotate(-25deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.st-bar.inked { animation: bar-fill 0.7s var(--ease) both; }
+@keyframes bar-fill { 0% { transform: scaleY(0.15); filter: brightness(2); } 60% { transform: scaleY(1.12); } 100% { transform: scaleY(1); filter: none; } }
+.st-count { display: grid; grid-template-columns: auto auto; column-gap: 16px; align-items: center; }
+.st-count > .tick-ring { grid-row: 1 / span 3; grid-column: 1; }
+.st-count > :not(.tick-ring) { grid-column: 2; }
+.tick-ring { overflow: visible; }
+.tick-ring-track { fill: none; stroke: var(--ring-track); stroke-width: 6; }
+.tick-ring-fill { fill: none; stroke: var(--ring-fill); stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 0.6s var(--ease); filter: drop-shadow(0 0 6px var(--halo)); }
+.tick-ring-flash { fill: none; stroke: var(--cyan); stroke-width: 3; transform-box: fill-box; transform-origin: center; animation: ink-ring 0.7s ease-out both; }
+.tick-pop { animation: ink-check 0.45s var(--ease) both; }
+/* Keep the poster wall still: no pops or ripples, just the change of colour. */
+:root[data-still] .timeline-dot.inked, :root[data-still] .timeline-dot.inked::before, :root[data-still] .timeline-dot.inked::after, :root[data-still] .timeline-dot.inked svg,
+:root[data-still] .st-bar.inked, :root[data-still] .tick-ring-flash, :root[data-still] .tick-pop { animation: none; }
+:root[data-still] .timeline-dot.inked::before, :root[data-still] .timeline-dot.inked::after, :root[data-still] .tick-ring-flash { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .timeline-dot.inked, .timeline-dot.inked svg, .st-bar.inked, .tick-pop { animation: none; }
+  .timeline-dot.inked::before, .timeline-dot.inked::after, .tick-ring-flash { display: none; }
+}
+/* "Change background": wide pictures in two or three columns */
+.poster-grid.wide { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+.poster-grid.wide .poster-option { aspect-ratio: 16 / 9; }

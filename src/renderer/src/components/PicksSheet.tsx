@@ -153,7 +153,7 @@ export default function PicksSheet(): React.JSX.Element {
       {pick && (
         <div className="clearout-card">
           <div className="clearout-poster">
-            <Poster path={pick.posterPath} type={pick.type} name={pick.name} size="w342" />
+            <Poster path={pick.posterPath} type={pick.type} id={pick.id} name={pick.name} size="w342" />
           </div>
           <div className="clearout-body">
             <h1>{pick.name}</h1>

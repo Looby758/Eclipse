@@ -21,12 +21,14 @@ import SpotlightTitle from './components/SpotlightTitle'
 import SettingsView from './components/SettingsView'
 import WatchSoonSheet from './components/WatchSoonSheet'
 import ListsSheet from './components/ListsSheet'
+import ShelfSheet from './components/ShelfSheet'
 import ListSheet from './components/ListSheet'
 import SpotlightHome from './components/SpotlightHome'
 import Logo from './components/Logo'
 import UndoBar from './components/UndoBar'
 import StartAsk from './components/StartAsk'
 import PhoneAsk from './components/PhoneAsk'
+import ZoomLayer from './components/ZoomLayer'
 import { useHomeStyle } from './lib/homeStyle'
 import { handleArrows, isTyping } from './lib/keys'
 import { useStartAsk } from './lib/startAsk'
@@ -121,6 +123,7 @@ export default function App(): React.JSX.Element {
           {view.name === 'search' && <SearchSheet />}
           {view.name === 'settings' && <SettingsView />}
           {view.name === 'lists' && <ListsSheet />}
+          {view.name === 'shelf' && <ShelfSheet key={view.room ?? 'shelf'} room={view.room} />}
           {view.name === 'soon' && <WatchSoonSheet />}
           {view.name === 'clearout' && <ClearOutSheet />}
           {view.name === 'picks' && <PicksSheet />}
@@ -138,6 +141,7 @@ export default function App(): React.JSX.Element {
           <UndoBar />
           <StartAsk />
           <PhoneAsk />
+          <ZoomLayer />
         </>
       )}
     </div>
