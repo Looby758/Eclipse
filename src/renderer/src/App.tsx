@@ -24,6 +24,7 @@ import ListsSheet from './components/ListsSheet'
 import ShelfSheet from './components/ShelfSheet'
 import ListSheet from './components/ListSheet'
 import SpotlightHome from './components/SpotlightHome'
+import Countdowns from './components/Countdowns'
 import Logo from './components/Logo'
 import UndoBar from './components/UndoBar'
 import ReactionAsk from './components/ReactionAsk'
@@ -128,6 +129,7 @@ export default function App(): React.JSX.Element {
             <>
               <HomeHero />
               <aside className="home-side">
+                <Countdowns />
                 <HomeNotes />
                 <OnThisDay />
               </aside>

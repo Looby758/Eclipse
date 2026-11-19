@@ -49,6 +49,7 @@ const api: EclipseApi = {
   finaleTheme: (tvId) => ipcRenderer.invoke('finale:theme', tvId),
   finaleImage: (how, name) => ipcRenderer.invoke('finale:image', how, name),
   moveFavourite: (from, to) => ipcRenderer.invoke('favourites:move', from, to),
+  setCountdown: (ref, on) => ipcRenderer.invoke('countdowns:set', ref, on),
   comingSoon: () => ipcRenderer.invoke('shelf:comingSoon'),
   boxSet: (key) => ipcRenderer.invoke('shelf:boxSet', key),
 

@@ -279,6 +279,8 @@ export interface Library {
   backdrops?: Record<string, string>
   /** Your favourites wall (phase 58): your all-time top films and shows, in your order. */
   favourites?: TitleRef[]
+  /** Countdowns on Home: films and shows you're waiting for, in the order you added them. */
+  countdowns?: TitleRef[]
 }
 
 /**

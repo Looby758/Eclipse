@@ -27,6 +27,7 @@ import { showExtensionFolder } from './extension'
 import { editMoment } from '@core/watching'
 import { orderPosters, setBackdrop, setPoster } from '@core/posters'
 import { moveFavourite, setFavourite } from '@core/favourites'
+import { setCountdown } from '@core/countdowns'
 import { CATCH_UP_ID, dismissCatchUp } from '@core/catchup'
 import { answerRecommendation } from '@core/recommend'
 import { newRemoteCode, remoteStatus, setRemote, setupRemote, stopRemote } from './remote'
@@ -328,6 +329,7 @@ function setupIpc(): void {
   ipcMain.handle('finale:theme', (_e, tvId: number) => themeFor(Number(tvId)))
   ipcMain.handle('finale:image', (event, how: 'copy' | 'save', name: string) => finaleImage(BrowserWindow.fromWebContents(event.sender)!, how === 'save' ? 'save' : 'copy', String(name ?? '')))
   ipcMain.handle('favourites:set', (_e, ref: TitleRef, on: boolean) => saveLibrary(setFavourite(getLibrary(), ref, !!on)))
+  ipcMain.handle('countdowns:set', (_e, ref: TitleRef, on: boolean) => saveLibrary(setCountdown(getLibrary(), ref, !!on)))
   ipcMain.handle('favourites:move', (_e, from: number, to: number) => saveLibrary(moveFavourite(getLibrary(), Number(from), Number(to))))
   ipcMain.handle('shelf:comingSoon', () => attempt(() => tmdb.comingSoonList(getLibrary())))
   ipcMain.handle('shelf:boxSet', (_e, key: string) => attempt(() => tmdb.boxSet(getLibrary(), String(key))))
