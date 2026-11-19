@@ -6,6 +6,7 @@ import {
   type ThemeMode,
 } from "../lib/themeMode";
 import { applyStill, savedStill } from "../lib/motion";
+import { usePremiereMode, type PremiereMode } from "../lib/premiere";
 import { useApp } from "../store/app";
 import { useHomeStyle } from "../lib/homeStyle";
 import KeyForm from "./KeyForm";
@@ -33,6 +34,7 @@ export default function SettingsView(): React.JSX.Element {
   const [cleared, setCleared] = useState(false);
   const home = useHomeStyle();
   const [still, setStill] = useState(savedStill);
+  const premiere = usePremiereMode();
 
   return (
     <Sheet className="settings">
@@ -80,6 +82,36 @@ export default function SettingsView(): React.JSX.Element {
             >
               Classic (legacy)
             </button>
+          </div>
+          <h3 className="card-sub">Premiere night</h3>
+          <p className="muted small">
+            On the day a season you’ve been waiting for comes out, Spotlight
+            Home can turn into that show with a countdown to its UK release
+            time, show just the countdown beside your usual Home, or leave Home
+            as it is.
+          </p>
+          <div
+            className="segmented"
+            role="radiogroup"
+            aria-label="Premiere night"
+          >
+            {(
+              [
+                ["home", "Whole Home"],
+                ["countdown", "Just a countdown"],
+                ["off", "Off"],
+              ] as [PremiereMode, string][]
+            ).map(([mode, label]) => (
+              <button
+                key={mode}
+                role="radio"
+                aria-checked={premiere.mode === mode}
+                className={premiere.mode === mode ? "on" : ""}
+                onClick={() => premiere.set(mode)}
+              >
+                {label}
+              </button>
+            ))}
           </div>
           <h3 className="card-sub">Keep the poster wall still</h3>
           <p className="muted small">

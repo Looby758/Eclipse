@@ -7,6 +7,7 @@ import { normalizeLinks, normalizeMoments } from './watching'
 import { normalizeTaste } from './taste'
 import { normalizePosters } from './posters'
 import { normalizeFavourites } from './favourites'
+import { normalizeCountdowns } from './countdowns'
 
 export type LibraryItem = { key: TitleKey; type: MediaType; id: number; title: TitleSnapshot }
 
@@ -365,6 +366,7 @@ export function normalizeLibrary(raw: unknown): Library {
   const rawPosters = raw && typeof raw === 'object' ? (raw as { posters?: unknown }).posters : undefined
   const rawBackdrops = raw && typeof raw === 'object' ? (raw as { backdrops?: unknown }).backdrops : undefined
   const rawFavourites = raw && typeof raw === 'object' ? (raw as { favourites?: unknown }).favourites : undefined
+  const rawCountdowns = raw && typeof raw === 'object' ? (raw as { countdowns?: unknown }).countdowns : undefined
   const finish = (): Library => {
     const posters = normalizePosters(rawPosters)
     if (posters) lib.posters = posters
@@ -372,6 +374,8 @@ export function normalizeLibrary(raw: unknown): Library {
     if (backdrops) lib.backdrops = backdrops
     const favourites = normalizeFavourites(rawFavourites)
     if (favourites) lib.favourites = favourites
+    const countdowns = normalizeCountdowns(rawCountdowns)
+    if (countdowns) lib.countdowns = countdowns
     const taste = normalizeTaste(rawTaste)
     if (taste) lib.recsTaste = taste
     if (Array.isArray(rawApplied)) {

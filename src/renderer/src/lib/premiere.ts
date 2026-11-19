@@ -137,3 +137,32 @@ function serviceFor(watchedOn: string | undefined, providers: WatchProviders | n
   const p = stream.find((x) => mine.includes(x.id)) ?? stream[0] ?? providers?.free[0]
   return p ? serviceNameOf(p.name) : null
 }
+
+/**
+ * Settings → Appearance → Premiere night: turn all of Home into the show (the usual), show it as a
+ * countdown in the Home column instead, or leave Home alone. Remembered on this computer.
+ */
+export type PremiereMode = 'home' | 'countdown' | 'off'
+
+const MODE = 'eclipse.premiereMode'
+
+function savedMode(): PremiereMode {
+  try {
+    const v = localStorage.getItem(MODE)
+    return v === 'countdown' || v === 'off' ? v : 'home'
+  } catch {
+    return 'home'
+  }
+}
+
+export const usePremiereMode = create<{ mode: PremiereMode; set(mode: PremiereMode): void }>((set) => ({
+  mode: savedMode(),
+  set: (mode) => {
+    try {
+      localStorage.setItem(MODE, mode)
+    } catch {
+      // Not remembered; still applies until Eclipse closes.
+    }
+    set({ mode })
+  }
+}))

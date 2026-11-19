@@ -15,7 +15,8 @@ import OnThisDay from './OnThisDay'
 import { candidates } from './HomeHero'
 import { focusSearch } from './Dock'
 import PremiereNight from './PremiereNight'
-import { seasonId, usePremieres } from '../lib/premiere'
+import { seasonId, usePremieres, usePremiereMode } from '../lib/premiere'
+import Countdowns from './Countdowns'
 
 const NAV: { view: View['name']; label: string; icon: typeof Moon }[] = [
   { view: 'home', label: 'Tonight', icon: Moon },
@@ -54,6 +55,7 @@ export function Pills(): React.JSX.Element {
 function HomeColumn(): React.JSX.Element {
   return (
     <aside className="spot-waiting" aria-label="Home items">
+      <Countdowns />
       <HomeNotes />
       <OnThisDay />
     </aside>
@@ -74,7 +76,9 @@ export default function SpotlightHome(): React.JSX.Element {
   // Phase 50: on the day a season you've been waiting for is out, Home turns into that show.
   const premieres = usePremieres(now)
   const [premiereKey, setPremiereKey] = useState<string | null>(null)
-  const shown = premieres.list.filter((p) => !premieres.hidden(p))
+  // Settings can show it as a countdown in the Home column instead, or not at all.
+  const takeover = usePremiereMode((s) => s.mode === 'home')
+  const shown = takeover ? premieres.list.filter((p) => !premieres.hidden(p)) : []
   const premiere = shown.find((p) => seasonId(p) === premiereKey) ?? shown[0] ?? null
 
   const all = entriesWith(library)

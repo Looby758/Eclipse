@@ -219,6 +219,8 @@ export interface EclipseApi {
   /** Phase 58: hangs a title on the favourites wall (at the end) or takes it down. */
   setFavourite(ref: TitleRef, on: boolean): Promise<Library>
   moveFavourite(from: number, to: number): Promise<Library>
+  /** Adds a countdown to Home (at the end) or takes it off. */
+  setCountdown(ref: TitleRef, on: boolean): Promise<Library>
   /** Phase 59: announced seasons and films you're waiting for, soonest first, for the shelf. */
   comingSoon(): Promise<Result<ComingSoon[]>>
 

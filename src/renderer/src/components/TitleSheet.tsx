@@ -7,6 +7,7 @@ import { DEFAULT_GLOW, hsl, posterGlow, type Hsl } from '../lib/posterColour'
 import Poster from './Poster'
 import PosterPicker from './PosterPicker'
 import { FavouriteButton } from './ShelfSheet'
+import { CountdownButton } from './Countdowns'
 import JourneyRibbon from './JourneyRibbon'
 import { journeyOf } from '@core/journey'
 import { useApp } from '../store/app'
@@ -111,6 +112,7 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
           )}
           <StatusPicker details={d} />
           <WatchSoonToggle details={d} />
+          <CountdownButton className="btn glass fav-toggle" details={d} />
           <FavouriteButton className="btn glass fav-toggle" title={{ key: d.key, type: d.type, id: d.id, name: d.name, year: d.year, posterPath: d.posterPath, date: d.date }} />
           <div className="row" style={{ marginTop: 10 }}>
             <ContinueButton titleKey={d.key} />

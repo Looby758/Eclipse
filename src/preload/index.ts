@@ -46,6 +46,7 @@ const api: EclipseApi = {
   setBackdrop: (key, path) => ipcRenderer.invoke('backdrops:set', key, path),
   setFavourite: (ref, on) => ipcRenderer.invoke('favourites:set', ref, on),
   moveFavourite: (from, to) => ipcRenderer.invoke('favourites:move', from, to),
+  setCountdown: (ref, on) => ipcRenderer.invoke('countdowns:set', ref, on),
   comingSoon: () => ipcRenderer.invoke('shelf:comingSoon'),
 
   getLibrary: () => ipcRenderer.invoke('library:get'),
