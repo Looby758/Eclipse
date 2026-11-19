@@ -5,7 +5,7 @@ import { localDate } from '@core/library'
 const DAY = 86400000
 const toMs = (d: string): number => Date.parse(`${d}T12:00:00Z`)
 /** The narrowest a season can be drawn, as a share of the ribbon, so a binge still shows. */
-const MIN_W = 2.6
+const MIN_W = 4
 const NUDGE = 0.5
 
 /**

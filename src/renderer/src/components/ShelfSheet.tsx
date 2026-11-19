@@ -19,8 +19,15 @@ const FIRST = 60
  * everything you've finished. Beside it, the favourites wall (phase 58): your all-time top films
  * and shows as framed posters, in your order.
  */
-export default function ShelfSheet({ room = 'shelf' }: { room?: Room }): React.JSX.Element {
-  const [here, setHere] = useState<Room>(room)
+/** The room you were last in, so coming back from a title page lands where you left (and the poster shrinks back into place). */
+let lastRoom: Room = 'shelf'
+
+export default function ShelfSheet({ room }: { room?: Room }): React.JSX.Element {
+  const [here, setRoom] = useState<Room>(room ?? lastRoom)
+  const setHere = (r: Room): void => {
+    lastRoom = r
+    setRoom(r)
+  }
   const favourites = useApp((s) => s.library.favourites?.length ?? 0)
   return (
     <Sheet className="shelf-sheet">

@@ -76,7 +76,7 @@
   /* Phase 56: the poster that grows into its title page */
   --zoom-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
   /* Phase 57: the journey ribbon */
-  --journey-h: 30px;
+  --journey-h: 34px;
   --journey-track: rgba(255, 255, 255, 0.06);
   --journey-hatch: rgba(255, 255, 255, 0.1);
   /* The shelf: planks, box sets and shrink-wrap (phase 59) */

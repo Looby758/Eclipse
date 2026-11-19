@@ -298,6 +298,17 @@ Export this doc as Markdown and save it in the project as `PLAN.md`. Then start 
 
 ## Progress log
 
+**Phases 55 to 60 (built, waiting for you to try them)**
+
+- **55, choose your own posters:** on a title page, **Change poster** (a pill on the Spotlight page, and under the poster on the Classic page when you hover it) opens every poster TMDB has in English or with no text, the usual one first and marked *Usual*. The one you pick is used everywhere: the wall, the shelf, the favourites wall, Home, Library, lists, search and the phone page. **Reset to the usual poster** goes back. Eclipse never asks about posters on its own. Saved in the library (`posters`), so both computers agree.
+- **56, opening a poster zooms into it:** clicking a poster anywhere (the wall, the shelf, a list, Library, search, Home) grows it smoothly from where it sat to fill the window, and the title page comes up through it; Back shrinks it into the same place. *Keep the poster wall still* (or the computer's reduce-animations setting) makes it a quick fade instead.
+- **57, your journey with a show:** **Your journey** on a show's page (a pill on Spotlight, a card on Classic) once you've reached two seasons. Each watch gets its own ribbon (*First time*, *Rewatch*, *With Sam*), each season a block placed on the calendar from your first tick in it to your last, with breaks of six weeks or more labelled ("8 months"), a line for today while it's going, and a list underneath ("Season 3: 10 to 25 September 2024 (16 days), 16 of 16 episodes"). Seasons seen before Eclipse sit at the start under *Before*. Seasons you haven't reached aren't shown. Clicking a season opens its episodes.
+- **58, favourites wall:** **Add to favourites** (a heart) on any title page. The new **Shelf** page (in the dock and the top pills) has a *Favourites wall* tab: framed posters on wires with a name plaque, in your order. Drag to reorder, or use the arrows on hover; ✕ takes one down. Up to 30. Saved in the library (`favourites`).
+- **59, coming soon on the shelf:** the Shelf tab starts with *Coming soon*: the next season of every show you're watching or have watched (not stopped, not ended) that hasn't started, and films on your watchlist not out yet (UK cinema date first), shrink-wrapped with a date sticker (or *Date TBA*), soonest first. On release day the wrap peels off and the sticker says *Out today*; a week later it leaves. Under it, *Finished*: a box set for everything you've finished, most recent first.
+- **60, ticking feels good:** ticking an episode fills its dot like ink with a ripple and a pop, its bar in *Every episode, by rating* fills up from the bottom, the new progress ring beside "61 / 171 episodes watched" jumps and flashes, and Home's **Tick it** check pops. *Keep the poster wall still* turns all of that down to just the change of colour.
+- Decisions: phase 52 (the shelf) isn't built, so 59 came with a simple shelf: box sets that open the title page, without 52's dates, hours and credits card. Release day unwraps on the shelf itself; tying it into premiere night (50) waits for 50. No new packages.
+
+
 **Phase 1: Foundation (done, merged)**
 
 - Done: Electron + React + TypeScript project set up like Orbit (electron-vite, Vitest, `area:action` IPC names, settings.json written safely, single-instance lock, Orbit-style title bar).
