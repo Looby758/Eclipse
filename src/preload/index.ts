@@ -49,6 +49,7 @@ const api: EclipseApi = {
   finaleTheme: (tvId) => ipcRenderer.invoke('finale:theme', tvId),
   finaleImage: (how, name) => ipcRenderer.invoke('finale:image', how, name),
   moveFavourite: (from, to) => ipcRenderer.invoke('favourites:move', from, to),
+  setCountdown: (ref, on) => ipcRenderer.invoke('countdowns:set', ref, on),
   comingSoon: () => ipcRenderer.invoke('shelf:comingSoon'),
   boxSet: (key) => ipcRenderer.invoke('shelf:boxSet', key),
 
@@ -66,6 +67,7 @@ const api: EclipseApi = {
   removeRewatch: (key, index) => ipcRenderer.invoke('library:removeRewatch', key, index),
   setRating: (key, rating) => ipcRenderer.invoke('library:setRating', key, rating),
   setNote: (key, note) => ipcRenderer.invoke('library:setNote', key, note),
+  setReaction: (key, episode, reaction) => ipcRenderer.invoke('library:setReaction', key, episode, reaction),
   dropTitle: (key) => ipcRenderer.invoke('library:drop', key),
   restoreDropped: (key) => ipcRenderer.invoke('library:restore', key),
   setFrom: (key, from) => ipcRenderer.invoke('library:setFrom', key, from),
