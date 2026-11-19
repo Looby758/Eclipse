@@ -48,6 +48,9 @@
   --spot-on-pri: #121428;
   --spot-hi: #8fe3ff;
   --spot-hi-2: #b4a2ff;
+  /* Premiere night (phase 50): the countdown digits, "It's out", and the glow once it is */
+  --premiere-digits: 56px;
+  --premiere-glow: rgba(143, 227, 255, 0.45);
 
   /* Frosted glass (Spotlight's pages) */
   --frost-veil: rgba(8, 9, 20, 0.28);
@@ -238,6 +241,7 @@
     --spot-on-pri: #ffffff;
     --spot-hi: #2f6bff;
     --spot-hi-2: #7a4dff;
+    --premiere-glow: rgba(47, 107, 255, 0.3);
   --frost-veil: rgba(238, 240, 251, 0.3);
   --frost-sheet: rgba(255, 255, 255, 0.5);
   --frost-pane: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.4));
@@ -304,6 +308,7 @@
   --spot-on-pri: #ffffff;
   --spot-hi: #2f6bff;
   --spot-hi-2: #7a4dff;
+  --premiere-glow: rgba(47, 107, 255, 0.3);
   --frost-veil: rgba(238, 240, 251, 0.3);
   --frost-sheet: rgba(255, 255, 255, 0.5);
   --frost-pane: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.4));

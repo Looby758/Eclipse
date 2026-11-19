@@ -1,6 +1,7 @@
-import type { LibraryEntry, SeasonDetails } from './types'
+import type { LibraryEntry, Reaction, SeasonDetails } from './types'
 import { episodeKey } from './types'
 import { nextEpisodeFor } from './library'
+import { disagreement } from './reactions'
 
 /**
  * "Does it get good?": a show's episodes as a grid, one row per season, coloured by TMDB rating.
@@ -97,4 +98,41 @@ export function buildHeatmap(seasons: SeasonDetails[], entry: LibraryEntry | und
 export function heatColour(rating: number, low: number, high: number): { h: number; s: number; l: number } {
   const t = Math.min(1, Math.max(0, (rating - low) / (high - low || 1)))
   return { h: Math.round(330 - t * 140), s: 85, l: Math.round(34 + t * 26) }
+}
+
+// ---- Phase 47: Mine, beside TMDB's ----
+
+export interface MineCell {
+  cell: HeatCell
+  reaction: Reaction
+  /** Where you and everyone else disagree (see reactions.ts): you loved a low one, or a high one dragged. */
+  differs: 'loved' | 'dragged' | null
+}
+
+export interface MineSummary {
+  /** Your reactions on this show's grid, by "S1E3". */
+  cells: Record<string, MineCell>
+  counts: Record<Reaction, number>
+  total: number
+  /** The disagreements, biggest gap first. */
+  differ: MineCell[]
+}
+
+/** Your reactions laid over the heatmap, with where they disagree with TMDB's ratings. */
+export function compareMine(map: Heatmap, reactions: Record<string, Reaction>): MineSummary {
+  const counts: Record<Reaction, number> = { cry: 0, fire: 0, laugh: 0, sleep: 0, wow: 0 }
+  const cells: Record<string, MineCell> = {}
+  for (const row of map.rows)
+    for (const cell of row.cells) {
+      const k = episodeKey(cell.season, cell.episode)
+      const reaction = reactions[k]
+      if (!reaction) continue
+      counts[reaction]++
+      cells[k] = { cell, reaction, differs: cell.trusted ? disagreement(reaction, cell.rating, map.low, map.high) : null }
+    }
+  const gap = (m: MineCell): number => (m.differs === 'dragged' ? m.cell.rating! - map.low : map.high - m.cell.rating!)
+  const differ = Object.values(cells)
+    .filter((m) => m.differs)
+    .sort((a, b) => gap(b) - gap(a))
+  return { cells, counts, total: Object.keys(cells).length, differ }
 }

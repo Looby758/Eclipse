@@ -1,6 +1,7 @@
 import { activeEntry } from './library'
 import { lastTicked } from './nudges'
 import { learn, leaning } from './taste'
+import { reactionWeight } from './reactions'
 import type { Library, LibraryEntry, SearchResult, Taste, Trait } from './types'
 
 /**
@@ -42,7 +43,8 @@ function lastWatched(e: LibraryEntry): string | null {
 
 /**
  * The titles to recommend from: what you've watched or are watching (not stopped, and not ones you
- * rated 5 or under), weighted by your rating and how recently you watched. The strongest `max`.
+ * rated 5 or under), weighted by your rating, how its episodes hit you (phase 47) and how recently
+ * you watched. The strongest `max`.
  */
 export function seedsOf(library: Library, now: Date, max = 15): Seed[] {
   const seeds: Seed[] = []
@@ -56,7 +58,9 @@ export function seedsOf(library: Library, now: Date, max = 15): Seed[] {
     const recency = 0.25 + 0.75 * Math.exp(-Math.max(0, ageDays) / 365)
     const liked = raw.rating !== undefined ? (raw.rating >= 9 ? 1.6 : raw.rating >= 8 ? 1.3 : 1) : 1
     const watching = e.status === 'watching' ? 1.2 : 1
-    seeds.push({ key: raw.key, name: raw.title.name, weight: recency * liked * watching })
+    // Phase 47: shows whose episodes hit you (😭 🔥 🤯) count for more, ones that dragged (😴) for less.
+    const felt = reactionWeight(raw)
+    seeds.push({ key: raw.key, name: raw.title.name, weight: recency * liked * watching * felt })
   }
   return seeds.sort((a, b) => b.weight - a.weight || a.name.localeCompare(b.name)).slice(0, max)
 }

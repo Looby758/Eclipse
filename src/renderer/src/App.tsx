@@ -25,9 +25,11 @@ import ListsSheet from './components/ListsSheet'
 import ShelfSheet from './components/ShelfSheet'
 import ListSheet from './components/ListSheet'
 import SpotlightHome from './components/SpotlightHome'
+import Countdowns from './components/Countdowns'
 import Logo from './components/Logo'
 import UndoBar from './components/UndoBar'
 import MilestoneNote from './components/MilestoneNote'
+import ReactionAsk from './components/ReactionAsk'
 import StartAsk from './components/StartAsk'
 import PhoneAsk from './components/PhoneAsk'
 import ZoomLayer from './components/ZoomLayer'
@@ -133,6 +135,7 @@ export default function App(): React.JSX.Element {
             <>
               <HomeHero />
               <aside className="home-side">
+                <Countdowns />
                 <HomeNotes />
                 <OnThisDay />
               </aside>
@@ -161,6 +164,7 @@ export default function App(): React.JSX.Element {
           <Dock tucked={spot || (view.name === 'title' && homeStyle === 'spotlight')} />
           <UndoBar />
           <MilestoneNote />
+          <ReactionAsk />
           <StartAsk />
           <PhoneAsk />
           <ZoomLayer />

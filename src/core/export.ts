@@ -1,5 +1,5 @@
-import type { Library, LibraryEntry } from './types'
-import { STATUS_LABELS, UNDATED, parseEpisodeKey } from './types'
+import type { Library, LibraryEntry, Reaction } from './types'
+import { REACTIONS, STATUS_LABELS, UNDATED, parseEpisodeKey } from './types'
 import { tmdbPageUrl } from './tmdb'
 import { watchCount } from './library'
 
@@ -57,8 +57,14 @@ export function titlesCsv(library: Library): string {
 }
 
 /** Every episode you've ticked, first watch and rewatches, in order. */
+/** Phase 47: how the episode hit you, as "🔥 Brilliant" (empty when you didn't say). */
+function felt(reactions: Record<string, Reaction> | undefined, season: number, episode: number): string {
+  const r = reactions?.[`S${season}E${episode}`]
+  return r ? `${REACTIONS[r].emoji} ${REACTIONS[r].label}` : ''
+}
+
 export function episodesCsv(library: Library): string {
-  const rows: (string | number | null | undefined)[][] = [['Show', 'Season', 'Episode', 'Watched on', 'Watch']]
+  const rows: (string | number | null | undefined)[][] = [['Show', 'Season', 'Episode', 'Watched on', 'Watch', 'Reaction']]
   const order = (ticks: Record<string, string>): [number, number, string][] =>
     Object.entries(ticks)
       .map(([k, v]) => ({ ep: parseEpisodeKey(k), v }))
@@ -66,9 +72,9 @@ export function episodesCsv(library: Library): string {
       .map((x) => [x.ep!.season, x.ep!.episode, x.v] as [number, number, string])
       .sort((a, b) => a[0] - b[0] || a[1] - b[1])
   for (const e of Object.values(library.entries).filter((x) => x.type === 'tv').sort(byName)) {
-    for (const [s, n, v] of order(e.episodes ?? {})) rows.push([e.title.name, s, n, day(v), 'First watch'])
+    for (const [s, n, v] of order(e.episodes ?? {})) rows.push([e.title.name, s, n, day(v), 'First watch', felt(e.reactions, s, n)])
     ;(e.rewatches ?? []).forEach((r, i) => {
-      for (const [s, n, v] of order(r.episodes ?? {})) rows.push([e.title.name, s, n, day(v), r.with ? `With ${r.with}` : `Rewatch ${i + 1}`])
+      for (const [s, n, v] of order(r.episodes ?? {})) rows.push([e.title.name, s, n, day(v), r.with ? `With ${r.with}` : `Rewatch ${i + 1}`, felt(r.reactions, s, n)])
     })
   }
   return toCsv(rows)
@@ -112,7 +118,7 @@ const README = `Your Eclipse data
 library.json   Everything, exactly as Eclipse saves it. Eclipse can open it again: put it in a
                folder and choose that folder in Settings > Data folder.
 titles.csv     Every film and show in your library, with status, dates, ratings and notes.
-episodes.csv   Every episode you've ticked, including rewatches.
+episodes.csv   Every episode you've ticked, including rewatches, and how it hit you.
 rewatches.csv  Each time you watched something again.
 lists.csv      Watch soon, your own lists with their titles, and the lists you follow.
 

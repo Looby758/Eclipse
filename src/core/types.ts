@@ -119,6 +119,8 @@ export interface LibraryEntry {
   rating?: number
   /** Shows: the episodes you've seen, by episodeKey ("S1E3"), each with the day you ticked it ("seen" when there's no date). */
   episodes?: Record<string, string>
+  /** Phase 47: how each episode of your first watch hit you, by episodeKey (only ticked ones). */
+  reactions?: Record<string, Reaction>
   /** Watched before you used Eclipse (or Sequel), with no date. */
   seenBefore?: boolean
   /** Times you've watched it again, oldest first. The last one may still be going (no finishedOn). */
@@ -141,6 +143,8 @@ export interface Rewatch {
   finishedOn?: string
   /** Shows: this rewatch's own episode ticks, by episodeKey, each with its day. */
   episodes?: Record<string, string>
+  /** Phase 47: how each episode hit you this time, by episodeKey (only ticked ones). */
+  reactions?: Record<string, Reaction>
   /** Watching with someone ("Sam"): kept apart from your own progress, and several can run at once. */
   with?: string
   /** Watching with someone: the next time you've arranged, and whether it's the same time every week. */
@@ -155,6 +159,21 @@ export interface PlannedTime {
 
 /** A milestone's id (phase 53): its measure and step, e.g. "episodes:1000", "hours:tv:1402:100", "genre:Drama:25". */
 export const MILESTONE_ID = /^[a-z]+(:[^:\n]{1,80}){0,2}:\d+$/
+/**
+ * Phase 47, "My own heatmap": the one-tap answer to how an episode hit you.
+ * 😭 wrecked, 🔥 brilliant, 😂 funny, 😴 dragged, 🤯 mind-blown.
+ */
+export type Reaction = 'cry' | 'fire' | 'laugh' | 'sleep' | 'wow'
+
+export const REACTION_LIST: Reaction[] = ['cry', 'fire', 'laugh', 'sleep', 'wow']
+
+export const REACTIONS: Record<Reaction, { emoji: string; label: string }> = {
+  cry: { emoji: '😭', label: 'Wrecked me' },
+  fire: { emoji: '🔥', label: 'Brilliant' },
+  laugh: { emoji: '😂', label: 'Made me laugh' },
+  sleep: { emoji: '😴', label: 'Dragged' },
+  wow: { emoji: '🤯', label: 'Mind-blown' }
+}
 
 /** An episode ticked as seen with no date (watched before Eclipse). */
 export const UNDATED = 'seen'
@@ -264,6 +283,8 @@ export interface Library {
   favourites?: TitleRef[]
   /** Milestones already shown (phase 53), e.g. "episodes:1000" or "hours:tv:1402:100", so each shows only once. */
   milestones?: string[]
+  /** Countdowns on Home: films and shows you're waiting for, in the order you added them. */
+  countdowns?: TitleRef[]
 }
 
 /**

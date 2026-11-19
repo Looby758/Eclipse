@@ -30,10 +30,10 @@ describe('export', () => {
 
   it('lists every episode ticked, first watch and rewatches', () => {
     expect(episodesCsv(sample()).slice(1).trim().split('\r\n')).toEqual([
-      'Show,Season,Episode,Watched on,Watch',
-      'Breaking Bad,1,1,2024-03-02,First watch',
-      'Breaking Bad,1,2,2024-03-02,First watch',
-      'Breaking Bad,1,1,2026-11-02,Rewatch 1'
+      'Show,Season,Episode,Watched on,Watch,Reaction',
+      'Breaking Bad,1,1,2024-03-02,First watch,',
+      'Breaking Bad,1,2,2024-03-02,First watch,',
+      'Breaking Bad,1,1,2026-11-02,Rewatch 1,'
     ])
     expect(rewatchesCsv(sample())).toContain('Breaking Bad,Show,1,2026-11-01,still going')
   })
