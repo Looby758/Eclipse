@@ -27,6 +27,7 @@ import WhereToWatch from './WhereToWatch'
 import TitleLinks from './TitleLinks'
 import Credits from './Credits'
 import PosterPicker from './PosterPicker'
+import TickRing from './TickRing'
 import { FavouriteButton } from './ShelfSheet'
 import JourneyRibbon from './JourneyRibbon'
 import { journeyOf } from '@core/journey'
@@ -255,6 +256,7 @@ export default function SpotlightTitle({ type, id }: { type: MediaType; id: numb
           <div className="st-right">
             {count && count.total > 0 && (
               <div className="st-count">
+                <TickRing seen={count.seen} total={count.total} />
                 <b>
                   {count.seen}
                   <small> / {count.total}</small>

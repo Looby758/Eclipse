@@ -65,6 +65,8 @@ export default function SpotlightHome(): React.JSX.Element {
   const [skip, setSkip] = useState(0)
   const [details, setDetails] = useState<TitleDetails | null>(null)
   const [busy, setBusy] = useState(false)
+  // Phase 60: the tick mark pops each time Tick it works.
+  const [ticked, setTicked] = useState(0)
   const [now, setNow] = useState(() => new Date())
   const prefs = preferencesOf(library)
 
@@ -150,12 +152,13 @@ export default function SpotlightHome(): React.JSX.Element {
                       try {
                         const ep = [episodeKey(next.season, next.episode)]
                         setLibrary(isTogether(pick) ? await window.api.tickWith(pick.key, pick.together.index, ep, true) : await window.api.setEpisodes(itemOf(details!), ep, true))
+                        setTicked((n) => n + 1)
                       } finally {
                         setBusy(false)
                       }
                     }}
                   >
-                    <Check size={17} /> Tick it
+                    <Check key={ticked} size={17} className={ticked ? 'tick-pop' : ''} /> Tick it
                   </button>
                 ) : (
                   <button className="spot-btn pri" onClick={open}>

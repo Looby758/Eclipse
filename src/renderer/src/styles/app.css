@@ -1116,3 +1116,32 @@ select:hover { border-color: var(--accent); }
 .fav-empty p { margin: 0; max-width: 440px; }
 .fav-toggle.lit { color: var(--fav); border-color: var(--fav); }
 .st-chip.lit svg[fill='currentColor'] { color: var(--fav); }
+
+/* Phase 60: ticking feels good. A dot fills like ink, the bar fills up, the ring jumps. */
+.timeline-dot { position: relative; overflow: hidden; }
+.timeline-dot.inked { animation: ink-pop 0.55s var(--ease); }
+.timeline-dot.inked::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: var(--ink); animation: ink-spread 0.6s var(--ease) both; }
+.timeline-dot.inked::after { content: ''; position: absolute; inset: -2px; border-radius: 50%; box-shadow: 0 0 0 2px var(--cyan); animation: ink-ring 0.7s ease-out both; }
+.timeline-dot.inked svg { position: relative; z-index: 1; animation: ink-check 0.45s var(--ease) 0.15s both; }
+@keyframes ink-spread { from { transform: scale(0.1); opacity: 0.95; } 70% { opacity: 0.7; } to { transform: scale(1.4); opacity: 0; } }
+@keyframes ink-pop { 0% { transform: scale(1); } 35% { transform: scale(1.22); } 100% { transform: scale(1); } }
+@keyframes ink-ring { from { transform: scale(0.9); opacity: 0.9; } to { transform: scale(1.7); opacity: 0; } }
+@keyframes ink-check { from { transform: scale(0.3) rotate(-25deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.st-bar.inked { animation: bar-fill 0.7s var(--ease) both; }
+@keyframes bar-fill { 0% { transform: scaleY(0.15); filter: brightness(2); } 60% { transform: scaleY(1.12); } 100% { transform: scaleY(1); filter: none; } }
+.st-count { display: grid; grid-template-columns: auto auto; column-gap: 16px; align-items: center; }
+.st-count > .tick-ring { grid-row: 1 / span 3; grid-column: 1; }
+.st-count > :not(.tick-ring) { grid-column: 2; }
+.tick-ring { overflow: visible; }
+.tick-ring-track { fill: none; stroke: var(--ring-track); stroke-width: 6; }
+.tick-ring-fill { fill: none; stroke: var(--ring-fill); stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 0.6s var(--ease); filter: drop-shadow(0 0 6px var(--halo)); }
+.tick-ring-flash { fill: none; stroke: var(--cyan); stroke-width: 3; transform-box: fill-box; transform-origin: center; animation: ink-ring 0.7s ease-out both; }
+.tick-pop { animation: ink-check 0.45s var(--ease) both; }
+/* Keep the poster wall still: no pops or ripples, just the change of colour. */
+:root[data-still] .timeline-dot.inked, :root[data-still] .timeline-dot.inked::before, :root[data-still] .timeline-dot.inked::after, :root[data-still] .timeline-dot.inked svg,
+:root[data-still] .st-bar.inked, :root[data-still] .tick-ring-flash, :root[data-still] .tick-pop { animation: none; }
+:root[data-still] .timeline-dot.inked::before, :root[data-still] .timeline-dot.inked::after, :root[data-still] .tick-ring-flash { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .timeline-dot.inked, .timeline-dot.inked svg, .st-bar.inked, .tick-pop { animation: none; }
+  .timeline-dot.inked::before, .timeline-dot.inked::after, .tick-ring-flash { display: none; }
+}

@@ -98,6 +98,10 @@
   --plaque: linear-gradient(180deg, #d9dcef, #aab0d4);
   --plaque-text: #14172e;
   --fav: #ff7ab8;
+  /* Phase 60: ticking (the ink in a dot, the progress ring) */
+  --ink: radial-gradient(circle, #ffffff, var(--cyan) 45%, var(--accent) 80%);
+  --ring-track: rgba(255, 255, 255, 0.16);
+  --ring-fill: #8fe3ff;
 
   /* Text */
   --text-strong: #ffffff;
