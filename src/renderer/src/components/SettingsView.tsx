@@ -6,6 +6,7 @@ import {
   type ThemeMode,
 } from "../lib/themeMode";
 import { applyStill, savedStill } from "../lib/motion";
+import { setStarWhy, useStarWhy } from "../lib/starWhy";
 import { usePremiereMode, type PremiereMode } from "../lib/premiere";
 import { useApp } from "../store/app";
 import { useHomeStyle } from "../lib/homeStyle";
@@ -34,6 +35,7 @@ export default function SettingsView(): React.JSX.Element {
   const [cleared, setCleared] = useState(false);
   const home = useHomeStyle();
   const [still, setStill] = useState(savedStill);
+  const starWhy = useStarWhy();
   const premiere = usePremiereMode();
 
   return (
@@ -139,6 +141,33 @@ export default function SettingsView(): React.JSX.Element {
               onClick={() => (setStill(true), applyStill(true))}
             >
               Still
+            </button>
+          </div>
+          <h3 className="card-sub">Star maps: why things connect</h3>
+          <p className="muted small">
+            Names each dotted line on a watch order’s star map, like “Morgan”
+            between The Walking Dead and Fear.
+          </p>
+          <div
+            className="segmented"
+            role="radiogroup"
+            aria-label="Star maps: why things connect"
+          >
+            <button
+              role="radio"
+              aria-checked={!starWhy}
+              className={!starWhy ? "on" : ""}
+              onClick={() => setStarWhy(false)}
+            >
+              Hidden
+            </button>
+            <button
+              role="radio"
+              aria-checked={starWhy}
+              className={starWhy ? "on" : ""}
+              onClick={() => setStarWhy(true)}
+            >
+              Shown
             </button>
           </div>
         </section>

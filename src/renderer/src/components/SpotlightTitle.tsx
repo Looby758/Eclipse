@@ -31,6 +31,7 @@ import TickRing from './TickRing'
 import { FavouriteButton } from './ShelfSheet'
 import { CountdownButton } from './Countdowns'
 import JourneyRibbon from './JourneyRibbon'
+import TitleSky from './TitleSky'
 import { journeyOf } from '@core/journey'
 
 const ICONS: Record<WatchStatus, typeof Bookmark> = { want: Bookmark, watching: CirclePlay, watched: CircleCheck, stopped: CirclePause }
@@ -205,6 +206,15 @@ export default function SpotlightTitle({ type, id }: { type: MediaType; id: numb
   return (
     <div
       className={`stitle ${bare ? 'bare' : ''}`}
+      onScroll={(e) => {
+        // Phase 49: blur the picture into a night sky as you scroll down into the star map.
+        const el = e.currentTarget
+        const sky = el.querySelector<HTMLElement>('.st-sky')
+        if (!sky) return
+        const p = Math.min(1, Math.max(0, 1 - (sky.offsetTop - el.scrollTop) / el.clientHeight))
+        el.style.setProperty('--sky', p.toFixed(3))
+        el.querySelector('.st-sky-head')?.classList.toggle('on', p > 0.8)
+      }}
       onClickCapture={(e) => {
         if (!bare) return
         e.stopPropagation()
@@ -284,6 +294,7 @@ export default function SpotlightTitle({ type, id }: { type: MediaType; id: numb
           <UniverseStrip name={name} items={universe.items} onAll={() => setPanel('universe')} />
         </div>
       </div>
+      <TitleSky details={d} logo={logo} canTick={canTick} busy={busy} onTick={tickIt} />
 
       {panel && (
         <Drawer title={panel === 'universe' ? `${name} universe` : (pills.find((p) => p.id === panel)?.label ?? '')} onClose={() => setPanel(null)}>

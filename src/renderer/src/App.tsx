@@ -154,7 +154,7 @@ export default function App(): React.JSX.Element {
           {view.name === 'repair' && <RepairSheet />}
           {view.name === 'stats' && <StatsSheet />}
           {view.name === 'year' && <YearSheet key={view.year ?? 'now'} year={view.year} />}
-          {view.name === 'list' && <ListSheet key={view.id} id={view.id} />}
+          {view.name === 'list' && <ListSheet key={`${view.id}${view.map ? ':map' : ''}`} id={view.id} map={view.map} />}
           {view.name === 'title' &&
             (homeStyle === 'spotlight' ? (
               <SpotlightTitle key={`${view.type}:${view.id}`} type={view.type} id={view.id} />
