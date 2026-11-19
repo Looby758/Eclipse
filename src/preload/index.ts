@@ -46,6 +46,8 @@ const api: EclipseApi = {
   backdropOptions: (type, id) => ipcRenderer.invoke('backdrops:list', type, id),
   setBackdrop: (key, path) => ipcRenderer.invoke('backdrops:set', key, path),
   setFavourite: (ref, on) => ipcRenderer.invoke('favourites:set', ref, on),
+  finaleTheme: (tvId) => ipcRenderer.invoke('finale:theme', tvId),
+  finaleImage: (how, name) => ipcRenderer.invoke('finale:image', how, name),
   moveFavourite: (from, to) => ipcRenderer.invoke('favourites:move', from, to),
   comingSoon: () => ipcRenderer.invoke('shelf:comingSoon'),
 

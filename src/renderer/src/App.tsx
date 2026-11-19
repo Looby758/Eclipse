@@ -29,6 +29,8 @@ import UndoBar from './components/UndoBar'
 import StartAsk from './components/StartAsk'
 import PhoneAsk from './components/PhoneAsk'
 import ZoomLayer from './components/ZoomLayer'
+import Finale from './components/Finale'
+import { useFinaleWatcher } from './lib/finale'
 import Opening from './components/Opening'
 import { shouldPlayOpening } from './lib/opening'
 import { useHomeStyle } from './lib/homeStyle'
@@ -43,6 +45,7 @@ export default function App(): React.JSX.Element {
   const homeStyle = useHomeStyle((s) => s.style)
   const welcoming = useWelcome((s) => s.step !== null)
   const { setStatus, setLibrary, back, go } = useApp.getState()
+  useFinaleWatcher()
   // Phase 51: the opening, while it plays ('play'), then while Home fades up ('reveal').
   const [opening, setOpening] = useState<'off' | 'play' | 'reveal'>('off')
 
@@ -153,6 +156,7 @@ export default function App(): React.JSX.Element {
           <StartAsk />
           <PhoneAsk />
           <ZoomLayer />
+          <Finale />
         </>
       )}
     </div>
