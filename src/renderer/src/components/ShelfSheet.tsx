@@ -8,6 +8,7 @@ import type { TitleRef } from '@core/types'
 import { useApp } from '../store/app'
 import Sheet from './Sheet'
 import Poster from './Poster'
+import { usePremieres } from '../lib/premiere'
 
 type Room = 'shelf' | 'favourites'
 
@@ -54,6 +55,14 @@ function Shelf(): React.JSX.Element {
   const [error, setError] = useState('')
   const [all, setAll] = useState(false)
   const keys = Object.keys(library.entries).sort().join(',')
+  // Phase 50: a season out today keeps its wrap until its UK release time, when Home says "It's out".
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 30_000)
+    return () => clearInterval(t)
+  }, [])
+  const premieres = usePremieres(now)
+  const premiereOf = (c: ComingSoon) => premieres.all.find((p) => p.item.key === c.key && p.item.season === c.season)
 
   useEffect(() => {
     let live = true
@@ -80,17 +89,23 @@ function Shelf(): React.JSX.Element {
       {soon && !soon.length && <p className="muted">Nothing announced yet for the shows you watch or the films on your watchlist.</p>}
       {soon && soon.length > 0 && (
         <div className="shelf-row soon">
-          {soon.map((c) => (
-            <button key={`${c.key}:${c.season ?? ''}`} className={`box ${c.out ? 'out' : 'wrapped'}`} onClick={() => go({ name: 'title', type: c.type, id: c.id })} title={c.name}>
-              <span className="box-art">
-                <Poster path={c.posterPath} type={c.type} id={c.id} name={c.name} size="w185" />
-                {c.out ? <span className="box-wrap-off" aria-hidden /> : <span className="box-wrap" aria-hidden />}
-                <span className={`box-sticker ${c.out ? 'out' : ''}`}>{c.out ? (c.date === localDate(new Date()) ? 'Out today' : 'Out now') : c.date ? shortDate(c.date) : 'Date TBA'}</span>
-              </span>
-              <span className="box-name">{c.name}</span>
-              <span className="box-meta">{c.label}</span>
-            </button>
-          ))}
+          {soon.map((c) => {
+            const p = premiereOf(c)
+            const wait = p && now < p.at ? p : undefined
+            return (
+              <button key={`${c.key}:${c.season ?? ''}`} className={`box ${c.out && !wait ? 'out' : 'wrapped'}`} onClick={() => go({ name: 'title', type: c.type, id: c.id })} title={c.name}>
+                <span className="box-art">
+                  <Poster path={c.posterPath} type={c.type} id={c.id} name={c.name} size="w185" />
+                  {c.out && !wait ? <span className="box-wrap-off" aria-hidden /> : <span className="box-wrap" aria-hidden />}
+                  <span className={`box-sticker ${c.out && !wait ? 'out' : ''}`}>
+                    {wait ? `${wait.day === localDate(now) ? 'Today' : 'Tomorrow'} ${wait.time}` : c.out ? ((p?.day ?? c.date) === localDate(now) ? 'Out today' : 'Out now') : c.date ? shortDate(c.date) : 'Date TBA'}
+                  </span>
+                </span>
+                <span className="box-name">{c.name}</span>
+                <span className="box-meta">{c.label}</span>
+              </button>
+            )
+          })}
         </div>
       )}
 

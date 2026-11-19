@@ -1183,3 +1183,25 @@ select:hover { border-color: var(--accent); }
 /* "Change background": wide pictures in two or three columns */
 .poster-grid.wide { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
 .poster-grid.wide .poster-option { aspect-ratio: 16 / 9; }
+
+/* ---- Premiere night (phase 50): Home turns into the show that's out today ---- */
+.premiere-fill { fill: none; stroke: var(--spot-hi); stroke-width: 10; stroke-linecap: round; filter: drop-shadow(0 0 8px var(--spot-hi)); }
+.premiere.is-out .premiere-fill { animation: premiere-glow 2.6s ease-in-out infinite; }
+@keyframes premiere-glow { 50% { filter: drop-shadow(0 0 18px var(--spot-hi)) drop-shadow(0 0 30px var(--spot-hi-2)); } }
+.premiere.is-out .spot-poster { box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), 0 0 60px var(--premiere-glow); }
+.premiere-eyebrow { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 99px; font: 600 12px var(--font-ui); letter-spacing: 0.08em; text-transform: uppercase; color: var(--spot-hi); background: var(--spot-glass); border: 1px solid var(--line); backdrop-filter: blur(14px); }
+.premiere-clock { display: flex; align-items: baseline; gap: 4px; font-family: var(--font-display); color: var(--text-strong); font-variant-numeric: tabular-nums; }
+.premiere-clock b { font-size: var(--premiere-digits); font-weight: 600; letter-spacing: -0.02em; line-height: 1; }
+.premiere-clock small { font-size: 16px; color: var(--text-muted); margin-right: 10px; }
+.premiere-clock small:last-child { margin-right: 0; }
+.spot-under .premiere-out { font: 700 var(--premiere-digits) / 1 var(--font-display); letter-spacing: -0.02em; color: var(--spot-hi); text-shadow: 0 0 28px var(--premiere-glow); animation: premiere-in 0.7s var(--ease) both; }
+@keyframes premiere-in { from { opacity: 0; transform: scale(0.9); } }
+.premiere-small { display: flex; gap: 16px; justify-content: center; }
+.premiere-link { display: inline-flex; align-items: center; gap: 5px; padding: 2px 0; border: none; background: none; color: var(--text-muted); font: 500 13px var(--font-ui); cursor: pointer; }
+.premiere-link:hover { color: var(--text); text-decoration: underline; }
+.premiere-time { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; padding: 10px 14px; border-radius: 16px; background: var(--spot-glass); border: 1px solid var(--line); backdrop-filter: blur(14px); font-size: 13px; color: var(--text-muted); }
+.premiere-time label { display: inline-flex; align-items: center; gap: 6px; }
+.premiere-time select, .premiere-time input { height: 30px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--glass-soft); color: var(--text); font: 500 13px var(--font-ui); }
+.spot-btn.small { height: 30px; padding: 0 14px; font-size: 13px; }
+:root[data-still] .premiere.is-out .premiere-fill, :root[data-still] .premiere-out { animation: none; }
+@media (prefers-reduced-motion: reduce) { .premiere.is-out .premiere-fill, .premiere-out { animation: none; } }

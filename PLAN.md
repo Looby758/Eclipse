@@ -298,6 +298,16 @@ Export this doc as Markdown and save it in the project as `PLAN.md`. Then start 
 
 ## Progress log
 
+**Phase 50: premiere night (built, waiting for you to try it)**
+
+- Done: on the day a season you've been waiting for comes out (the next season of a show you're watching or have finished, the same list as the shelf's *Coming soon*), Spotlight Home turns into that show. The drifting wall fills with only its posters: the new season's poster, the show's posters in English or with no text, and its other seasons' posters. Never a backdrop or anything from inside an episode. Clicking any of them opens the show.
+- Done: in the middle, the new season's poster inside a ring that fills through the day, *Premiere night*, the show's name, "Season 3 · out at 08:00 on Disney+" and a countdown to the second. At the release time it changes to a glowing **It's out** with **Start Season 3 on Disney+** (one click opens it on the service, the same way *Watch on* does) and **Open the show**.
+- Done: the UK time comes from the service it's on, because TMDB only gives a day: Netflix, Disney+, Prime Video and Paramount+ 08:00; Apple TV+ 02:00; NOW 02:00 the morning after TMDB's date (American shows); BBC iPlayer and ITVX 06:00; Channel 4 21:00; anything else "about 08:00". **Not the right time?** lets you set the day and time for that season yourself.
+- Done: **Usual Home for today** puts the normal Tonight dial back until tomorrow. Two premieres on the same day: the next one out comes first, with **Also today: …** to switch. Ticking an episode of the new season ends premiere night, as does midnight.
+- Done (ties up 59): on the shelf, a season out today keeps its shrink-wrap with a "Today 08:00" sticker until its release time, then unwraps with *Out today* at the same moment Home says *It's out*.
+- How to try it: you need a show in your library with a season out today. Open Eclipse on Spotlight Home that day. To see "It's out", use **Not the right time?** and set a time a minute or two from now.
+- Decisions: Spotlight only (Classic Home is unchanged). The times you set and *Usual Home for today* are remembered on this computer only, since they only matter for a day. *Keep the poster wall still* stops the glow. No new packages.
+
 **Phases 55 to 60 (built, waiting for you to try them)**
 
 - **55, choose your own posters:** on a title page, **Change poster** (a pill on the Spotlight page, and under the poster on the Classic page when you hover it) opens every poster TMDB has in English or with no text, the usual one first and marked *Usual*. The one you pick is used everywhere: the wall, the shelf, the favourites wall, Home, Library, lists, search and the phone page. **Reset to the usual poster** goes back. Eclipse never asks about posters on its own. Saved in the library (`posters`), so both computers agree.

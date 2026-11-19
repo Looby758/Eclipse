@@ -5,6 +5,7 @@ import { OWN_ENOUGH, WALL_COLUMNS, WALL_PER_COLUMN, wallPosters } from '../lib/w
 import type { MediaType, SearchResult } from '@core/types'
 import { useApp } from '../store/app'
 import { isTyping } from '../lib/keys'
+import { usePremiereWall } from '../lib/premiere'
 
 const ROWS = 6
 const PER_ROW = 14
@@ -34,6 +35,8 @@ function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: b
   const [trendingTitles, setTrendingTitles] = useState<SearchResult[]>([])
   const trending = useMemo(() => trendingTitles.map((t) => t.posterPath!).filter(Boolean), [trendingTitles])
   const [recTitles, setRecTitles] = useState<SearchResult[]>([])
+  // Phase 50: on premiere night, Home's rows are all that show's posters.
+  const premiere = usePremiereWall((s) => (rows && alive && s.posters?.length ? s : null))
 
   const own = useMemo(
     () =>
@@ -82,7 +85,7 @@ function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: b
     return map
   }, [library, recTitles, trendingTitles])
   usePointerLift(rowsRef, rows && alive, (path) => {
-    const ref = titles.get(path)
+    const ref = premiere?.show ?? titles.get(path)
     if (ref) go({ name: 'title', type: ref.type, id: ref.id })
   })
 
@@ -102,7 +105,7 @@ function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: b
 
   // Spotlight Home: flat rows drifting sideways, alternate rows the other way.
   const lines = useMemo(() => {
-    const posters = wallPosters(own, trending, ROWS * PER_ROW, recs)
+    const posters = premiere ? wallPosters(premiere.posters!, [], ROWS * PER_ROW) : wallPosters(own, trending, ROWS * PER_ROW, recs)
     return Array.from({ length: ROWS }, (_, r) => {
       const row: Tile[] = Array.from({ length: PER_ROW }, (_, k) => {
         const path = posters[r + k * ROWS]
@@ -110,7 +113,7 @@ function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: b
       })
       return [...row, ...row.map((t) => ({ ...t, key: `${t.key}b` }))]
     })
-  }, [own, trending, recs])
+  }, [own, trending, recs, premiere?.posters])
 
   const tile = (t: Tile): React.JSX.Element =>
     t.url ? (

@@ -14,6 +14,8 @@ import HomeNotes from './HomeNotes'
 import OnThisDay from './OnThisDay'
 import { candidates } from './HomeHero'
 import { focusSearch } from './Dock'
+import PremiereNight from './PremiereNight'
+import { seasonId, usePremieres } from '../lib/premiere'
 
 const NAV: { view: View['name']; label: string; icon: typeof Moon }[] = [
   { view: 'home', label: 'Tonight', icon: Moon },
@@ -69,6 +71,11 @@ export default function SpotlightHome(): React.JSX.Element {
   const [ticked, setTicked] = useState(0)
   const [now, setNow] = useState(() => new Date())
   const prefs = preferencesOf(library)
+  // Phase 50: on the day a season you've been waiting for is out, Home turns into that show.
+  const premieres = usePremieres(now)
+  const [premiereKey, setPremiereKey] = useState<string | null>(null)
+  const shown = premieres.list.filter((p) => !premieres.hidden(p))
+  const premiere = shown.find((p) => seasonId(p) === premiereKey) ?? shown[0] ?? null
 
   const all = entriesWith(library)
   // Watches with someone ("with Jack") are picks too, with that watch's own progress.
@@ -123,69 +130,81 @@ export default function SpotlightHome(): React.JSX.Element {
       <div className="spot-pool" aria-hidden />
       <Pills />
 
-      <div className="spot-center">
-        <TonightDial evenings={ev} minutesEach={each} count={pick ? fits : 0} now={now}>
-          {pick ? (
-            <button className="spot-poster" onClick={open} aria-label={`Open ${pick.title.name}`}>
-              <Poster path={pick.title.posterPath} type={pick.type} id={pick.id} name={pick.title.name} size="w342" />
-            </button>
-          ) : (
-            <Sparkles size={40} className="spot-empty-icon" />
-          )}
-        </TonightDial>
+      {premiere ? (
+        <PremiereNight
+          key={seasonId(premiere)}
+          premiere={premiere}
+          info={premieres.info[premiere.item.key]}
+          others={shown.filter((p) => p !== premiere)}
+          onSwitch={(p) => setPremiereKey(seasonId(p))}
+          onHide={() => premieres.hide(premiere)}
+          onSetTime={(t) => premieres.setTime(premiere, t)}
+        />
+      ) : (
+        <div className="spot-center">
+          <TonightDial evenings={ev} minutesEach={each} count={pick ? fits : 0} now={now}>
+            {pick ? (
+              <button className="spot-poster" onClick={open} aria-label={`Open ${pick.title.name}`}>
+                <Poster path={pick.title.posterPath} type={pick.type} id={pick.id} name={pick.title.name} size="w342" />
+              </button>
+            ) : (
+              <Sparkles size={40} className="spot-empty-icon" />
+            )}
+          </TonightDial>
 
-        <div className="spot-under">
-          {pick ? (
-            <>
-              <h1>
-                {verb} {pick.title.name}
-                {withWho}?
-              </h1>
-              <p>{line}</p>
-              <div className="spot-btns">
-                {isShow && next ? (
-                  <button
-                    className="spot-btn pri"
-                    disabled={busy || !details}
-                    onClick={async () => {
-                      setBusy(true)
-                      try {
-                        const ep = [episodeKey(next.season, next.episode)]
-                        setLibrary(isTogether(pick) ? await window.api.tickWith(pick.key, pick.together.index, ep, true) : await window.api.setEpisodes(itemOf(details!), ep, true))
-                        setTicked((n) => n + 1)
-                      } finally {
-                        setBusy(false)
-                      }
-                    }}
-                  >
-                    <Check key={ticked} size={17} className={ticked ? 'tick-pop' : ''} /> Tick it
+          <div className="spot-under">
+            {pick ? (
+              <>
+                <h1>
+                  {verb} {pick.title.name}
+                  {withWho}?
+                </h1>
+                <p>{line}</p>
+                <div className="spot-btns">
+                  {isShow && next ? (
+                    <button
+                      className="spot-btn pri"
+                      disabled={busy || !details}
+                      onClick={async () => {
+                        setBusy(true)
+                        try {
+                          const ep = [episodeKey(next.season, next.episode)]
+                          setLibrary(isTogether(pick) ? await window.api.tickWith(pick.key, pick.together.index, ep, true) : await window.api.setEpisodes(itemOf(details!), ep, true))
+                          setTicked((n) => n + 1)
+                        } finally {
+                          setBusy(false)
+                        }
+                      }}
+                    >
+                      <Check key={ticked} size={17} className={ticked ? 'tick-pop' : ''} /> Tick it
+                    </button>
+                  ) : (
+                    <button className="spot-btn pri" onClick={open}>
+                      Open it
+                    </button>
+                  )}
+                  {picks.length > 1 && (
+                    <button className="spot-btn" onClick={() => setSkip((n) => n + 1)}>
+                      Something else
+                    </button>
+                  )}
+                </div>
+                <JustTonight now={now} />
+              </>
+            ) : (
+              <>
+                <h1>Find something to watch</h1>
+                <p>{all.length ? 'Nothing on your watchlist or in progress right now.' : 'Search for a film or show, open it and give it a status.'}</p>
+                <div className="spot-btns">
+                  <button className="spot-btn pri" onClick={focusSearch}>
+                    <Search size={17} /> Search
                   </button>
-                ) : (
-                  <button className="spot-btn pri" onClick={open}>
-                    Open it
-                  </button>
-                )}
-                {picks.length > 1 && (
-                  <button className="spot-btn" onClick={() => setSkip((n) => n + 1)}>
-                    Something else
-                  </button>
-                )}
-              </div>
-              <JustTonight now={now} />
-            </>
-          ) : (
-            <>
-              <h1>Find something to watch</h1>
-              <p>{all.length ? 'Nothing on your watchlist or in progress right now.' : 'Search for a film or show, open it and give it a status.'}</p>
-              <div className="spot-btns">
-                <button className="spot-btn pri" onClick={focusSearch}>
-                  <Search size={17} /> Search
-                </button>
-              </div>
-            </>
-          )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       <HomeColumn />
     </div>
