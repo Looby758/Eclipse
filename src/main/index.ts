@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import { exportFiles } from '@core/export'
 import { toIcs } from '@core/calendar'
 import { moveWatchSoon, setWatchSoon } from '@core/watchsoon'
-import { type LibraryItem, dropTitle, restoreDropped, setFrom, endWatchWith, planWatchWith, startWatchWith, tickWith, endRewatch, localDate, markRowSeen, settleSeenShows, markSeenBefore, preferencesOf, removeRewatch, setEpisodes, startRewatch, setFinishBy, snoozeTitle, setNote, setPreferences, setStatus, setWatchedOn } from '@core/library'
+import { type LibraryItem, dropTitle, restoreDropped, setFrom, endWatchWith, planWatchWith, startWatchWith, tickWith, endRewatch, localDate, markRowSeen, settleSeenShows, markSeenBefore, preferencesOf, removeRewatch, setEpisodes, startRewatch, setFinishBy, snoozeTitle, setNote, setRating, setPreferences, setStatus, setWatchedOn } from '@core/library'
 import { TmdbError } from '@core/tmdb'
 import { createList, followList, moveInList, removeList, renameList, setInList } from '@core/lists'
 import { UNDATED, type Library, type TitleRef } from '@core/types'
@@ -289,6 +289,7 @@ function setupIpc(): void {
   ipcMain.handle('library:startRewatch', (_e, item) => change((lib) => startRewatch(lib, item)))
   ipcMain.handle('library:endRewatch', (_e, key: string, keep: boolean) => change((lib) => endRewatch(lib, key, keep)))
   ipcMain.handle('library:removeRewatch', (_e, key: string, index: number) => change((lib) => removeRewatch(lib, key, index)))
+  ipcMain.handle('library:setRating', (_e, key: string, rating: number | null) => saveLibrary(setRating(getLibrary(), String(key), typeof rating === 'number' ? rating : null)))
   ipcMain.handle('library:setNote', (_e, key: string, note: string) => saveLibrary(setNote(getLibrary(), key, note)))
   ipcMain.handle('library:setWatchedOn', (_e, key: string, day: string | null) => saveLibrary(setWatchedOn(getLibrary(), key, day)))
   ipcMain.handle('lists:create', (_e, name: string, items?: TitleRef[]) => {

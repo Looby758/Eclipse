@@ -10,6 +10,7 @@ import type { TitleRef } from '@core/types'
 import { useApp } from '../store/app'
 import Sheet from './Sheet'
 import Poster from './Poster'
+import StarRating from './StarRating'
 
 type Room = 'shelf' | 'favourites'
 
@@ -193,7 +194,6 @@ function BoxCase({ box, onClose }: { box: FinishedBox; onClose: () => void }): R
     ])
   if (c.with.length) facts.push(['Watched with', c.with.join(', ')])
   if (c.from) facts.push(['Recommended by', c.from])
-  if (c.rating != null) facts.push(['Your rating', `${c.rating} / 10`])
 
   // On the page itself, not inside the shelf's sheet, so it sits over everything (the dock too).
   return createPortal(
@@ -211,6 +211,9 @@ function BoxCase({ box, onClose }: { box: FinishedBox; onClose: () => void }): R
             {c.name} {c.year ? <span className="case-year">{c.year}</span> : null}
           </h2>
           {c.tagline && <p className="case-tagline">{c.tagline}</p>}
+          <div className="case-rating">
+            <StarRating titleKey={box.key} name={c.name} />
+          </div>
 
           <div className="case-stats">
             <Stat value={c.minutes ? formatHours(c.minutes) : '—'} label={c.estimated ? 'about this long, every watch' : 'spent on it, every watch'} />

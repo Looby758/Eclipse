@@ -249,6 +249,8 @@ export interface EclipseApi {
   /** Finishes the rewatch you're on, or gives it up. */
   endRewatch(key: string, keep: boolean): Promise<Library>
   removeRewatch(key: string, index: number): Promise<Library>
+  /** Your rating out of 10 (five stars with halves), or null to take it off. */
+  setRating(key: TitleKey, rating: number | null): Promise<Library>
   setNote(key: TitleKey, note: string): Promise<Library>
   /** Clear out: take it off your library (it goes to recently dropped), or put it back. */
   dropTitle(key: TitleKey): Promise<Library>

@@ -61,6 +61,7 @@ const api: EclipseApi = {
   startRewatch: (item) => ipcRenderer.invoke('library:startRewatch', item),
   endRewatch: (key, keep) => ipcRenderer.invoke('library:endRewatch', key, keep),
   removeRewatch: (key, index) => ipcRenderer.invoke('library:removeRewatch', key, index),
+  setRating: (key, rating) => ipcRenderer.invoke('library:setRating', key, rating),
   setNote: (key, note) => ipcRenderer.invoke('library:setNote', key, note),
   dropTitle: (key) => ipcRenderer.invoke('library:drop', key),
   restoreDropped: (key) => ipcRenderer.invoke('library:restore', key),
