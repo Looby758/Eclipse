@@ -1069,3 +1069,50 @@ select:hover { border-color: var(--accent); }
 .journey-list { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; font-size: var(--text-sm); color: var(--text-muted); }
 .journey-list b { color: var(--text); font-weight: 600; }
 .journey-dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: hsl(var(--hue) 85% 62%); }
+
+/* The shelf (phase 59 with a simple version of 52): box sets standing on shelves */
+.shelf-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 28px 18px; padding-bottom: 8px; }
+.box { position: relative; display: grid; gap: 4px; padding: 0 0 14px; border: 0; background: none; text-align: left; cursor: pointer; color: var(--text); }
+/* The plank each row of boxes stands on. */
+.box::after { content: ''; position: absolute; left: -9px; right: -9px; bottom: 0; height: 8px; border-radius: 3px; background: var(--shelf-plank); box-shadow: var(--shelf-plank-shadow); }
+.box-art { position: relative; display: block; aspect-ratio: 2 / 3; border-radius: 6px 10px 10px 6px; overflow: hidden; box-shadow: var(--box-shadow); transform-origin: bottom center; transition: transform var(--fast) var(--ease), box-shadow var(--fast); }
+/* A box set's spine down the left edge. */
+.box-art::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 7px; z-index: 1; background: linear-gradient(90deg, rgba(0, 0, 0, 0.45), rgba(255, 255, 255, 0.12) 60%, transparent); }
+.box-art .poster { width: 100%; height: 100%; object-fit: cover; display: block; }
+.box:hover .box-art, .box:focus-visible .box-art { transform: translateY(-8px) rotate(-1.5deg); box-shadow: var(--box-shadow-lift); }
+.box-name { font-size: var(--text-sm); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 6px; }
+.box-meta { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px; }
+/* Shrink-wrap: a glossy film over the box, with a crease and a glint that slides across on hover. */
+.box-wrap { position: absolute; inset: 0; z-index: 2; background: var(--wrap-film), linear-gradient(115deg, transparent 30%, var(--wrap-glint) 45%, transparent 58%); background-size: 100% 100%, 250% 100%; background-position: 0 0, 120% 0; box-shadow: inset 0 0 0 1px var(--wrap-edge), inset 0 0 18px rgba(255, 255, 255, 0.18); transition: background-position 0.9s var(--ease); }
+.box-wrap::after { content: ''; position: absolute; left: 12%; right: 30%; top: 22%; height: 1px; transform: rotate(-8deg); background: var(--wrap-edge); opacity: 0.7; }
+.box.wrapped:hover .box-wrap { background-position: 0 0, -40% 0; }
+.box.wrapped .poster { filter: saturate(0.85) brightness(0.92); }
+/* Release day: the wrap peels off. */
+.box-wrap-off { position: absolute; inset: 0; z-index: 2; background: var(--wrap-film); box-shadow: inset 0 0 0 1px var(--wrap-edge); transform-origin: top right; animation: wrap-peel 1.4s var(--ease) 0.3s both; pointer-events: none; }
+@keyframes wrap-peel { 0% { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); opacity: 1; } 60% { clip-path: polygon(0 0, 100% 0, 100% 0, 0 100%); opacity: 0.8; } 100% { clip-path: polygon(0 0, 0 0, 0 0, 0 0); opacity: 0; } }
+.box-sticker { position: absolute; z-index: 3; right: 6px; bottom: 8px; padding: 3px 8px; border-radius: 999px; background: var(--sticker-bg); color: var(--sticker-text); font-size: 10px; font-weight: 700; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35); transform: rotate(-4deg); }
+.box-sticker.out { background: var(--accent-gradient); color: #fff; }
+:root[data-still] .box-wrap-off { animation: none; opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .box-wrap-off { animation: none; opacity: 0; } }
+
+/* Phase 58: the favourites wall, framed posters in a gallery */
+.fav-wall { list-style: none; margin: 18px 0 0; padding: 30px 26px; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 38px 30px; border-radius: var(--radius-lg); background: var(--gallery-wall); box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.35); }
+.fav { position: relative; display: grid; justify-items: center; gap: 10px; cursor: grab; }
+.fav.dragging { opacity: 0.4; }
+.fav.over .fav-frame { transform: scale(1.04); box-shadow: 0 0 0 3px var(--cyan), var(--frame-shadow); }
+/* A wire from the top of the wall. */
+.fav::before { content: ''; position: absolute; top: -26px; left: 50%; width: 1px; height: 26px; background: var(--frame-wire); }
+.fav-frame { display: block; width: 100%; padding: 10px; border: 0; border-radius: 4px; background: var(--frame); box-shadow: var(--frame-shadow); cursor: pointer; transition: transform var(--fast) var(--ease), box-shadow var(--fast); }
+.fav-frame:hover, .fav-frame:focus-visible { transform: translateY(-3px); }
+.fav-mat { display: block; padding: 8px; background: var(--frame-mat); box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.3); }
+.fav-mat .poster { display: block; width: 100%; aspect-ratio: 2 / 3; object-fit: cover; }
+.fav-plaque { display: grid; justify-items: center; padding: 4px 12px; border-radius: 4px; background: var(--plaque); color: var(--plaque-text); font-size: var(--text-xs); text-align: center; max-width: 100%; }
+.fav-plaque b { font-size: var(--text-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.fav-tools { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; opacity: 0; transition: opacity var(--fast); }
+.fav:hover .fav-tools, .fav:focus-within .fav-tools { opacity: 1; }
+.fav-tools button { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: 0; background: rgba(0, 0, 0, 0.65); color: #fff; cursor: pointer; }
+.fav-tools button:disabled { opacity: 0.35; cursor: default; }
+.fav-empty { display: grid; justify-items: center; gap: 6px; padding: 50px 20px; text-align: center; color: var(--text-muted); }
+.fav-empty p { margin: 0; max-width: 440px; }
+.fav-toggle.lit { color: var(--fav); border-color: var(--fav); }
+.st-chip.lit svg[fill='currentColor'] { color: var(--fav); }

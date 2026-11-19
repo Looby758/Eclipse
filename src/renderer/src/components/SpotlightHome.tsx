@@ -1,4 +1,4 @@
-import { Check, Hourglass, Library, ListChecks, Moon, Search, Settings, Sparkles } from 'lucide-react'
+import { Check, Hourglass, Library, LibraryBig, ListChecks, Moon, Search, Settings, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { entriesWith, isTogether, nextEpisodeFor, nextSession, preferencesOf, withTogether } from '@core/library'
 import { sessionLabel } from '../lib/together'
@@ -19,7 +19,8 @@ const NAV: { view: View['name']; label: string; icon: typeof Moon }[] = [
   { view: 'home', label: 'Tonight', icon: Moon },
   { view: 'library', label: 'Library', icon: Library },
   { view: 'soon', label: 'Soon', icon: Hourglass },
-  { view: 'lists', label: 'Lists', icon: ListChecks }
+  { view: 'lists', label: 'Lists', icon: ListChecks },
+  { view: 'shelf', label: 'Shelf', icon: LibraryBig }
 ]
 
 /** Spotlight's navigation: small glass pills in the top right (Home and the Spotlight title page). */

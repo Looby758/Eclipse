@@ -27,6 +27,7 @@ import WhereToWatch from './WhereToWatch'
 import TitleLinks from './TitleLinks'
 import Credits from './Credits'
 import PosterPicker from './PosterPicker'
+import { FavouriteButton } from './ShelfSheet'
 import JourneyRibbon from './JourneyRibbon'
 import { journeyOf } from '@core/journey'
 
@@ -240,6 +241,7 @@ export default function SpotlightTitle({ type, id }: { type: MediaType; id: numb
                   </button>
                 ))}
               <SoonChip details={d} />
+              <FavouriteButton className="st-chip" title={{ key: d.key, type: d.type, id: d.id, name: d.name, year: d.year, posterPath: d.posterPath, date: d.date }} />
               <button className={`st-chip ${panel === 'poster' ? 'on' : ''}`} onClick={() => setPanel(panel === 'poster' ? null : 'poster')}>
                 <RectangleVertical size={13} /> Change poster
               </button>
