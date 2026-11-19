@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { localDate, recommenders } from '@core/library'
 import type { TitleKey } from '@core/types'
 import { useApp } from '../store/app'
+import StarRating from './StarRating'
 
 /** Your own bits about something in your library: the day you watched it, a note, your rating. */
 export default function EntryDetails({ titleKey }: { titleKey: TitleKey }): React.JSX.Element | null {
@@ -84,12 +85,10 @@ export default function EntryDetails({ titleKey }: { titleKey: TitleKey }): Reac
           ))}
         </datalist>
       </label>
-      {entry.rating !== undefined && (
-        <div className="entry-field">
-          <span>Your rating</span>
-          <div className="entry-rating">★ {Number.isInteger(entry.rating) ? entry.rating : entry.rating.toFixed(1)}/10</div>
-        </div>
-      )}
+      <div className="entry-field">
+        <span>Your rating</span>
+        <StarRating titleKey={entry.key} name={entry.title.name} />
+      </div>
     </div>
   )
 }

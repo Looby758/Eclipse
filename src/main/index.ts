@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import { exportFiles } from '@core/export'
 import { toIcs } from '@core/calendar'
 import { moveWatchSoon, setWatchSoon } from '@core/watchsoon'
-import { type LibraryItem, dropTitle, restoreDropped, setFrom, endWatchWith, planWatchWith, startWatchWith, tickWith, endRewatch, localDate, markRowSeen, settleSeenShows, markSeenBefore, preferencesOf, removeRewatch, setEpisodes, startRewatch, setFinishBy, snoozeTitle, setNote, setPreferences, setStatus, setWatchedOn } from '@core/library'
+import { type LibraryItem, dropTitle, restoreDropped, setFrom, endWatchWith, planWatchWith, startWatchWith, tickWith, endRewatch, localDate, markRowSeen, settleSeenShows, markSeenBefore, preferencesOf, removeRewatch, setEpisodes, startRewatch, setFinishBy, snoozeTitle, setNote, setRating, setPreferences, setStatus, setWatchedOn } from '@core/library'
 import { TmdbError } from '@core/tmdb'
 import { createList, followList, moveInList, removeList, renameList, setInList } from '@core/lists'
 import { UNDATED, type Library, type Reaction, type TitleRef } from '@core/types'
@@ -36,6 +36,7 @@ import { setReaction } from '@core/reactions'
 import { loginStatus, markAsked, setStartAtLogin, startedHidden } from './login'
 import { backupFor, dailyBackup, listBackups } from './backups'
 import { foldFromPhone, phoneAsks, resolveAsk, startPhone } from './phone'
+import { finaleImage, themeFor } from './finale'
 import { errorText, healthStatus, log, onHealthChanged, recentLog, report } from './health'
 
 // Window background, matching --bg in src/renderer/src/styles/theme.css so there's no flash on start.
@@ -296,6 +297,7 @@ function setupIpc(): void {
     carryUndo(before, after)
     return after
   })
+  ipcMain.handle('library:setRating', (_e, key: string, rating: number | null) => saveLibrary(setRating(getLibrary(), String(key), typeof rating === 'number' ? rating : null)))
   ipcMain.handle('library:setNote', (_e, key: string, note: string) => saveLibrary(setNote(getLibrary(), key, note)))
   ipcMain.handle('library:setWatchedOn', (_e, key: string, day: string | null) => saveLibrary(setWatchedOn(getLibrary(), key, day)))
   ipcMain.handle('lists:create', (_e, name: string, items?: TitleRef[]) => {
@@ -323,9 +325,12 @@ function setupIpc(): void {
   )
   ipcMain.handle('backdrops:set', (_e, key: string, path: string | null) => saveLibrary(setBackdrop(getLibrary(), String(key), typeof path === 'string' ? path : null)))
   ipcMain.handle('posters:set', (_e, key: string, path: string | null) => saveLibrary(setPoster(getLibrary(), String(key), typeof path === 'string' ? path : null)))
+  ipcMain.handle('finale:theme', (_e, tvId: number) => themeFor(Number(tvId)))
+  ipcMain.handle('finale:image', (event, how: 'copy' | 'save', name: string) => finaleImage(BrowserWindow.fromWebContents(event.sender)!, how === 'save' ? 'save' : 'copy', String(name ?? '')))
   ipcMain.handle('favourites:set', (_e, ref: TitleRef, on: boolean) => saveLibrary(setFavourite(getLibrary(), ref, !!on)))
   ipcMain.handle('favourites:move', (_e, from: number, to: number) => saveLibrary(moveFavourite(getLibrary(), Number(from), Number(to))))
   ipcMain.handle('shelf:comingSoon', () => attempt(() => tmdb.comingSoonList(getLibrary())))
+  ipcMain.handle('shelf:boxSet', (_e, key: string) => attempt(() => tmdb.boxSet(getLibrary(), String(key))))
   ipcMain.handle('soon:move', (_e, from: number, to: number) => saveLibrary(moveWatchSoon(getLibrary(), from, to)))
   ipcMain.handle('library:setFinishBy', (_e, key: string, day: string | null) => saveLibrary(setFinishBy(getLibrary(), key, day)))
   ipcMain.handle('library:snooze', (_e, key: string, until: string | null) => saveLibrary(snoozeTitle(getLibrary(), key, until)))
@@ -362,6 +367,12 @@ function setupIpc(): void {
   ipcMain.handle('week:budget', () => attempt(() => tmdb.weekBudget(getLibrary())))
   ipcMain.handle('catchup:list', () => attempt(() => tmdb.catchUpList(getLibrary())))
   ipcMain.handle('catchup:dismiss', (_e, id: string) => (CATCH_UP_ID.test(String(id)) ? saveLibrary(dismissCatchUp(getLibrary(), String(id))) : getLibrary()))
+  // Phase 51: the opening plays for the first window of a launch only.
+  ipcMain.handle('opening:take', () => {
+    const play = !openingTaken
+    openingTaken = true
+    return play
+  })
   ipcMain.handle('tray:get', () => trayOn())
   ipcMain.handle('tray:set', (_e, on: boolean) => setTray(!!on))
   ipcMain.handle('discord:status', () => discordStatus())
@@ -504,6 +515,9 @@ function createWindow(): BrowserWindow {
   return win
 }
 
+/** Phase 51: the opening has played (or been passed over) this launch. */
+let openingTaken = false
+
 /** Opens the window, or brings it to the front (from the tray, or the dock on a Mac). */
 function showWindow(): void {
   if (mainWindow) {
@@ -526,6 +540,8 @@ app.whenReady().then(() => {
   reopenLibrary()
   setupIpc()
   const hidden = startedHidden()
+  // Started quietly in the tray: no opening, even when the window is opened from there later.
+  if (hidden) openingTaken = true
   if (hidden) {
     // Started with the computer: stay in the tray, and wait for Google Drive to bring the data folder.
     waitForDataFolder()

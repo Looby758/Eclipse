@@ -1,5 +1,5 @@
 import type { Library, LibraryEntry, MediaType, TitleDetails, TitleKey } from './types'
-import { UNDATED } from './types'
+import { UNDATED, parseEpisodeKey } from './types'
 
 /**
  * The shelf: a box set for everything you've finished, and (phase 59) the seasons and films you're
@@ -117,3 +117,223 @@ export function finishedShelf(library: Library): FinishedBox[] {
     })
     .sort((a, b) => (b.finishedOn ?? '').localeCompare(a.finishedOn ?? '') || a.name.localeCompare(b.name))
 }
+
+// ---- Phase 52: pull a box set out ----
+
+/** The shelves of finished box sets, one per year you finished things in (newest first), then "Seen before Eclipse". */
+export interface ShelfOfYear {
+  /** "2026", or null for the shelf of things seen before Eclipse. */
+  year: string | null
+  boxes: FinishedBox[]
+}
+
+export function shelvesByYear(boxes: FinishedBox[]): ShelfOfYear[] {
+  const by = new Map<string | null, FinishedBox[]>()
+  for (const b of boxes) {
+    const y = b.finishedOn ? b.finishedOn.slice(0, 4) : null
+    by.set(y, [...(by.get(y) ?? []), b])
+  }
+  return [...by.entries()].sort((a, b) => (b[0] ?? '0000').localeCompare(a[0] ?? '0000')).map(([year, list]) => ({ year, boxes: list }))
+}
+
+/** One time through it, on the back of the box: your first time, a rewatch, or with someone. */
+export interface BoxWatch {
+  label: string
+  /** First and last dated watch, or null when it had no dates (seen before Eclipse). */
+  from: string | null
+  to: string | null
+  /** Still going. */
+  going: boolean
+  /** Shows: episodes seen in this watch. */
+  episodes: number
+}
+
+/** The back of the box: your history with something you've finished, and its credits. */
+export interface BoxSetCard {
+  key: TitleKey
+  type: MediaType
+  id: number
+  name: string
+  year: number | null
+  posterPath: string | null
+  tagline: string
+  /** Your first time: the first and last day (a film's watch day is both). Null when seen before Eclipse. */
+  started: string | null
+  finished: string | null
+  /** Days from first to last, counting both (shows only, when both are known). */
+  days: number | null
+  /** All the time you've spent on it, every watch counted. */
+  minutes: number
+  /** True when some of that is a guess (TMDB has no runtime). */
+  estimated: boolean
+  /** Shows: episodes in your first watch, and how many the show has. */
+  episodes: number
+  totalEpisodes: number | null
+  seasons: number
+  /** Times you've seen it all the way through (your first time and finished rewatches on your own). */
+  timesThrough: number
+  watches: BoxWatch[]
+  /** Who you've watched it with. */
+  with: string[]
+  rating: number | null
+  from: string | null
+  note: string | null
+  /** Shows: the best-rated episode you've seen (TMDB's rating, with enough votes to count). */
+  best: { season: number; episode: number; name: string; rating: number } | null
+  /** Shows: the most episodes you watched in one day. */
+  binge: { day: string; episodes: number } | null
+  /** Films: the director(s). Shows: none (TMDB lists one per episode). */
+  directors: string[]
+  /** The main cast, with who they played. */
+  starring: { name: string; role: string }[]
+  seenBefore: boolean
+}
+
+/** Least TMDB votes for an episode to count as your best-rated one. */
+export const BEST_MIN_VOTES = 20
+
+const isDay = (d: string | undefined | null): d is string => !!d && d !== UNDATED && /^\d{4}-\d{2}-\d{2}$/.test(d)
+const span = (days: string[]): { from: string | null; to: string | null } => {
+  const s = days.filter(isDay).sort()
+  return { from: s[0] ?? null, to: s[s.length - 1] ?? null }
+}
+const daysBetween = (a: string, b: string): number => Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 86_400_000)
+
+/**
+ * What's on the back of a box set you pull off the shelf. Works from your library alone (dates,
+ * who with, your note); TMDB's details, credits and seasons add the hours, the cast and your
+ * best-rated episode when they're there.
+ */
+export function boxSetCard(
+  entry: LibraryEntry,
+  details?: TitleDetails,
+  credits?: { directors: { name: string }[]; cast: { name: string; role: string }[] },
+  seasons: { number: number; episodes: { number: number; name: string; runtime: number | null; voteAverage: number | null; voteCount: number }[] }[] = []
+): BoxSetCard {
+  const rewatches = entry.rewatches ?? []
+  const fallback = entry.type === 'movie' ? 120 : 45
+  const perEpisode = details?.runtime || fallback
+  const episodeInfo = new Map<string, { name: string; runtime: number | null; voteAverage: number | null; voteCount: number }>()
+  for (const s of seasons) for (const e of s.episodes) episodeInfo.set(`S${s.number}E${e.number}`, e)
+
+  let minutes = 0
+  let estimated = entry.type === 'movie' && !details?.runtime
+  const watches: BoxWatch[] = []
+  const withWho: string[] = []
+  let timesThrough = 0
+
+  if (entry.type === 'movie') {
+    const first = entry.watchedOn ?? null
+    const finishedRewatches = rewatches.filter((r) => r.finishedOn)
+    const count = (entry.status === 'watched' || first ? 1 : 0) + finishedRewatches.length
+    minutes = count * perEpisode
+    if (entry.status === 'watched' || first) watches.push({ label: 'First time', from: first, to: first, going: false, episodes: 0 })
+    let n = 0
+    for (const r of rewatches) {
+      if (r.with && !withWho.includes(r.with)) withWho.push(r.with)
+      const day = r.finishedOn ?? null
+      watches.push({ label: r.with ? `With ${r.with}` : ++n === 1 ? 'Rewatch' : `Rewatch ${n}`, from: day ?? r.startedOn, to: day, going: !r.finishedOn, episodes: 0 })
+    }
+    timesThrough = (entry.status === 'watched' || first ? 1 : 0) + finishedRewatches.filter((r) => !r.with).length
+    return {
+      ...head(entry, details),
+      started: first,
+      finished: first,
+      days: null,
+      minutes,
+      estimated: estimated && count > 0,
+      episodes: 0,
+      totalEpisodes: null,
+      seasons: 0,
+      timesThrough,
+      watches,
+      with: withWho,
+      ...yours(entry),
+      best: null,
+      binge: null,
+      directors: (credits?.directors ?? []).slice(0, 2).map((d) => d.name),
+      starring: (credits?.cast ?? []).slice(0, 5).map((c) => ({ name: c.name, role: c.role })),
+      seenBefore: !!entry.seenBefore || !first
+    }
+  }
+
+  // Shows: every tick counts towards the hours, at that episode's own length when TMDB knows it.
+  const timeOf = (ticks: Record<string, string>): number => {
+    let m = 0
+    for (const k of Object.keys(ticks)) {
+      const info = episodeInfo.get(k)
+      if (info?.runtime) m += info.runtime
+      else {
+        m += perEpisode
+        if (!details?.runtime) estimated = true
+      }
+    }
+    return m
+  }
+  const own = entry.episodes ?? {}
+  minutes += timeOf(own)
+  const first = span(Object.values(own))
+  if (Object.keys(own).length) watches.push({ label: 'First time', ...first, going: entry.status === 'watching', episodes: Object.keys(own).length })
+  let n = 0
+  for (const r of rewatches) {
+    const ticks = r.episodes ?? {}
+    minutes += timeOf(ticks)
+    if (r.with && !withWho.includes(r.with)) withWho.push(r.with)
+    const s = span([r.startedOn, ...Object.values(ticks), r.finishedOn ?? ''])
+    watches.push({ label: r.with ? `With ${r.with}` : ++n === 1 ? 'Rewatch' : `Rewatch ${n}`, ...s, to: r.finishedOn ? s.to : null, going: !r.finishedOn, episodes: Object.keys(ticks).length })
+  }
+  timesThrough = (entry.status === 'watched' ? 1 : 0) + rewatches.filter((r) => r.finishedOn && !r.with).length
+
+  // Your best-rated episode: of everything you've seen in any watch.
+  const seen = new Set([...Object.keys(own), ...rewatches.flatMap((r) => Object.keys(r.episodes ?? {}))])
+  let best: BoxSetCard['best'] = null
+  for (const k of seen) {
+    const info = episodeInfo.get(k)
+    const p = parseEpisodeKey(k)
+    if (!info || !p || info.voteAverage == null || info.voteCount < BEST_MIN_VOTES) continue
+    if (!best || info.voteAverage > best.rating) best = { season: p.season, episode: p.episode, name: info.name, rating: Math.round(info.voteAverage * 10) / 10 }
+  }
+
+  // The most in one day, your first time through.
+  const perDay = new Map<string, number>()
+  for (const d of Object.values(own)) if (isDay(d)) perDay.set(d, (perDay.get(d) ?? 0) + 1)
+  let binge: BoxSetCard['binge'] = null
+  for (const [day, count] of perDay) if (!binge || count > binge.episodes || (count === binge.episodes && day < binge.day)) binge = { day, episodes: count }
+
+  // The same day the shelf shows: the day you marked it Watched, otherwise your last tick.
+  const finished = isDay(entry.watchedOn) ? entry.watchedOn : first.to
+  const started = first.from
+  const seasonsSeen = new Set([...seen].map((k) => parseEpisodeKey(k)?.season ?? 0).filter((s) => s > 0)).size
+  return {
+    ...head(entry, details),
+    started,
+    finished,
+    days: started && finished ? daysBetween(started, finished) + 1 : null,
+    minutes,
+    estimated: estimated && minutes > 0,
+    episodes: Object.keys(own).length,
+    totalEpisodes: details?.numberOfEpisodes ?? null,
+    seasons: seasonsSeen,
+    timesThrough,
+    watches,
+    with: withWho,
+    ...yours(entry),
+    best,
+    binge: binge && binge.episodes >= 2 ? binge : null,
+    directors: [],
+    starring: (credits?.cast ?? []).slice(0, 5).map((c) => ({ name: c.name, role: c.role })),
+    seenBefore: !!entry.seenBefore || (!started && Object.keys(own).length > 0)
+  }
+}
+
+const head = (entry: LibraryEntry, d?: TitleDetails): Pick<BoxSetCard, 'key' | 'type' | 'id' | 'name' | 'year' | 'posterPath' | 'tagline'> => ({
+  key: entry.key,
+  type: entry.type,
+  id: entry.id,
+  name: entry.title.name,
+  year: entry.title.year,
+  posterPath: entry.title.posterPath,
+  tagline: d?.tagline ?? ''
+})
+
+const yours = (e: LibraryEntry): Pick<BoxSetCard, 'rating' | 'from' | 'note'> => ({ rating: e.rating ?? null, from: e.from?.trim() || null, note: e.note?.trim() || null })

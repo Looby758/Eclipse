@@ -145,6 +145,25 @@ export function setNote(library: Library, key: string, note: string, now: Date =
 }
 
 /** Sets or clears who recommended it. */
+/**
+ * Your own rating out of 10, in whole steps (five stars with halves, like Sequel: 7 is three and a
+ * half stars). null takes it off.
+ */
+export function setRating(library: Library, key: string, rating: number | null, now: Date = new Date()): Library {
+  const value = rating === null || !Number.isFinite(rating) ? null : Math.min(10, Math.max(1, Math.round(rating)))
+  if (!library.entries[key] || (library.entries[key].rating ?? null) === value) return library
+  return changeEntry(
+    library,
+    key,
+    (e) => {
+      const next: LibraryEntry = { ...e, rating: value ?? 0 }
+      if (value === null) delete next.rating
+      return next
+    },
+    now
+  )
+}
+
 export function setFrom(library: Library, key: string, from: string, now: Date = new Date()): Library {
   const text = from.replace(/\s+/g, ' ').trim().slice(0, 80)
   if ((library.entries[key]?.from ?? '') === text) return library
