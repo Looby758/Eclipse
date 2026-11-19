@@ -14,13 +14,8 @@ import Logo from './Logo'
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const fmt = (n: number): string => n.toLocaleString('en-GB')
-/** "That's 312 hours", or "3 days 4 hours" once it's long. */
-const longTime = (minutes: number): string => {
-  const hours = Math.round(minutes / 60)
-  if (hours < 72) return formatHours(minutes)
-  const days = Math.floor(hours / 24)
-  return `${plural(days, 'day')} ${plural(hours % 24, 'hour')}`
-}
+/** "about 17 days", once it's more than three days. */
+const asDays = (minutes: number): string => (minutes >= 72 * 60 ? `, about ${Math.round(minutes / 1440)} days` : '')
 
 /** Bars like Your year's months: one per label, the biggest lit. */
 function Bars({ items, label }: { items: { label: string; minutes: number; title: string }[]; label: string }): React.JSX.Element {
@@ -87,8 +82,8 @@ export default function StatsSheet(): React.JSX.Element {
 
           <div className="year-big">
             <div>
-              <strong>{longTime(s.minutes)}</strong>
-              <span>watched in all</span>
+              <strong>{formatHours(s.minutes)}</strong>
+              <span>watched in all{asDays(s.minutes)}</span>
             </div>
             <div>
               <strong>{fmt(s.episodes)}</strong>

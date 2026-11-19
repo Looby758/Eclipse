@@ -1204,3 +1204,31 @@ select:hover { border-color: var(--accent); }
   .milestone, .milestone-halo::before { animation: none; }
   .milestone-halo::before { opacity: 0.35; }
 }
+
+/* Phase 53: the Stats page (shares Your year's numbers, cards and bars) */
+.stats-lede { max-width: 900px; margin: -6px 0 18px; }
+.stats .year-months { max-width: 1100px; }
+.stats .year-grid + .year-months, .stats .year-months + .year-grid { margin-top: 14px; }
+.stats .year-grid { margin-bottom: 14px; }
+.stats-bars { height: 160px; }
+.stats-split { height: 8px; border-radius: 999px; background: var(--glass-hover); overflow: hidden; margin: 10px 0 8px; }
+.stats-split span { display: block; height: 100%; border-radius: inherit; background: var(--accent-gradient); }
+.stats-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.stats-rows li { display: grid; grid-template-columns: minmax(90px, 140px) 1fr auto; align-items: center; gap: 10px; font-size: var(--text-sm); }
+.stats-row-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stats-row-bar { display: block; height: 6px; border-radius: 999px; background: var(--glass-hover); overflow: hidden; }
+.stats-row-bar span { display: block; height: 100%; border-radius: inherit; background: var(--accent-gradient); }
+.stats-milestones .list-sub { display: flex; align-items: center; gap: 8px; }
+.milestone-card h3 { margin: 0 0 12px; font-size: var(--text-sm); text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+.milestone-track + .milestone-track { margin-top: 14px; }
+.milestone-track-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.milestone-track-label { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.milestone-badge { display: inline-grid; flex-shrink: 0; border-radius: 6px; box-shadow: 0 0 10px var(--halo); }
+.milestone-badge svg { display: block; }
+.milestone-progress { margin: 8px 0 4px; }
+.milestone-progress span { box-shadow: 0 0 8px var(--halo); }
+.milestone-track-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.milestone-track-foot .link-btn { padding: 0; font-size: var(--text-xs); }
+.milestone-notes { margin: 6px 0 0; padding-left: 18px; font-size: var(--text-sm); color: var(--text-muted); display: grid; gap: 2px; }
+.stats .year-top + .year-grid { margin-top: 22px; }
+.stats-milestones .year-grid { align-items: start; }
