@@ -29,6 +29,8 @@ import UndoBar from './components/UndoBar'
 import StartAsk from './components/StartAsk'
 import PhoneAsk from './components/PhoneAsk'
 import ZoomLayer from './components/ZoomLayer'
+import Finale from './components/Finale'
+import { useFinaleWatcher } from './lib/finale'
 import { useHomeStyle } from './lib/homeStyle'
 import { handleArrows, isTyping } from './lib/keys'
 import { useStartAsk } from './lib/startAsk'
@@ -41,6 +43,7 @@ export default function App(): React.JSX.Element {
   const homeStyle = useHomeStyle((s) => s.style)
   const welcoming = useWelcome((s) => s.step !== null)
   const { setStatus, setLibrary, back, go } = useApp.getState()
+  useFinaleWatcher()
 
   useEffect(() => {
     window.api.status().then((s) => {
@@ -142,6 +145,7 @@ export default function App(): React.JSX.Element {
           <StartAsk />
           <PhoneAsk />
           <ZoomLayer />
+          <Finale />
         </>
       )}
     </div>

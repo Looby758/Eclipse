@@ -219,6 +219,10 @@ export interface EclipseApi {
   /** Phase 58: hangs a title on the favourites wall (at the end) or takes it down. */
   setFavourite(ref: TitleRef, on: boolean): Promise<Library>
   moveFavourite(from: number, to: number): Promise<Library>
+  /** Phase 46: a show's theme tune (an MP3), downloaded once and kept, or null when there isn't one. */
+  finaleTheme(tvId: number): Promise<Uint8Array | null>
+  /** Phase 46: the finale as it looks now, copied to the clipboard or saved as a PNG. */
+  finaleImage(how: 'copy' | 'save', name: string): Promise<{ done: boolean; path?: string }>
   /** Phase 59: announced seasons and films you're waiting for, soonest first, for the shelf. */
   comingSoon(): Promise<Result<ComingSoon[]>>
 

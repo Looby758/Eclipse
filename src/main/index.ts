@@ -35,6 +35,7 @@ import { remember, undoTarget } from './undo'
 import { loginStatus, markAsked, setStartAtLogin, startedHidden } from './login'
 import { backupFor, dailyBackup, listBackups } from './backups'
 import { foldFromPhone, phoneAsks, resolveAsk, startPhone } from './phone'
+import { finaleImage, themeFor } from './finale'
 import { errorText, healthStatus, log, onHealthChanged, recentLog, report } from './health'
 
 // Window background, matching --bg in src/renderer/src/styles/theme.css so there's no flash on start.
@@ -316,6 +317,8 @@ function setupIpc(): void {
   )
   ipcMain.handle('backdrops:set', (_e, key: string, path: string | null) => saveLibrary(setBackdrop(getLibrary(), String(key), typeof path === 'string' ? path : null)))
   ipcMain.handle('posters:set', (_e, key: string, path: string | null) => saveLibrary(setPoster(getLibrary(), String(key), typeof path === 'string' ? path : null)))
+  ipcMain.handle('finale:theme', (_e, tvId: number) => themeFor(Number(tvId)))
+  ipcMain.handle('finale:image', (event, how: 'copy' | 'save', name: string) => finaleImage(BrowserWindow.fromWebContents(event.sender)!, how === 'save' ? 'save' : 'copy', String(name ?? '')))
   ipcMain.handle('favourites:set', (_e, ref: TitleRef, on: boolean) => saveLibrary(setFavourite(getLibrary(), ref, !!on)))
   ipcMain.handle('favourites:move', (_e, from: number, to: number) => saveLibrary(moveFavourite(getLibrary(), Number(from), Number(to))))
   ipcMain.handle('shelf:comingSoon', () => attempt(() => tmdb.comingSoonList(getLibrary())))
