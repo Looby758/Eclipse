@@ -1041,8 +1041,14 @@ select:hover { border-color: var(--accent); }
 .zoom-ghost { position: fixed; object-fit: cover; box-shadow: var(--zoom-shadow); will-change: left, top, width, height, opacity; }
 .zoom-veil { position: fixed; inset: 0; background: var(--zoom-veil); opacity: 0; }
 /* While it grows, the page underneath comes up a beat later, through the poster. */
-:root.zooming .stitle .st-page, :root.zooming .title-sheet { animation: zoom-page-in 1500ms var(--ease) both; }
-@keyframes zoom-page-in { 0%, 68% { opacity: 0; transform: translateY(14px); } 100% { opacity: 1; transform: none; } }
+/* The show's page stays hidden while the poster travels: its picture fades in behind the big
+   poster, then the words come up as the poster melts away. */
+:root.zooming .stitle { animation: zoom-room-in 1400ms linear both; }
+:root.zooming .stitle .st-bg { animation: zoom-bg-in 1400ms linear both; }
+@keyframes zoom-room-in { 0%, 48% { background-color: transparent; } 78%, 100% { background-color: #05060f; } }
+:root.zooming .stitle .st-page, :root.zooming .stitle > .spot-pills, :root.zooming .title-sheet, :root.zooming .corner { animation: zoom-page-in 1400ms var(--ease) both; }
+@keyframes zoom-bg-in { 0%, 48% { opacity: 0; } 78%, 100% { opacity: 1; } }
+@keyframes zoom-page-in { 0%, 80% { opacity: 0; transform: translateY(12px); } 100% { opacity: 1; transform: none; } }
 /* Keep the poster wall still: a plain fade. */
 :root.page-fade .stitle, :root.page-fade .sheet { animation: zoom-fade 240ms ease-out both !important; }
 @keyframes zoom-fade { from { opacity: 0; } }

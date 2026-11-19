@@ -71,26 +71,30 @@ export default function ZoomLayer(): React.JSX.Element {
       img.alt = ''
       img.src = src
       el.append(veil, img)
-      const full = { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight }
-      const a = from ?? full
-      const b = to ?? full
       type Box = { left: number; top: number; width: number; height: number }
-      const lifted = (r: Box): Box => ({ left: r.left - r.width * 0.04, top: r.top - r.height * 0.04, width: r.width * 1.08, height: r.height * 1.08 })
+      const source = (from ?? to)!
+      // Where the poster is shown big: centred, as tall as most of the window, never past its edges, in its own shape.
+      const ratio = source.width / source.height || 2 / 3
+      const h = Math.min(window.innerHeight * 0.8, (window.innerWidth * 0.7) / ratio)
+      const big: Box = { left: (window.innerWidth - h * ratio) / 2, top: (window.innerHeight - h) / 2, width: h * ratio, height: h }
+      const grown = (r: Box, k: number): Box => ({ left: r.left - (r.width * (k - 1)) / 2, top: r.top - (r.height * (k - 1)) / 2, width: r.width * k, height: r.height * k })
       const frame = (r: Box, rad: string, opacity: number, offset: number, easing = 'cubic-bezier(0.65, 0, 0.35, 1)'): Keyframe => ({ left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px`, borderRadius: rad, opacity, offset, easing })
       const anim = img.animate(
         growing
           ? [
-              // Lift off the page, hold a beat, sweep out to fill the window, then dissolve into the page.
-              frame(a, radius, 1, 0, 'ease-out'),
-              frame(lifted(a), radius, 1, 0.14),
-              frame(lifted(a), radius, 1, 0.22),
-              frame(b, '0px', 1, 0.7, 'ease-in'),
-              frame(b, '0px', 0, 1)
+              // Lift off the page and hold a beat, glide to the middle as a big poster, hold while the
+              // show's own picture fades in behind it, then let it melt into the page.
+              frame(source, radius, 1, 0, 'ease-out'),
+              frame(grown(source, 1.08), radius, 1, 0.12),
+              frame(grown(source, 1.08), radius, 1, 0.2),
+              frame(big, '14px', 1, 0.52, 'linear'),
+              frame(big, '14px', 1, 0.7, 'ease-in'),
+              frame(grown(big, 1.04), '14px', 0, 1)
             ]
-          : [frame(a, '0px', 0, 0, 'ease-out'), frame(a, '0px', 1, 0.18), frame(lifted(b), radius, 1, 0.78, 'ease-out'), frame(b, radius, 1, 0.9), frame(b, radius, 0, 1)],
+          : [frame(grown(big, 1.04), '14px', 0, 0, 'ease-out'), frame(big, '14px', 1, 0.2), frame(grown(source, 1.08), radius, 1, 0.78, 'ease-out'), frame(source, radius, 1, 0.9), frame(source, radius, 0, 1)],
         { duration: ms, fill: 'forwards' }
       )
-      veil.animate(growing ? [{ opacity: 0 }, { opacity: 1, offset: 0.3 }, { opacity: 1, offset: 0.7 }, { opacity: 0 }] : [{ opacity: 0.9 }, { opacity: 0.9, offset: 0.2 }, { opacity: 0 }], { duration: ms, fill: 'forwards' })
+      veil.animate(growing ? [{ opacity: 0 }, { opacity: 1, offset: 0.3 }, { opacity: 1, offset: 0.5 }, { opacity: 0, offset: 0.8 }, { opacity: 0 }] : [{ opacity: 0.9 }, { opacity: 0.9, offset: 0.2 }, { opacity: 0 }], { duration: ms, fill: 'forwards' })
       if (growing) {
         // Swap in the bigger picture once it has loaded, so the full-window frame isn't blurry.
         const big = new Image()
