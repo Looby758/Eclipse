@@ -31,20 +31,32 @@ export function posterFor<T extends string | null | undefined>(library: Library,
   return library.posters?.[key] ?? fallback
 }
 
+/** Which picture you're choosing: the poster, or the background on the title's page. */
+export type Artwork = 'posters' | 'backdrops'
+
 /** Uses `path` for this title everywhere, or goes back to TMDB's default with null (Reset). */
 export function setPoster(library: Library, key: string, path: string | null): Library {
+  return setArtwork(library, 'posters', key, path)
+}
+
+/** The background picture on a title's page (picked with "Change background"), or back to TMDB's with null. */
+export function setBackdrop(library: Library, key: string, path: string | null): Library {
+  return setArtwork(library, 'backdrops', key, path)
+}
+
+function setArtwork(library: Library, kind: Artwork, key: string, path: string | null): Library {
   if (!KEY.test(key)) return library
   if (path !== null && !isPosterPath(path)) return library
-  const posters = { ...(library.posters ?? {}) }
+  const chosen = { ...(library[kind] ?? {}) }
   if (path === null) {
-    if (!(key in posters)) return library
-    delete posters[key]
+    if (!(key in chosen)) return library
+    delete chosen[key]
   } else {
-    if (posters[key] === path) return library
-    posters[key] = path
+    if (chosen[key] === path) return library
+    chosen[key] = path
   }
-  const next: Library = { ...library, posters }
-  if (!Object.keys(posters).length) delete next.posters
+  const next: Library = { ...library, [kind]: chosen }
+  if (!Object.keys(chosen).length) delete next[kind]
   return next
 }
 
@@ -54,6 +66,12 @@ export function normalizePosters(raw: unknown): Record<string, string> | undefin
   const out: Record<string, string> = {}
   for (const [key, path] of Object.entries(raw as Record<string, unknown>)) if (KEY.test(key) && isPosterPath(path)) out[key] = path
   return Object.keys(out).length ? out : undefined
+}
+
+/** A title's posters and backgrounds on TMDB. */
+export interface TitleImages {
+  posters: PosterOption[]
+  backdrops: PosterOption[]
 }
 
 /**

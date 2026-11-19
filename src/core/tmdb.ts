@@ -1,5 +1,5 @@
 import type { Trait } from './types'
-import type { PosterOption } from './posters'
+import type { TitleImages } from './posters'
 import type { CollectionDetails, Credits, Episode, MediaType, NextEpisode, PartEpisodes, PersonDetails, PersonRef, PersonResult, Provider, SearchResult, Season, SeasonDetails, TitleDetails, TitleRef, TmdbListDetails, WatchProviders } from './types'
 import { titleKey } from './types'
 
@@ -83,8 +83,8 @@ export interface Tmdb {
   similar(type: MediaType, id: number): Promise<SearchResult[]>
   /** What recommendations learn from: its creators, network, main cast and keywords. */
   traits(type: MediaType, id: number): Promise<Trait[]>
-  /** Every poster TMDB has for a title in English or with no text (phase 55: choose your own). */
-  posters(type: MediaType, id: number): Promise<PosterOption[]>
+  /** Every poster and background TMDB has for a title in English or with no text (phase 55: choose your own). */
+  images(type: MediaType, id: number): Promise<TitleImages>
 }
 
 export function createTmdb({ key, fetch, language = 'en-GB' }: TmdbOptions): Tmdb {
@@ -202,9 +202,9 @@ export function createTmdb({ key, fetch, language = 'en-GB' }: TmdbOptions): Tmd
       }
     },
 
-    async posters(type, id) {
-      const raw = await get<{ posters?: RawImage[] }>(`/${type}/${id}/images`, { include_image_language: 'en,null' })
-      return parsePosters(raw.posters ?? [])
+    async images(type, id) {
+      const raw = await get<{ posters?: RawImage[]; backdrops?: RawImage[] }>(`/${type}/${id}/images`, { include_image_language: 'en,null' })
+      return { posters: parsePosters(raw.posters ?? []), backdrops: parsePosters(raw.backdrops ?? []) }
     },
 
     async details(type, id) {
@@ -316,7 +316,7 @@ interface RawImage {
   height?: number
 }
 
-export function parsePosters(raw: RawImage[]): PosterOption[] {
+export function parsePosters(raw: RawImage[]): TitleImages['posters'] {
   return raw
     .filter((p): p is RawImage & { file_path: string } => typeof p.file_path === 'string' && !p.file_path.endsWith('.svg'))
     .map((p) => ({ path: p.file_path, language: p.iso_639_1 || null, votes: (p.vote_average ?? 0) * Math.min(1, (p.vote_count ?? 0) / 3 + 0.25), width: p.width ?? 0, height: p.height ?? 0 }))

@@ -255,6 +255,8 @@ export interface Library {
   phoneApplied?: string[]
   /** Posters you chose yourself (phase 55), by title key: TMDB's file path ("/abc.jpg"), used everywhere instead of the default. */
   posters?: Record<string, string>
+  /** Backgrounds you chose for a title's page, by title key (same shape as posters). */
+  backdrops?: Record<string, string>
   /** Your favourites wall (phase 58): your all-time top films and shows, in your order. */
   favourites?: TitleRef[]
 }

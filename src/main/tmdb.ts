@@ -1,4 +1,4 @@
-import type { PosterOption } from '@core/posters'
+import type { TitleImages } from '@core/posters'
 import { comingSoon, comingSoonCandidates, type ComingSoon } from '@core/shelf'
 import { errorText, report } from './health'
 import { net, safeStorage } from 'electron'
@@ -235,8 +235,8 @@ async function keep<T>(key: string, ttl: number, job: () => Promise<T>, refresh 
   return { data: r.data, stale: r.source === 'stale', savedAt: r.savedAt }
 }
 
-/** Phase 55: a title's other posters, for "Change poster" (saved for a week, like details). */
-export const posters = (type: MediaType, id: number): Promise<Fetched<PosterOption[]>> => keep(`posters:${type}:${id}`, CACHE_TTL.details, () => tmdb().posters(type, id))
+/** Phase 55: a title's other posters and backgrounds, for "Change poster" and "Change background" (saved for a week, like details). */
+export const images = (type: MediaType, id: number): Promise<Fetched<TitleImages>> => keep(`images:${type}:${id}`, CACHE_TTL.details, () => tmdb().images(type, id))
 
 // "v3": saved copies from before parts played, the full cast and part ids were kept are fetched again.
 export const credits = (type: MediaType, id: number): Promise<Fetched<Credits>> => keep(`credits3:${type}:${id}`, CACHE_TTL.credits, () => tmdb().credits(type, id))

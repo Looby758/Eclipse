@@ -69,7 +69,8 @@ export function CastStrip({ details: d, universe, onMore }: { details: TitleDeta
 
 function UniverseCard({ u, name }: { u: UniverseItem; name: string }): React.JSX.Element {
   const go = useApp((s) => s.go)
-  const art = imageUrl(u.backdropPath ?? u.posterPath, 'w780')
+  const chosen = useApp((s) => s.library.backdrops?.[u.key])
+  const art = imageUrl(chosen ?? u.backdropPath ?? u.posterPath, 'w780')
   return (
     <button
       className={`st-card ${u.current ? 'on' : ''} ${u.total && u.seen >= u.total ? 'done' : ''}`}

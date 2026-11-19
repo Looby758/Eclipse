@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { emptyLibrary, normalizeLibrary } from './library'
-import { orderPosters, posterFor, setPoster } from './posters'
+import { orderPosters, posterFor, setBackdrop, setPoster } from './posters'
 import { FAVOURITES_MAX, isFavourite, moveFavourite, setFavourite } from './favourites'
 import { comingSoon, finishedShelf } from './shelf'
 import { parsePosters } from './tmdb'
@@ -21,6 +21,12 @@ describe('choose your own posters (phase 55)', () => {
     l = setPoster(l, 'tv:1402', null)
     expect(l.posters).toBeUndefined()
     expect(posterFor(l, 'tv:1402', '/def.jpg')).toBe('/def.jpg')
+  })
+  it('keeps a chosen background apart from the poster, and through the file', () => {
+    const l = setBackdrop(setPoster(emptyLibrary(), 'tv:1', '/p.jpg'), 'tv:1', '/b.jpg')
+    expect(l.posters).toEqual({ 'tv:1': '/p.jpg' })
+    expect(normalizeLibrary(JSON.parse(JSON.stringify(l))).backdrops).toEqual({ 'tv:1': '/b.jpg' })
+    expect(setBackdrop(l, 'tv:1', null).backdrops).toBeUndefined()
   })
   it('ignores anything that is not a TMDB image path or title key', () => {
     const l = emptyLibrary()

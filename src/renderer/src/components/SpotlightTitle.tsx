@@ -1,4 +1,4 @@
-import { Bookmark, Check, ChevronDown, CircleCheck, CirclePause, CirclePlay, ExternalLink, Hourglass, Image, Plus, Popcorn, RectangleVertical, RefreshCw, X } from 'lucide-react'
+import { Bookmark, Check, ChevronDown, CircleCheck, CirclePause, CirclePlay, ExternalLink, Hourglass, Image, Plus, Popcorn, RectangleHorizontal, RectangleVertical, RefreshCw, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { formatDate, formatRuntime, plural, stingerLine } from '@core/format'
 import { activeEntry, currentRewatch, localDate, nextEpisodeFor, preferencesOf, watchCount } from '@core/library'
@@ -34,7 +34,7 @@ import { journeyOf } from '@core/journey'
 
 const ICONS: Record<WatchStatus, typeof Bookmark> = { want: Bookmark, watching: CirclePlay, watched: CircleCheck, stopped: CirclePause }
 
-type Panel = 'universe' | 'episodes' | 'note' | 'with' | 'time' | 'moments' | 'rewatch' | 'where' | 'more' | 'poster' | 'journey'
+type Panel = 'universe' | 'episodes' | 'note' | 'with' | 'time' | 'moments' | 'rewatch' | 'where' | 'more' | 'poster' | 'backdrop' | 'journey'
 
 /**
  * The Spotlight look's title page ("All on one screen"): the show's own picture fills the window,
@@ -78,6 +78,8 @@ export default function SpotlightTitle({ type, id }: { type: MediaType; id: numb
   const library = useApp((s) => s.library)
   const setLibrary = useApp((s) => s.setLibrary)
   const raw = library.entries[`${type}:${id}`]
+  // The background you chose for this page, if any.
+  const chosenBackdrop = library.backdrops?.[`${type}:${id}`]
   const entry = activeEntry(raw)
 
   const load = async (refresh = false): Promise<void> => {
@@ -126,7 +128,7 @@ export default function SpotlightTitle({ type, id }: { type: MediaType; id: numb
   const d = details
   const tv = d.type === 'tv'
   const today = localDate(new Date())
-  const backdrop = imageUrl(d.backdropPath, 'original')
+  const backdrop = imageUrl(chosenBackdrop ?? d.backdropPath, 'original')
   const logo = imageUrl(d.logoPath, 'w500')
   const count = tv ? showCount(d, entry, today) : null
   const next = tv ? nextEpisodeFor(entry, d.seasons) : null
@@ -195,7 +197,8 @@ export default function SpotlightTitle({ type, id }: { type: MediaType; id: numb
     { id: 'rewatch', label: rewatchLabel, show: watched > 0 || !!currentRewatch(raw) || (tv ? !started : !filmDone) },
     { id: 'where', label: 'Where to watch', show: true },
     { id: 'more', label: 'More', show: true },
-    { id: 'poster', label: 'Change poster', show: false }
+    { id: 'poster', label: 'Change poster', show: false },
+    { id: 'backdrop', label: 'Change background', show: false }
   ]
 
   return (
@@ -246,6 +249,9 @@ export default function SpotlightTitle({ type, id }: { type: MediaType; id: numb
               <button className={`st-chip ${panel === 'poster' ? 'on' : ''}`} onClick={() => setPanel(panel === 'poster' ? null : 'poster')}>
                 <RectangleVertical size={13} /> Change poster
               </button>
+              <button className={`st-chip ${panel === 'backdrop' ? 'on' : ''}`} onClick={() => setPanel(panel === 'backdrop' ? null : 'backdrop')}>
+                <RectangleHorizontal size={13} /> Change background
+              </button>
               {backdrop && (
                 <button className="st-chip" onClick={() => setBare(true)} title="Just the picture (P)">
                   <Image size={13} /> Just the picture
@@ -293,6 +299,7 @@ export default function SpotlightTitle({ type, id }: { type: MediaType; id: numb
           {panel === 'rewatch' && <RewatchPanel details={d} />}
           {panel === 'where' && <WhereToWatch type={d.type} id={d.id} />}
           {panel === 'poster' && <PosterPicker details={d} />}
+          {panel === 'backdrop' && <PosterPicker details={d} kind="backdrops" />}
           {panel === 'journey' && journey && <JourneyRibbon journey={journey} onSeason={(n) => openEpisode(n, 1)} />}
           {panel === 'more' && (
             <div className="st-more">

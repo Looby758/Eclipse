@@ -212,6 +212,10 @@ export interface EclipseApi {
   posterOptions(type: MediaType, id: number): Promise<Result<PosterOption[]>>
   /** Uses one of a title's posters everywhere, or goes back to the default with null (Reset). */
   setPoster(key: TitleKey, path: string | null): Promise<Library>
+  /** Every background TMDB has for a title's page, textless first (the usual one first of all). */
+  backdropOptions(type: MediaType, id: number): Promise<Result<PosterOption[]>>
+  /** Uses one of them on the title's page, or goes back to the usual one with null. */
+  setBackdrop(key: TitleKey, path: string | null): Promise<Library>
   /** Phase 58: hangs a title on the favourites wall (at the end) or takes it down. */
   setFavourite(ref: TitleRef, on: boolean): Promise<Library>
   moveFavourite(from: number, to: number): Promise<Library>

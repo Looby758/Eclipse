@@ -25,7 +25,7 @@ import { acceptSuggestion, changeDiscord, dismissSuggestion, notMine, noticingSt
 import { discordStatus, setupDiscord, stopDiscord } from './discord'
 import { showExtensionFolder } from './extension'
 import { editMoment } from '@core/watching'
-import { orderPosters, setPoster } from '@core/posters'
+import { orderPosters, setBackdrop, setPoster } from '@core/posters'
 import { moveFavourite, setFavourite } from '@core/favourites'
 import { CATCH_UP_ID, dismissCatchUp } from '@core/catchup'
 import { answerRecommendation } from '@core/recommend'
@@ -303,10 +303,18 @@ function setupIpc(): void {
   ipcMain.handle('soon:set', (_e, ref: TitleRef, on: boolean) => saveLibrary(setWatchSoon(getLibrary(), ref, on)))
   ipcMain.handle('posters:list', (_e, type: 'movie' | 'tv', id: number) =>
     attempt(async () => {
-      const [options, d] = await Promise.all([tmdb.posters(type, id), tmdb.details(type, id)])
-      return orderPosters(options.data, d.data.posterPath)
+      const [images, d] = await Promise.all([tmdb.images(type, id), tmdb.details(type, id)])
+      return orderPosters(images.data.posters, d.data.posterPath)
     })
   )
+  ipcMain.handle('backdrops:list', (_e, type: 'movie' | 'tv', id: number) =>
+    attempt(async () => {
+      const [images, d] = await Promise.all([tmdb.images(type, id), tmdb.details(type, id)])
+      // Backgrounds with no text first: words over the page would fight with its own.
+      return orderPosters(images.data.backdrops, d.data.backdropPath, 'none')
+    })
+  )
+  ipcMain.handle('backdrops:set', (_e, key: string, path: string | null) => saveLibrary(setBackdrop(getLibrary(), String(key), typeof path === 'string' ? path : null)))
   ipcMain.handle('posters:set', (_e, key: string, path: string | null) => saveLibrary(setPoster(getLibrary(), String(key), typeof path === 'string' ? path : null)))
   ipcMain.handle('favourites:set', (_e, ref: TitleRef, on: boolean) => saveLibrary(setFavourite(getLibrary(), ref, !!on)))
   ipcMain.handle('favourites:move', (_e, from: number, to: number) => saveLibrary(moveFavourite(getLibrary(), Number(from), Number(to))))
