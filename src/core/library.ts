@@ -1,6 +1,6 @@
 import type { Dropped, JustTonight, Library, LibraryEntry, MediaType, Preferences, Reaction, Rewatch, TitleDetails, TitleKey, TitleSnapshot, WatchSlot, WatchStatus } from './types'
 import type { PlannedTime } from './types'
-import { DEFAULT_PREFERENCES, UNDATED, WATCH_STATUSES, episodeKey, parseEpisodeKey, parseTitleKey } from './types'
+import { DEFAULT_PREFERENCES, MILESTONE_ID, UNDATED, WATCH_STATUSES, episodeKey, parseEpisodeKey, parseTitleKey } from './types'
 import type { TitleRef } from './types'
 import { normalizeLists, normalizeWatchSoon, refOf } from './lists'
 import { normalizeLinks, normalizeMoments } from './watching'
@@ -386,6 +386,7 @@ export function normalizeLibrary(raw: unknown): Library {
   const rawPosters = raw && typeof raw === 'object' ? (raw as { posters?: unknown }).posters : undefined
   const rawBackdrops = raw && typeof raw === 'object' ? (raw as { backdrops?: unknown }).backdrops : undefined
   const rawFavourites = raw && typeof raw === 'object' ? (raw as { favourites?: unknown }).favourites : undefined
+  const rawMilestones = raw && typeof raw === 'object' ? (raw as { milestones?: unknown }).milestones : undefined
   const rawCountdowns = raw && typeof raw === 'object' ? (raw as { countdowns?: unknown }).countdowns : undefined
   const finish = (): Library => {
     const posters = normalizePosters(rawPosters)
@@ -394,6 +395,10 @@ export function normalizeLibrary(raw: unknown): Library {
     if (backdrops) lib.backdrops = backdrops
     const favourites = normalizeFavourites(rawFavourites)
     if (favourites) lib.favourites = favourites
+    if (Array.isArray(rawMilestones)) {
+      const ids = [...new Set(rawMilestones.filter((x): x is string => typeof x === 'string' && MILESTONE_ID.test(x)))].slice(-2000)
+      if (ids.length) lib.milestones = ids
+    }
     const countdowns = normalizeCountdowns(rawCountdowns)
     if (countdowns) lib.countdowns = countdowns
     const taste = normalizeTaste(rawTaste)

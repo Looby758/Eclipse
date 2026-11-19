@@ -14,6 +14,7 @@ import PicksSheet from './components/PicksSheet'
 import ServicesSheet from './components/ServicesSheet'
 import RepairSheet from './components/RepairSheet'
 import YearSheet from './components/YearSheet'
+import StatsSheet from './components/StatsSheet'
 import LibrarySheet from './components/LibrarySheet'
 import SearchSheet from './components/SearchSheet'
 import TitleSheet from './components/TitleSheet'
@@ -27,6 +28,7 @@ import SpotlightHome from './components/SpotlightHome'
 import Countdowns from './components/Countdowns'
 import Logo from './components/Logo'
 import UndoBar from './components/UndoBar'
+import MilestoneNote from './components/MilestoneNote'
 import ReactionAsk from './components/ReactionAsk'
 import StartAsk from './components/StartAsk'
 import PhoneAsk from './components/PhoneAsk'
@@ -39,6 +41,7 @@ import { useHomeStyle } from './lib/homeStyle'
 import { handleArrows, isTyping } from './lib/keys'
 import { useStartAsk } from './lib/startAsk'
 import { startWelcome, useWelcome } from './lib/welcome'
+import { watchMilestones } from './lib/milestones'
 
 export default function App(): React.JSX.Element {
   const status = useApp((s) => s.status)
@@ -62,6 +65,8 @@ export default function App(): React.JSX.Element {
     })
     window.api.getLibrary().then(setLibrary)
     const stop = window.api.onLibraryChanged(setLibrary)
+    // Phase 53: a small note when a tick takes you past a milestone.
+    const stopMilestones = watchMilestones()
     // Mouse back button, Alt+Left and Escape go back, like a browser.
     const onMouse = (e: MouseEvent): void => {
       if (e.button === 3) back()
@@ -81,6 +86,7 @@ export default function App(): React.JSX.Element {
     window.addEventListener('keydown', onKey)
     return () => {
       stop()
+      stopMilestones()
       window.removeEventListener('mouseup', onMouse)
       window.removeEventListener('keydown', onKey)
     }
@@ -146,6 +152,7 @@ export default function App(): React.JSX.Element {
           {view.name === 'picks' && <PicksSheet />}
           {view.name === 'services' && <ServicesSheet />}
           {view.name === 'repair' && <RepairSheet />}
+          {view.name === 'stats' && <StatsSheet />}
           {view.name === 'year' && <YearSheet key={view.year ?? 'now'} year={view.year} />}
           {view.name === 'list' && <ListSheet key={view.id} id={view.id} />}
           {view.name === 'title' &&
@@ -156,6 +163,7 @@ export default function App(): React.JSX.Element {
             ))}
           <Dock tucked={spot || (view.name === 'title' && homeStyle === 'spotlight')} />
           <UndoBar />
+          <MilestoneNote />
           <ReactionAsk />
           <StartAsk />
           <PhoneAsk />

@@ -1236,6 +1236,56 @@ select:hover { border-color: var(--accent); }
 .poster-grid.wide { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
 .poster-grid.wide .poster-option { aspect-ratio: 16 / 9; }
 
+/* Phase 53: milestones, a small note at the top with a soft flare in the eclipse's halo */
+.milestone { position: fixed; top: 18px; left: 50%; transform: translateX(-50%); z-index: 63; display: flex; align-items: center; gap: 12px; max-width: calc(100vw - 40px); padding: 8px 8px 8px 10px; border-radius: 18px; border: 1px solid var(--line); background: var(--menu-bg); color: var(--menu-text); box-shadow: var(--shadow); cursor: default; animation: milestone-in var(--slow) var(--ease), milestone-out 0.8s var(--ease) 8.2s forwards; }
+.milestone-halo { position: relative; display: grid; place-items: center; flex-shrink: 0; width: 34px; height: 34px; }
+.milestone-halo svg { position: relative; display: block; }
+.milestone-halo::before { content: ''; position: absolute; inset: -6px; border-radius: 50%; background: radial-gradient(circle, var(--milestone-flare) 0%, transparent 70%); opacity: 0; animation: milestone-flare 2.4s var(--ease) 0.2s; }
+.milestone-text { display: flex; flex-direction: column; min-width: 0; padding-right: 4px; }
+.milestone-line { font-size: var(--text-sm); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.milestone-detail { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.milestone-close { display: grid; place-items: center; width: 26px; height: 26px; flex-shrink: 0; border: 0; border-radius: 50%; background: transparent; color: var(--text-muted); cursor: pointer; }
+.milestone-close:hover { background: var(--line); color: var(--menu-text); }
+@keyframes milestone-in { from { opacity: 0; transform: translate(-50%, -8px); } }
+@keyframes milestone-out { to { opacity: 0; } }
+@keyframes milestone-flare { 0% { opacity: 0; transform: scale(0.6); } 35% { opacity: 1; transform: scale(1.5); } 100% { opacity: 0.35; transform: scale(1.1); } }
+.milestone-halo::after { content: ''; position: absolute; inset: -2px; border-radius: 50%; box-shadow: 0 0 14px var(--halo); opacity: 0.6; pointer-events: none; }
+:root[data-still] .milestone, :root[data-still] .milestone-halo::before { animation: none; }
+:root[data-still] .milestone-halo::before { opacity: 0.35; }
+@media (prefers-reduced-motion: reduce) {
+  .milestone, .milestone-halo::before { animation: none; }
+  .milestone-halo::before { opacity: 0.35; }
+}
+
+/* Phase 53: the Stats page (shares Your year's numbers, cards and bars) */
+.stats-lede { max-width: 900px; margin: -6px 0 18px; }
+.stats .year-months { max-width: 1100px; }
+.stats .year-grid + .year-months, .stats .year-months + .year-grid { margin-top: 14px; }
+.stats .year-grid { margin-bottom: 14px; }
+.stats-bars { height: 160px; }
+.stats-split { height: 8px; border-radius: 999px; background: var(--glass-hover); overflow: hidden; margin: 10px 0 8px; }
+.stats-split span { display: block; height: 100%; border-radius: inherit; background: var(--accent-gradient); }
+.stats-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.stats-rows li { display: grid; grid-template-columns: minmax(90px, 140px) 1fr auto; align-items: center; gap: 10px; font-size: var(--text-sm); }
+.stats-row-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stats-row-bar { display: block; height: 6px; border-radius: 999px; background: var(--glass-hover); overflow: hidden; }
+.stats-row-bar span { display: block; height: 100%; border-radius: inherit; background: var(--accent-gradient); }
+.stats-milestones .list-sub { display: flex; align-items: center; gap: 8px; }
+.milestone-card h3 { margin: 0 0 12px; font-size: var(--text-sm); text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+.milestone-track + .milestone-track { margin-top: 14px; }
+.milestone-track-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.milestone-track-label { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.milestone-badge { display: inline-grid; flex-shrink: 0; border-radius: 6px; box-shadow: 0 0 10px var(--halo); }
+.milestone-badge svg { display: block; }
+.milestone-progress { margin: 8px 0 4px; }
+.milestone-progress span { box-shadow: 0 0 8px var(--halo); }
+.milestone-track-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.milestone-track-foot .link-btn { padding: 0; font-size: var(--text-xs); }
+.milestone-notes { margin: 6px 0 0; padding-left: 18px; font-size: var(--text-sm); color: var(--text-muted); display: grid; gap: 2px; }
+.stats .year-top + .year-grid { margin-top: 22px; }
+.stats-milestones .year-grid { align-items: start; }
+
+
 /* ---- Premiere night (phase 50): Home turns into the show that's out today ---- */
 .premiere-fill { fill: none; stroke: var(--spot-hi); stroke-width: 10; stroke-linecap: round; filter: drop-shadow(0 0 8px var(--spot-hi)); }
 .premiere.is-out .premiere-fill { animation: premiere-glow 2.6s ease-in-out infinite; }

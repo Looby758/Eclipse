@@ -27,12 +27,14 @@ import { showExtensionFolder } from './extension'
 import { editMoment } from '@core/watching'
 import { orderPosters, setBackdrop, setPoster } from '@core/posters'
 import { moveFavourite, setFavourite } from '@core/favourites'
+import { markMilestones, milestoneBoard, milestoneKeys } from '@core/milestones'
+import { allTimeStats } from '@core/stats'
 import { setCountdown } from '@core/countdowns'
 import { CATCH_UP_ID, dismissCatchUp } from '@core/catchup'
 import { answerRecommendation } from '@core/recommend'
 import { newRemoteCode, remoteStatus, setRemote, setupRemote, stopRemote } from './remote'
 import { guardStatus, readOnlyReason, startGuard, stopGuard, takeOver } from './guard'
-import { carryUndo, remember, undoTarget } from './undo'
+import { carryForward, carryUndo, remember, undoTarget } from './undo'
 import { setReaction } from '@core/reactions'
 import { loginStatus, markAsked, setStartAtLogin, startedHidden } from './login'
 import { backupFor, dailyBackup, listBackups } from './backups'
@@ -329,6 +331,14 @@ function setupIpc(): void {
   ipcMain.handle('finale:theme', (_e, tvId: number) => themeFor(Number(tvId)))
   ipcMain.handle('finale:image', (event, how: 'copy' | 'save', name: string) => finaleImage(BrowserWindow.fromWebContents(event.sender)!, how === 'save' ? 'save' : 'copy', String(name ?? '')))
   ipcMain.handle('favourites:set', (_e, ref: TitleRef, on: boolean) => saveLibrary(setFavourite(getLibrary(), ref, !!on)))
+  ipcMain.handle('milestones:seen', (_e, ids: unknown) => {
+    const before = getLibrary()
+    const next = markMilestones(before, Array.isArray(ids) ? ids.map(String) : [])
+    if (next === before) return before
+    const after = saveLibrary(next)
+    carryForward(before, after, (lib) => markMilestones(lib, Array.isArray(ids) ? ids.map(String) : []))
+    return after
+  })
   ipcMain.handle('countdowns:set', (_e, ref: TitleRef, on: boolean) => saveLibrary(setCountdown(getLibrary(), ref, !!on)))
   ipcMain.handle('favourites:move', (_e, from: number, to: number) => saveLibrary(moveFavourite(getLibrary(), Number(from), Number(to))))
   ipcMain.handle('shelf:comingSoon', () => attempt(() => tmdb.comingSoonList(getLibrary())))
@@ -351,6 +361,14 @@ function setupIpc(): void {
       const lib = getLibrary()
       const { details, credits, lists } = await tmdb.yearData(lib, keysWatchedIn(lib, year))
       return yearInReview(getLibrary(), year, details, credits, lists, localDate(new Date()))
+    })
+  )
+  // Stats: everything you've watched over all time, and every milestone (phase 53).
+  ipcMain.handle('stats:all', () =>
+    attempt(async () => {
+      const details = await tmdb.detailsMany(milestoneKeys(getLibrary()))
+      const lib = getLibrary()
+      return { stats: allTimeStats(lib, details, localDate(new Date())), milestones: milestoneBoard(lib, details), shown: lib.milestones?.length ?? 0 }
     })
   )
   ipcMain.handle('recs:list', () => attempt(() => tmdb.recommendationsFor(getLibrary())))

@@ -1,4 +1,4 @@
-import { Hourglass, Library, LibraryBig, ListChecks, Moon, Search, Settings } from 'lucide-react'
+import { ChartNoAxesColumn, Hourglass, Library, LibraryBig, ListChecks, Moon, Search, Settings } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { currentView, useApp, type View } from '../store/app'
 
@@ -8,6 +8,7 @@ const ITEMS: { view: View['name']; label: string; icon: typeof Moon }[] = [
   { view: 'soon', label: 'Soon', icon: Hourglass },
   { view: 'lists', label: 'Lists', icon: ListChecks },
   { view: 'shelf', label: 'Shelf', icon: LibraryBig },
+  { view: 'stats', label: 'Stats', icon: ChartNoAxesColumn },
   { view: 'settings', label: 'Settings', icon: Settings }
 ]
 
