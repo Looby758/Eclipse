@@ -13,7 +13,7 @@ import type { PosterOption } from '@core/posters'
 import type { BoxSetCard, ComingSoon } from '@core/shelf'
 import type { NowPlaying, Recognised, Suggestion, UnknownShow } from '@core/watching'
 import type { CollectionDetails, Credits, ListSource, PartEpisodes, PersonDetails, PersonResult, TitleRef, TmdbListDetails } from '@core/types'
-import type { Library, MediaType, PlannedTime, Preferences, Provider, SearchResult, SeasonDetails, TitleDetails, TitleKey, TitleSnapshot, WatchProviders, WatchStatus } from '@core/types'
+import type { Library, MediaType, PlannedTime, Preferences, Reaction, Provider, SearchResult, SeasonDetails, TitleDetails, TitleKey, TitleSnapshot, WatchProviders, WatchStatus } from '@core/types'
 
 /** A clash between your phone and this computer, with a plain-words line (Phase 45). */
 export type PhoneAsk = PhoneConflict & { text: string }
@@ -261,6 +261,8 @@ export interface EclipseApi {
   /** Your rating out of 10 (five stars with halves), or null to take it off. */
   setRating(key: TitleKey, rating: number | null): Promise<Library>
   setNote(key: TitleKey, note: string): Promise<Library>
+  /** Phase 47: how an episode hit you (null clears it), saved on its most recent tick. */
+  setReaction(key: TitleKey, episode: string, reaction: Reaction | null): Promise<Library>
   /** Clear out: take it off your library (it goes to recently dropped), or put it back. */
   dropTitle(key: TitleKey): Promise<Library>
   restoreDropped(key: TitleKey): Promise<Library>

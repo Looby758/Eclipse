@@ -7,7 +7,7 @@ import { moveWatchSoon, setWatchSoon } from '@core/watchsoon'
 import { type LibraryItem, dropTitle, restoreDropped, setFrom, endWatchWith, planWatchWith, startWatchWith, tickWith, endRewatch, localDate, markRowSeen, settleSeenShows, markSeenBefore, preferencesOf, removeRewatch, setEpisodes, startRewatch, setFinishBy, snoozeTitle, setNote, setRating, setPreferences, setStatus, setWatchedOn } from '@core/library'
 import { TmdbError } from '@core/tmdb'
 import { createList, followList, moveInList, removeList, renameList, setInList } from '@core/lists'
-import { UNDATED, type Library, type TitleRef } from '@core/types'
+import { UNDATED, type Library, type Reaction, type TitleRef } from '@core/types'
 import { mergeSequel, summarizeImport, type SequelImport } from '@core/sequel'
 import type { AppStatus, Result } from '@shared/api'
 import { loadSettings, saveSettings } from './settings'
@@ -31,7 +31,8 @@ import { CATCH_UP_ID, dismissCatchUp } from '@core/catchup'
 import { answerRecommendation } from '@core/recommend'
 import { newRemoteCode, remoteStatus, setRemote, setupRemote, stopRemote } from './remote'
 import { guardStatus, readOnlyReason, startGuard, stopGuard, takeOver } from './guard'
-import { remember, undoTarget } from './undo'
+import { carryUndo, remember, undoTarget } from './undo'
+import { setReaction } from '@core/reactions'
 import { loginStatus, markAsked, setStartAtLogin, startedHidden } from './login'
 import { backupFor, dailyBackup, listBackups } from './backups'
 import { foldFromPhone, phoneAsks, resolveAsk, startPhone } from './phone'
@@ -290,6 +291,12 @@ function setupIpc(): void {
   ipcMain.handle('library:startRewatch', (_e, item) => change((lib) => startRewatch(lib, item)))
   ipcMain.handle('library:endRewatch', (_e, key: string, keep: boolean) => change((lib) => endRewatch(lib, key, keep)))
   ipcMain.handle('library:removeRewatch', (_e, key: string, index: number) => change((lib) => removeRewatch(lib, key, index)))
+  ipcMain.handle('library:setReaction', (_e, key: string, episode: string, reaction: Reaction | null) => {
+    const before = getLibrary()
+    const after = saveLibrary(setReaction(before, key, episode, reaction))
+    carryUndo(before, after)
+    return after
+  })
   ipcMain.handle('library:setRating', (_e, key: string, rating: number | null) => saveLibrary(setRating(getLibrary(), String(key), typeof rating === 'number' ? rating : null)))
   ipcMain.handle('library:setNote', (_e, key: string, note: string) => saveLibrary(setNote(getLibrary(), key, note)))
   ipcMain.handle('library:setWatchedOn', (_e, key: string, day: string | null) => saveLibrary(setWatchedOn(getLibrary(), key, day)))

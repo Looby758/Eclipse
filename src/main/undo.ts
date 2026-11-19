@@ -45,3 +45,11 @@ export function undoTarget(id: number, current: Library): { ok: true; library: L
 }
 
 export const forgetUndo = (): void => void steps.splice(0)
+
+/**
+ * A small follow-up that belongs to the last change (phase 47: how the episode you just ticked hit
+ * you) keeps that change undoable: undoing the tick takes the reaction with it.
+ */
+export function carryUndo(before: Library, after: Library): void {
+  for (const s of steps) if (s.after === before) s.after = after
+}
