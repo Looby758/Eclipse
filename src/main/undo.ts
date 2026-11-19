@@ -44,6 +44,17 @@ export function undoTarget(id: number, current: Library): { ok: true; library: L
   return { ok: true, library: step.before, label: step.label }
 }
 
+/**
+ * A quiet change saved straight after another (noting a milestone was shown) shouldn't stop that
+ * one being undone: it's carried into the step, so undoing it keeps the quiet change too.
+ */
+export function carryForward(before: Library, after: Library, fn: (lib: Library) => Library): void {
+  const step = steps.find((s) => s.after === before)
+  if (!step) return
+  step.after = after
+  step.before = fn(step.before)
+}
+
 export const forgetUndo = (): void => void steps.splice(0)
 
 /**

@@ -157,6 +157,8 @@ export interface PlannedTime {
   weekly?: boolean
 }
 
+/** A milestone's id (phase 53): its measure and step, e.g. "episodes:1000", "hours:tv:1402:100", "genre:Drama:25". */
+export const MILESTONE_ID = /^[a-z]+(:[^:\n]{1,80}){0,2}:\d+$/
 /**
  * Phase 47, "My own heatmap": the one-tap answer to how an episode hit you.
  * 😭 wrecked, 🔥 brilliant, 😂 funny, 😴 dragged, 🤯 mind-blown.
@@ -279,6 +281,8 @@ export interface Library {
   backdrops?: Record<string, string>
   /** Your favourites wall (phase 58): your all-time top films and shows, in your order. */
   favourites?: TitleRef[]
+  /** Milestones already shown (phase 53), e.g. "episodes:1000" or "hours:tv:1402:100", so each shows only once. */
+  milestones?: string[]
   /** Countdowns on Home: films and shows you're waiting for, in the order you added them. */
   countdowns?: TitleRef[]
 }
