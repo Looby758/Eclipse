@@ -1045,3 +1045,27 @@ select:hover { border-color: var(--accent); }
 /* Keep the poster wall still: a plain fade. */
 :root.page-fade .stitle, :root.page-fade .sheet { animation: zoom-fade 240ms ease-out both !important; }
 @keyframes zoom-fade { from { opacity: 0; } }
+
+/* Phase 57: your journey with a show */
+.journey { display: grid; gap: 10px; }
+.journey-summary { margin: 0; color: var(--text-muted); font-size: var(--text-sm); }
+.journey-lanes { display: grid; gap: 8px; }
+.journey-lane, .journey-axis { display: grid; grid-template-columns: 96px minmax(0, 1fr); align-items: center; gap: 10px; }
+.journey-label { font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); display: flex; flex-direction: column; line-height: 1.2; }
+.journey-label small { color: var(--cyan); font-weight: 500; }
+.journey-track { position: relative; height: var(--journey-h); border-radius: 999px; background: var(--journey-track); }
+.journey-axis .journey-track { height: 16px; background: none; }
+.journey-before { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px 0 0 999px; background: repeating-linear-gradient(135deg, transparent 0 6px, var(--journey-hatch) 6px 8px); }
+.journey-year-line { position: absolute; top: -3px; bottom: -3px; width: 1px; background: var(--line); }
+.journey-season { position: absolute; top: 3px; bottom: 3px; min-width: 22px; padding: 0 4px; border: 0; border-radius: 999px; cursor: pointer; font: 700 10px var(--font-ui); color: #fff; overflow: hidden; white-space: nowrap; text-overflow: clip; background: linear-gradient(135deg, hsl(var(--hue) 85% 62%), hsl(calc(var(--hue) + 25) 70% 48%)); box-shadow: 0 2px 10px hsl(var(--hue) 80% 50% / 0.35); transition: transform var(--fast) var(--ease); }
+.journey-season.part { background: linear-gradient(135deg, hsl(var(--hue) 70% 55% / 0.55), hsl(calc(var(--hue) + 25) 60% 45% / 0.45)); box-shadow: inset 0 0 0 1px hsl(var(--hue) 85% 65% / 0.8); }
+.journey-season:hover, .journey-season:focus-visible { transform: scaleY(1.18); z-index: 1; }
+.journey-lane.with .journey-season, .journey-lane.rewatch .journey-season { top: 6px; bottom: 6px; }
+.journey-gap { position: absolute; top: 50%; height: 0; border-top: 1px dashed var(--text-faint); }
+.journey-gap em { position: absolute; left: 50%; top: 4px; transform: translateX(-50%); font-style: normal; font-size: 10px; color: var(--text-faint); white-space: nowrap; }
+.journey-now { position: absolute; top: -4px; bottom: -4px; width: 2px; border-radius: 2px; background: var(--cyan); box-shadow: 0 0 10px var(--halo); }
+.journey-tick { position: absolute; top: 0; font-size: 10px; color: var(--text-faint); white-space: nowrap; transform: translateX(-2px); }
+.journey-tick.end { left: auto; right: 0; transform: none; }
+.journey-list { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; font-size: var(--text-sm); color: var(--text-muted); }
+.journey-list b { color: var(--text); font-weight: 600; }
+.journey-dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: hsl(var(--hue) 85% 62%); }

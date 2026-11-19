@@ -75,6 +75,10 @@
   --poster-pick-on: #0b0d1f;
   /* Phase 56: the poster that grows into its title page */
   --zoom-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+  /* Phase 57: the journey ribbon */
+  --journey-h: 30px;
+  --journey-track: rgba(255, 255, 255, 0.06);
+  --journey-hatch: rgba(255, 255, 255, 0.1);
 
   /* Text */
   --text-strong: #ffffff;
@@ -150,6 +154,8 @@
     --bg: #efedfa;
     --glass: rgba(255, 255, 255, 0.78);
     --glass-soft: rgba(40, 30, 120, 0.05);
+    --journey-track: rgba(40, 30, 120, 0.06);
+    --journey-hatch: rgba(40, 30, 120, 0.12);
     --glass-hover: rgba(40, 30, 120, 0.09);
     --sheet: rgba(255, 255, 255, 0.93);
     --line: rgba(40, 30, 120, 0.14);
@@ -204,6 +210,8 @@
   --bg: #efedfa;
   --glass: rgba(255, 255, 255, 0.78);
   --glass-soft: rgba(40, 30, 120, 0.05);
+    --journey-track: rgba(40, 30, 120, 0.06);
+    --journey-hatch: rgba(40, 30, 120, 0.12);
   --glass-hover: rgba(40, 30, 120, 0.09);
   --sheet: rgba(255, 255, 255, 0.93);
   --line: rgba(40, 30, 120, 0.14);

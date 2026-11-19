@@ -6,6 +6,8 @@ import type { MediaType, TitleDetails } from '@core/types'
 import { DEFAULT_GLOW, hsl, posterGlow, type Hsl } from '../lib/posterColour'
 import Poster from './Poster'
 import PosterPicker from './PosterPicker'
+import JourneyRibbon from './JourneyRibbon'
+import { journeyOf } from '@core/journey'
 import { useApp } from '../store/app'
 import Sheet from './Sheet'
 import StatusPicker from './StatusPicker'
@@ -117,6 +119,7 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
         </div>
 
         <div className="title-body">
+          <JourneyCard details={d} />
           {picking && (
             <section className="card">
               <div className="row spread">
@@ -194,5 +197,18 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
         </div>
       </Sheet>
     </>
+  )
+}
+
+/** Phase 57: your journey with a show, on the Classic page. */
+function JourneyCard({ details: d }: { details: TitleDetails }): React.JSX.Element | null {
+  const raw = useApp((s) => s.library.entries[d.key])
+  const journey = d.type === 'tv' ? journeyOf(raw, d.seasons) : null
+  if (!journey) return null
+  return (
+    <section className="card">
+      <h2>Your journey</h2>
+      <JourneyRibbon journey={journey} />
+    </section>
   )
 }

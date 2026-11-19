@@ -27,10 +27,12 @@ import WhereToWatch from './WhereToWatch'
 import TitleLinks from './TitleLinks'
 import Credits from './Credits'
 import PosterPicker from './PosterPicker'
+import JourneyRibbon from './JourneyRibbon'
+import { journeyOf } from '@core/journey'
 
 const ICONS: Record<WatchStatus, typeof Bookmark> = { want: Bookmark, watching: CirclePlay, watched: CircleCheck, stopped: CirclePause }
 
-type Panel = 'universe' | 'episodes' | 'note' | 'with' | 'time' | 'moments' | 'rewatch' | 'where' | 'more' | 'poster'
+type Panel = 'universe' | 'episodes' | 'note' | 'with' | 'time' | 'moments' | 'rewatch' | 'where' | 'more' | 'poster' | 'journey'
 
 /**
  * The Spotlight look's title page ("All on one screen"): the show's own picture fills the window,
@@ -178,11 +180,13 @@ export default function SpotlightTitle({ type, id }: { type: MediaType; id: numb
     setPanel('episodes')
   }
 
+  const journey = tv ? journeyOf(raw, d.seasons) : null
   const watched = watchCount(raw)
   const rewatchLabel = currentRewatch(raw) ? 'Rewatching' : watched === 0 ? 'Seen it before?' : watched === 1 ? 'Watched once' : `Watched ${watched} times`
   const pills: { id: Panel; label: string; show: boolean; on?: boolean }[] = [
     { id: 'episodes', label: 'Episodes', show: tv },
     { id: 'note', label: entry?.note ? 'Note ✓' : 'Note', show: !!raw },
+    { id: 'journey', label: 'Your journey', show: !!journey },
     { id: 'with', label: 'Watch with someone', show: tv },
     { id: 'time', label: tv ? 'Finish it by…' : 'Tonight', show: tv ? !!count && count.total > count.seen : !filmDone && !!d.runtime },
     { id: 'moments', label: `Moments (${raw?.moments?.length ?? 0})`, show: !!raw?.moments?.length },
@@ -285,6 +289,7 @@ export default function SpotlightTitle({ type, id }: { type: MediaType; id: numb
           {panel === 'rewatch' && <RewatchPanel details={d} />}
           {panel === 'where' && <WhereToWatch type={d.type} id={d.id} />}
           {panel === 'poster' && <PosterPicker details={d} />}
+          {panel === 'journey' && journey && <JourneyRibbon journey={journey} onSeason={(n) => openEpisode(n, 1)} />}
           {panel === 'more' && (
             <div className="st-more">
               {d.tagline && <p className="tagline">{d.tagline}</p>}
