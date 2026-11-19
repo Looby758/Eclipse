@@ -10,7 +10,7 @@ import type { WeekSoFar } from '@core/week'
 import type { Recommendation } from '@core/recommend'
 import type { PhoneConflict } from '@core/phone'
 import type { PosterOption } from '@core/posters'
-import type { ComingSoon } from '@core/shelf'
+import type { BoxSetCard, ComingSoon } from '@core/shelf'
 import type { NowPlaying, Recognised, Suggestion, UnknownShow } from '@core/watching'
 import type { CollectionDetails, Credits, ListSource, PartEpisodes, PersonDetails, PersonResult, TitleRef, TmdbListDetails } from '@core/types'
 import type { Library, MediaType, PlannedTime, Preferences, Provider, SearchResult, SeasonDetails, TitleDetails, TitleKey, TitleSnapshot, WatchProviders, WatchStatus } from '@core/types'
@@ -230,6 +230,8 @@ export interface EclipseApi {
   finaleImage(how: 'copy' | 'save', name: string): Promise<{ done: boolean; path?: string }>
   /** Phase 59: announced seasons and films you're waiting for, soonest first, for the shelf. */
   comingSoon(): Promise<Result<ComingSoon[]>>
+  /** Phase 52: the back of a finished box set: your dates, hours, who with, and its credits. */
+  boxSet(key: TitleKey): Promise<Result<BoxSetCard>>
 
   /** What's coming up from your library: watchlist films, new seasons (or every episode) of shows you follow. */
   calendarPreview(): Promise<Result<ReleaseEvent[]>>
@@ -256,6 +258,8 @@ export interface EclipseApi {
   /** Finishes the rewatch you're on, or gives it up. */
   endRewatch(key: string, keep: boolean): Promise<Library>
   removeRewatch(key: string, index: number): Promise<Library>
+  /** Your rating out of 10 (five stars with halves), or null to take it off. */
+  setRating(key: TitleKey, rating: number | null): Promise<Library>
   setNote(key: TitleKey, note: string): Promise<Library>
   /** Clear out: take it off your library (it goes to recently dropped), or put it back. */
   dropTitle(key: TitleKey): Promise<Library>

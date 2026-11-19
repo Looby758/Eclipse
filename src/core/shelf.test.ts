@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { emptyLibrary, normalizeLibrary } from './library'
 import { orderPosters, posterFor, setBackdrop, setPoster } from './posters'
 import { FAVOURITES_MAX, isFavourite, moveFavourite, setFavourite } from './favourites'
-import { comingSoon, finishedShelf } from './shelf'
+import { boxSetCard, comingSoon, finishedShelf, shelvesByYear } from './shelf'
 import { parsePosters } from './tmdb'
 import type { Library, LibraryEntry, TitleDetails, TitleKey } from './types'
 
@@ -114,5 +114,91 @@ describe('the shelf of finished things', () => {
       entry('movie:4', 'D', { status: 'want' })
     )
     expect(finishedShelf(l).map((b) => [b.name, b.finishedOn])).toEqual([['A', '2026-01-01'], ['B', '2025-03-04'], ['C', null]])
+  })
+})
+
+describe('pulling a box set off the shelf (phase 52)', () => {
+  const seasons = [
+    {
+      number: 1,
+      episodes: [
+        { number: 1, name: 'Pilot', runtime: 60, voteAverage: 8, voteCount: 50 },
+        { number: 2, name: 'Guts', runtime: 40, voteAverage: 9.4, voteCount: 50 },
+        { number: 3, name: 'Tell It', runtime: 40, voteAverage: 9.9, voteCount: 3 }
+      ]
+    },
+    { number: 2, episodes: [{ number: 1, name: 'What Lies Ahead', runtime: null, voteAverage: 9.6, voteCount: 40 }] }
+  ]
+  const show = entry('tv:1402', 'The Walking Dead', {
+    watchedOn: '2024-03-02',
+    episodes: { S1E1: '2024-01-01', S1E2: '2024-01-01', S1E3: '2024-01-01', S2E1: '2024-03-02' },
+    rewatches: [
+      { startedOn: '2025-01-01', finishedOn: '2025-02-01', episodes: { S1E1: '2025-01-01' } },
+      { startedOn: '2026-05-01', with: 'Sam', episodes: { S1E1: '2026-05-01', S1E2: '2026-05-08' } }
+    ],
+    note: 'The best year of telly',
+    from: 'Jack'
+  })
+  const details = { runtime: 44, tagline: 'Fight the dead.', numberOfEpisodes: 177 } as TitleDetails
+  const credits = { directors: [], cast: [{ name: 'Andrew Lincoln', role: 'Rick Grimes' }] }
+
+  it('gives your dates, hours, who with and the credits', () => {
+    const c = boxSetCard(show, details, credits, seasons)
+    expect(c.started).toBe('2024-01-01')
+    expect(c.finished).toBe('2024-03-02')
+    expect(c.days).toBe(62)
+    // First time 60+40+40+44, the rewatch 60, with Sam 60+40.
+    expect(c.minutes).toBe(184 + 60 + 100)
+    expect(c.estimated).toBe(false)
+    expect(c.episodes).toBe(4)
+    expect(c.totalEpisodes).toBe(177)
+    expect(c.seasons).toBe(2)
+    expect(c.timesThrough).toBe(2)
+    expect(c.with).toEqual(['Sam'])
+    expect(c.watches.map((w) => [w.label, w.going])).toEqual([
+      ['First time', false],
+      ['Rewatch', false],
+      ['With Sam', true]
+    ])
+    expect(c.binge).toEqual({ day: '2024-01-01', episodes: 3 })
+    expect(c.starring).toEqual([{ name: 'Andrew Lincoln', role: 'Rick Grimes' }])
+    expect(c.note).toBe('The best year of telly')
+    expect(c.from).toBe('Jack')
+    expect(c.tagline).toBe('Fight the dead.')
+  })
+  it('picks the best-rated episode you saw, ignoring ones with too few votes', () => {
+    expect(boxSetCard(show, details, credits, seasons).best).toEqual({ season: 2, episode: 1, name: 'What Lies Ahead', rating: 9.6 })
+  })
+  it('still works from the library alone (offline), with a guessed length', () => {
+    const c = boxSetCard(show)
+    expect(c.minutes).toBe(7 * 45)
+    expect(c.estimated).toBe(true)
+    expect(c.best).toBeNull()
+    expect(c.starring).toEqual([])
+  })
+  it('counts every watch of a film and names its director', () => {
+    const film = entry('movie:157336', 'Interstellar', { watchedOn: '2023-06-01', rewatches: [{ startedOn: '2025-01-01', finishedOn: '2025-01-01' }, { startedOn: '2026-01-01', finishedOn: '2026-01-01', with: 'Dad' }] })
+    const c = boxSetCard(film, { runtime: 169, tagline: '' } as TitleDetails, { directors: [{ name: 'Christopher Nolan' }], cast: [] })
+    expect(c.minutes).toBe(169 * 3)
+    expect(c.timesThrough).toBe(2)
+    expect(c.with).toEqual(['Dad'])
+    expect(c.directors).toEqual(['Christopher Nolan'])
+    expect(c.finished).toBe('2023-06-01')
+  })
+  it('says when it was seen before Eclipse', () => {
+    const c = boxSetCard(entry('tv:1', 'Lost', { seenBefore: true, episodes: { S1E1: 'seen' } }))
+    expect(c.seenBefore).toBe(true)
+    expect(c.started).toBeNull()
+    expect(c.days).toBeNull()
+  })
+  it('puts each year on its own shelf, newest first, and seen-before-Eclipse last', () => {
+    const shelves = shelvesByYear(
+      finishedShelf(lib(entry('movie:1', 'A', { watchedOn: '2025-02-01' }), entry('movie:2', 'B', { watchedOn: '2026-01-01' }), entry('movie:3', 'C', { seenBefore: true }), entry('movie:4', 'D', { watchedOn: '2026-05-01' })))
+    )
+    expect(shelves.map((s) => [s.year, s.boxes.map((b) => b.name)])).toEqual([
+      ['2026', ['D', 'B']],
+      ['2025', ['A']],
+      [null, ['C']]
+    ])
   })
 })
