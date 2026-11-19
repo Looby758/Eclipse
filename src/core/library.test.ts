@@ -50,3 +50,16 @@ describe('library', () => {
     expect(localDate(new Date(2026, 0, 9))).toBe('2026-01-09')
   })
 })
+
+describe('your rating, five stars by halves', () => {
+  it('saves whole steps out of 10 and takes it off with null', async () => {
+    const { setRating, setStatus, emptyLibrary } = await import('./library')
+    let l = setStatus(emptyLibrary(), { key: 'movie:1', type: 'movie', id: 1, title: { name: 'A', year: 2020, posterPath: null } } as never, 'watched')
+    l = setRating(l, 'movie:1', 7)
+    expect(l.entries['movie:1'].rating).toBe(7)
+    expect(setRating(l, 'movie:1', 7.4).entries['movie:1'].rating).toBe(7)
+    expect(setRating(l, 'movie:1', 14).entries['movie:1'].rating).toBe(10)
+    expect(setRating(l, 'movie:1', null).entries['movie:1'].rating).toBeUndefined()
+    expect(setRating(l, 'movie:2', 5)).toBe(l)
+  })
+})

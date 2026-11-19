@@ -7,6 +7,9 @@ import { episodeKey, type SeasonDetails, type TitleDetails, UNDATED } from '@cor
 import { itemOf } from '../lib/item'
 import { useApp } from '../store/app'
 import { useJustTicked } from '../lib/justTicked'
+import { reactionOf } from '@core/reactions'
+import { REACTIONS, type Reaction } from '@core/types'
+import ReactionPicker from './ReactionPicker'
 
 /**
  * A show's seasons as a row of dots you tick off. Ticking saves today's date; the next episode
@@ -17,7 +20,8 @@ export type EpisodeFocus = { season: number; episode: number; n: number }
 
 export default function EpisodeTimeline({ details, focus }: { details: TitleDetails; focus?: EpisodeFocus | null }): React.JSX.Element | null {
   const sectionRef = useRef<HTMLElement>(null)
-  const entry = useApp((s) => activeEntry(s.library.entries[details.key]))
+  const raw = useApp((s) => s.library.entries[details.key])
+  const entry = activeEntry(raw)
   const setLibrary = useApp((s) => s.setLibrary)
   const rewatching = useApp((s) => !!currentRewatch(s.library.entries[details.key]))
   const counts = useMemo(() => details.seasons.map((s) => ({ number: s.number, episodeCount: s.episodeCount })), [details])
@@ -102,6 +106,16 @@ export default function EpisodeTimeline({ details, focus }: { details: TitleDeta
   const pickedKey = selected !== null ? episodeKey(shown, selected) : null
   const pickedSeen = pickedKey ? !!seen[pickedKey] : false
   const spoiler = ep && !pickedSeen && !isNext(ep.number) && !reveal
+  const felt = pickedKey && pickedSeen ? reactionOf(raw, pickedKey) : undefined
+  const react = async (r: Reaction | null): Promise<void> => {
+    if (!pickedKey) return
+    setBusy(true)
+    try {
+      setLibrary(await window.api.setReaction(details.key, pickedKey, r))
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <section className="seasons" ref={sectionRef}>
@@ -133,13 +147,14 @@ export default function EpisodeTimeline({ details, focus }: { details: TitleDeta
         {numbers.map((n) => {
           const key = episodeKey(shown, n)
           const watched = !!seen[key]
+          const dotFelt = watched ? reactionOf(raw, key) : undefined
           const cls = ['timeline-dot', watched ? 'seen' : '', isNext(n) ? 'next' : '', aired(n) ? '' : 'future', selected === n ? 'picked' : '', inked.has(key) ? 'inked' : ''].filter(Boolean).join(' ')
           return (
             <li key={n}>
               <button
                 className={cls}
                 aria-pressed={watched}
-                aria-label={`Episode ${n}${watched ? ', watched' : ''}${isNext(n) ? ', up next' : ''}`}
+                aria-label={`Episode ${n}${watched ? ', watched' : ''}${dotFelt ? `, ${REACTIONS[dotFelt].label}` : ''}${isNext(n) ? ', up next' : ''}`}
                 onClick={() => {
                   setPicked(n)
                   setReveal(false)
@@ -147,7 +162,7 @@ export default function EpisodeTimeline({ details, focus }: { details: TitleDeta
                 onDoubleClick={() => aired(n) && tick([key], !watched)}
                 title={watched ? (seen[key] === UNDATED ? 'Seen before (no date)' : `Watched ${formatDate(seen[key])}`) : 'Double-click to tick'}
               >
-                {watched ? <Check size={14} strokeWidth={3} /> : n}
+                {dotFelt ? <span className="dot-felt" aria-hidden>{REACTIONS[dotFelt].emoji}</span> : watched ? <Check size={14} strokeWidth={3} /> : n}
               </button>
             </li>
           )
@@ -174,6 +189,12 @@ export default function EpisodeTimeline({ details, focus }: { details: TitleDeta
             ) : (
               <p className="episode-overview">{ep.overview}</p>
             ))}
+            {pickedSeen && (
+              <div className="episode-felt">
+                <span className="muted small">{felt ? `${REACTIONS[felt].label}. Change it?` : 'How did it hit you?'}</span>
+                <ReactionPicker value={felt} onPick={react} disabled={busy} />
+              </div>
+            )}
             <div className="row episode-actions">
               {aired(selected) ? (
                 <>

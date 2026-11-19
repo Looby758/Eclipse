@@ -115,8 +115,9 @@ export default function SettingsView(): React.JSX.Element {
           </div>
           <h3 className="card-sub">Keep the poster wall still</h3>
           <p className="muted small">
-            Stops the drifting posters, the glowing dots and the pages sliding
-            in. Your computer’s own “reduce animations” setting does this too.
+            Stops the drifting posters, the glowing dots, the pages sliding in
+            and the opening when Eclipse starts. Your computer’s own “reduce
+            animations” setting does this too.
           </p>
           <div
             className="segmented"

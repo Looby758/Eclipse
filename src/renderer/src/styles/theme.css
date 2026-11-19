@@ -86,6 +86,10 @@
   /* The shelf: planks, box sets and shrink-wrap (phase 59) */
   --shelf-plank: linear-gradient(180deg, #2a2f5c, #171a38);
   --shelf-plank-shadow: 0 8px 18px rgba(0, 0, 0, 0.5);
+  --shelf-room: linear-gradient(180deg, rgba(20, 24, 60, 0.55), rgba(8, 10, 28, 0.55));
+  --shelf-room-shade: rgba(0, 0, 0, 0.45);
+  --shelf-plate: linear-gradient(180deg, #c9d6ff, #8fa2e6);
+  --shelf-plate-text: #0b0d24;
   --box-shadow: 0 10px 22px rgba(0, 0, 0, 0.5);
   --box-shadow-lift: 0 22px 40px rgba(0, 0, 0, 0.6);
   --wrap-film: linear-gradient(160deg, rgba(220, 235, 255, 0.28), rgba(255, 255, 255, 0.06) 40%, rgba(200, 220, 255, 0.2));
@@ -193,6 +197,10 @@
     --journey-hatch: rgba(40, 30, 120, 0.12);
     --shelf-plank: linear-gradient(180deg, #c9cbe6, #a9acd2);
     --shelf-plank-shadow: 0 8px 16px rgba(40, 50, 110, 0.2);
+    --shelf-room: linear-gradient(180deg, rgba(235, 238, 255, 0.7), rgba(214, 219, 248, 0.7));
+    --shelf-room-shade: rgba(60, 70, 150, 0.12);
+    --shelf-plate: linear-gradient(180deg, #3f5bff, #2a3fc4);
+    --shelf-plate-text: #ffffff;
     --box-shadow: 0 10px 22px rgba(40, 50, 110, 0.25);
     --box-shadow-lift: 0 22px 40px rgba(40, 50, 110, 0.32);
     --fav: #d43a8a;
@@ -255,6 +263,10 @@
     --journey-hatch: rgba(40, 30, 120, 0.12);
     --shelf-plank: linear-gradient(180deg, #c9cbe6, #a9acd2);
     --shelf-plank-shadow: 0 8px 16px rgba(40, 50, 110, 0.2);
+    --shelf-room: linear-gradient(180deg, rgba(235, 238, 255, 0.7), rgba(214, 219, 248, 0.7));
+    --shelf-room-shade: rgba(60, 70, 150, 0.12);
+    --shelf-plate: linear-gradient(180deg, #3f5bff, #2a3fc4);
+    --shelf-plate-text: #ffffff;
     --box-shadow: 0 10px 22px rgba(40, 50, 110, 0.25);
     --box-shadow-lift: 0 22px 40px rgba(40, 50, 110, 0.32);
     --fav: #d43a8a;
