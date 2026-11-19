@@ -75,6 +75,7 @@ const api: EclipseApi = {
   answerRecommendation: (item, answer) => ipcRenderer.invoke('recs:answer', item, answer),
   catchUps: () => ipcRenderer.invoke('catchup:list'),
   dismissCatchUp: (id) => ipcRenderer.invoke('catchup:dismiss', id),
+  milestonesSeen: (ids) => ipcRenderer.invoke('milestones:seen', ids),
   trayOn: () => ipcRenderer.invoke('tray:get'),
   setTray: (on) => ipcRenderer.invoke('tray:set', on),
   discordStatus: () => ipcRenderer.invoke('discord:status'),

@@ -124,6 +124,8 @@
   --cyan: #4fd8ff;
   /* "Now": the next episode's glow, and your own services */
   --halo: rgba(79, 216, 255, 0.7);
+  /* Phase 53: the soft flare behind the eclipse on a milestone note */
+  --milestone-flare: rgba(79, 216, 255, 0.55);
   --next-bg: rgba(79, 216, 255, 0.1);
   /* Heatmap: episodes with too few votes to trust */
   --heat-few: rgba(255, 255, 255, 0.12);
@@ -207,6 +209,7 @@
     --accent-2: #2d8fe0;
     --cyan: #0a9ccc;
     --halo: rgba(10, 156, 204, 0.55);
+  --milestone-flare: rgba(10, 156, 204, 0.4);
     --next-bg: rgba(10, 156, 204, 0.1);
     --heat-few: rgba(40, 30, 120, 0.12);
     --accent-shadow: 0 10px 30px rgba(106, 76, 240, 0.3);
@@ -268,6 +271,7 @@
   --accent-2: #2d8fe0;
   --cyan: #0a9ccc;
   --halo: rgba(10, 156, 204, 0.55);
+  --milestone-flare: rgba(10, 156, 204, 0.4);
   --next-bg: rgba(10, 156, 204, 0.1);
   --heat-few: rgba(40, 30, 120, 0.12);
   --accent-shadow: 0 10px 30px rgba(106, 76, 240, 0.3);

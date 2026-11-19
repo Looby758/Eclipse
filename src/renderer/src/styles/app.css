@@ -1183,3 +1183,24 @@ select:hover { border-color: var(--accent); }
 /* "Change background": wide pictures in two or three columns */
 .poster-grid.wide { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
 .poster-grid.wide .poster-option { aspect-ratio: 16 / 9; }
+
+/* Phase 53: milestones, a small note at the top with a soft flare in the eclipse's halo */
+.milestone { position: fixed; top: 18px; left: 50%; transform: translateX(-50%); z-index: 63; display: flex; align-items: center; gap: 12px; max-width: calc(100vw - 40px); padding: 8px 8px 8px 10px; border-radius: 18px; border: 1px solid var(--line); background: var(--menu-bg); color: var(--menu-text); box-shadow: var(--shadow); cursor: default; animation: milestone-in var(--slow) var(--ease), milestone-out 0.8s var(--ease) 8.2s forwards; }
+.milestone-halo { position: relative; display: grid; place-items: center; flex-shrink: 0; width: 34px; height: 34px; }
+.milestone-halo svg { position: relative; display: block; }
+.milestone-halo::before { content: ''; position: absolute; inset: -6px; border-radius: 50%; background: radial-gradient(circle, var(--milestone-flare) 0%, transparent 70%); opacity: 0; animation: milestone-flare 2.4s var(--ease) 0.2s; }
+.milestone-text { display: flex; flex-direction: column; min-width: 0; padding-right: 4px; }
+.milestone-line { font-size: var(--text-sm); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.milestone-detail { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.milestone-close { display: grid; place-items: center; width: 26px; height: 26px; flex-shrink: 0; border: 0; border-radius: 50%; background: transparent; color: var(--text-muted); cursor: pointer; }
+.milestone-close:hover { background: var(--line); color: var(--menu-text); }
+@keyframes milestone-in { from { opacity: 0; transform: translate(-50%, -8px); } }
+@keyframes milestone-out { to { opacity: 0; } }
+@keyframes milestone-flare { 0% { opacity: 0; transform: scale(0.6); } 35% { opacity: 1; transform: scale(1.5); } 100% { opacity: 0.35; transform: scale(1.1); } }
+.milestone-halo::after { content: ''; position: absolute; inset: -2px; border-radius: 50%; box-shadow: 0 0 14px var(--halo); opacity: 0.6; pointer-events: none; }
+:root[data-still] .milestone, :root[data-still] .milestone-halo::before { animation: none; }
+:root[data-still] .milestone-halo::before { opacity: 0.35; }
+@media (prefers-reduced-motion: reduce) {
+  .milestone, .milestone-halo::before { animation: none; }
+  .milestone-halo::before { opacity: 0.35; }
+}

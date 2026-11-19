@@ -263,7 +263,7 @@ From a conversation about how I actually use Eclipse day to day: mostly ticking 
 50. **Premiere night.** On the day a season I've been waiting for comes out, Home turns into that show: the poster wall fills with its posters and artwork (never anything from inside an episode), and a countdown runs to the UK release time, then "It's out" with one click to start. *Needs:* 34 (Spotlight).
 51. **An opening for Eclipse.** A couple of seconds of intro when the app launches: the Halo-blue eclipse rises and my posters fly into the wall, like a studio logo before a film. Any key or click skips it, it's skipped when Eclipse starts quietly in the tray, and *Keep the poster wall still* (41) turns it off. *Needs:* 34.
 52. **A shelf of everything I've finished.** A room with box sets on shelves, one for every show and film I've completed. Pull one out and it opens to my dates, hours, who I watched it with and its credits (46). Like a DVD collection, but it's my history. *Needs:* nothing new; shares the credits with 46.
-53. **Milestones.** Quiet moments, not badges or points: "That was your 1,000th episode" with a soft flare in the halo, or "100 hours of The Walking Dead". Shown once, as a small note. *Needs:* nothing new.
+53. **Milestones.** *(Built.)* Quiet moments, not badges or points: "That was your 1,000th episode" with a soft flare in the halo, or "100 hours of The Walking Dead". Shown once, as a small note. *Needs:* nothing new.
 54. **Sound design.** A soft click when I tick an episode, a richer chime for finishing a season, a low swell when the credits roll (46). Off by default, with one switch in Settings → Appearance. *Needs:* nothing new.
 55. **Choose my own posters (only when I want to).** Most titles have many alternative posters on TMDB. Eclipse keeps using the default poster on its own and never asks; on a title's page, a small *Change poster* opens a grid of the alternatives, and the one I pick is used everywhere (the wall, the shelf, Home, lists). *Reset* goes back to the default. Saved in the library so both computers agree. *Needs:* nothing new.
 56. **Opening a poster zooms into it.** Clicking a poster (on the wall, the shelf, a list) grows it smoothly into that title's page, so it feels like stepping into it rather than a page loading; closing shrinks it back. *Keep the poster wall still* (41) swaps it for a simple fade. *Needs:* nothing new.
@@ -297,6 +297,14 @@ Export this doc as Markdown and save it in the project as `PLAN.md`. Then start 
 - I've built one app with Claude Code before but I'm not a professional developer, so explain how to run and test each phase in plain steps.
 
 ## Progress log
+
+**Phase 53: Milestones (built, waiting for you to try it)**
+
+- When a tick takes you past a milestone, a small note slides in at the top of the window for about nine seconds, with a soft flare in the halo of the eclipse logo: "That was your 1,000th episode." with the episode underneath ("The Walking Dead · S9 E4"), "100 hours of The Walking Dead." with "Since March 2023", or "That was your 100th film." with the film. Click it to put it away sooner. No badges, points or lists of them anywhere.
+- The milestones: episodes at 100, 250, 500, 750, 1,000, 1,500, 2,000, 2,500, 3,000 and then every 1,000; hours with one show at 24 ("A whole day of Lost."), 50, 100, 200, 300, 500, 750 and 1,000; different films watched at 25, 50, 100, 150, 200, 250, 300, 400, 500, 750 and 1,000.
+- **Shown once:** which ones you've had are kept in the library (`milestones`), so both computers agree, and unticking and ticking again never shows one twice. Undo still works on the tick that brought it.
+- Decisions: every tick counts towards episodes (rewatches and watching with someone too). Hours with a show are its ticks times TMDB's usual episode length (45 minutes when TMDB doesn't say). Opening Eclipse never shows anything, only a tick you make while it's open. Ticks marked "seen before", and imports or a different library arriving with hundreds of ticks at once, pass their milestones quietly, with no note. *Keep the poster wall still* and the computer's reduce-animations setting keep the note but drop the flare and slide.
+- To try it: just keep ticking as usual. To see one straight away, untick the last few episodes of a long show and tick them again: if that crosses a round number of episodes or hours you hadn't had a note for, it shows.
 
 **Phases 55 to 60 (built, waiting for you to try them)**
 

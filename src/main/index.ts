@@ -27,11 +27,12 @@ import { showExtensionFolder } from './extension'
 import { editMoment } from '@core/watching'
 import { orderPosters, setBackdrop, setPoster } from '@core/posters'
 import { moveFavourite, setFavourite } from '@core/favourites'
+import { markMilestones } from '@core/milestones'
 import { CATCH_UP_ID, dismissCatchUp } from '@core/catchup'
 import { answerRecommendation } from '@core/recommend'
 import { newRemoteCode, remoteStatus, setRemote, setupRemote, stopRemote } from './remote'
 import { guardStatus, readOnlyReason, startGuard, stopGuard, takeOver } from './guard'
-import { remember, undoTarget } from './undo'
+import { carryForward, remember, undoTarget } from './undo'
 import { loginStatus, markAsked, setStartAtLogin, startedHidden } from './login'
 import { backupFor, dailyBackup, listBackups } from './backups'
 import { foldFromPhone, phoneAsks, resolveAsk, startPhone } from './phone'
@@ -317,6 +318,14 @@ function setupIpc(): void {
   ipcMain.handle('backdrops:set', (_e, key: string, path: string | null) => saveLibrary(setBackdrop(getLibrary(), String(key), typeof path === 'string' ? path : null)))
   ipcMain.handle('posters:set', (_e, key: string, path: string | null) => saveLibrary(setPoster(getLibrary(), String(key), typeof path === 'string' ? path : null)))
   ipcMain.handle('favourites:set', (_e, ref: TitleRef, on: boolean) => saveLibrary(setFavourite(getLibrary(), ref, !!on)))
+  ipcMain.handle('milestones:seen', (_e, ids: unknown) => {
+    const before = getLibrary()
+    const next = markMilestones(before, Array.isArray(ids) ? ids.map(String) : [])
+    if (next === before) return before
+    const after = saveLibrary(next)
+    carryForward(before, after, (lib) => markMilestones(lib, Array.isArray(ids) ? ids.map(String) : []))
+    return after
+  })
   ipcMain.handle('favourites:move', (_e, from: number, to: number) => saveLibrary(moveFavourite(getLibrary(), Number(from), Number(to))))
   ipcMain.handle('shelf:comingSoon', () => attempt(() => tmdb.comingSoonList(getLibrary())))
   ipcMain.handle('soon:move', (_e, from: number, to: number) => saveLibrary(moveWatchSoon(getLibrary(), from, to)))

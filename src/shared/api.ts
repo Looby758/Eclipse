@@ -281,6 +281,9 @@ export interface EclipseApi {
   /** "Not now": don't suggest this one again. */
   dismissCatchUp(id: string): Promise<Library>
 
+  /** Phase 53: notes milestones as shown ("episodes:1000"), so each shows only once on either computer. */
+  milestonesSeen(ids: string[]): Promise<Library>
+
   /** Eclipse in the menu bar / tray (Phase 26), and whether closing the window keeps it running there. */
   trayOn(): Promise<boolean>
   setTray(on: boolean): Promise<boolean>

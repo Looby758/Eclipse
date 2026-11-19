@@ -259,6 +259,8 @@ export interface Library {
   backdrops?: Record<string, string>
   /** Your favourites wall (phase 58): your all-time top films and shows, in your order. */
   favourites?: TitleRef[]
+  /** Milestones already shown (phase 53), e.g. "episodes:1000" or "hours:tv:1402:100", so each shows only once. */
+  milestones?: string[]
 }
 
 /**

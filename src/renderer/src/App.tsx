@@ -26,6 +26,7 @@ import ListSheet from './components/ListSheet'
 import SpotlightHome from './components/SpotlightHome'
 import Logo from './components/Logo'
 import UndoBar from './components/UndoBar'
+import MilestoneNote from './components/MilestoneNote'
 import StartAsk from './components/StartAsk'
 import PhoneAsk from './components/PhoneAsk'
 import ZoomLayer from './components/ZoomLayer'
@@ -33,6 +34,7 @@ import { useHomeStyle } from './lib/homeStyle'
 import { handleArrows, isTyping } from './lib/keys'
 import { useStartAsk } from './lib/startAsk'
 import { startWelcome, useWelcome } from './lib/welcome'
+import { watchMilestones } from './lib/milestones'
 
 export default function App(): React.JSX.Element {
   const status = useApp((s) => s.status)
@@ -49,6 +51,8 @@ export default function App(): React.JSX.Element {
     })
     window.api.getLibrary().then(setLibrary)
     const stop = window.api.onLibraryChanged(setLibrary)
+    // Phase 53: a small note when a tick takes you past a milestone.
+    const stopMilestones = watchMilestones()
     // Mouse back button, Alt+Left and Escape go back, like a browser.
     const onMouse = (e: MouseEvent): void => {
       if (e.button === 3) back()
@@ -68,6 +72,7 @@ export default function App(): React.JSX.Element {
     window.addEventListener('keydown', onKey)
     return () => {
       stop()
+      stopMilestones()
       window.removeEventListener('mouseup', onMouse)
       window.removeEventListener('keydown', onKey)
     }
@@ -139,6 +144,7 @@ export default function App(): React.JSX.Element {
             ))}
           <Dock tucked={spot || (view.name === 'title' && homeStyle === 'spotlight')} />
           <UndoBar />
+          <MilestoneNote />
           <StartAsk />
           <PhoneAsk />
           <ZoomLayer />
