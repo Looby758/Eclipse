@@ -168,7 +168,7 @@ export default function SettingsView(): React.JSX.Element {
                 // Turning them on plays both once, so you know what you'll hear.
                 if (!sounds) {
                   playTick();
-                  playSeasonChime(0.45);
+                  playSeasonChime(0.6);
                 }
                 setSounds(true);
               }}

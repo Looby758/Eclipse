@@ -11,7 +11,7 @@ import { useApp } from '../store/app'
  * finishes a season. Off unless you turn it on (Settings → Appearance), remembered on this computer.
  *
  * Everything is made here with the Web Audio API, so there are no sound files and no packages, and
- * everything sits high and light: nothing low, no rumble or boom. Theme tunes are not used here;
+ * everything sits in the middle of the range: nothing low, no rumble or boom. Theme tunes are not used here;
  * they play only in the send-off when you finish a show (phase 46), which brings its own chime, so
  * the last tick of a show clicks but doesn't also chime for its season.
  */
@@ -93,70 +93,48 @@ function note(c: AudioContext, out: AudioNode, freq: number, peak: number, at: n
   o.stop(at + length + 0.05)
 }
 
-/** The tick: a tiny tap of air and a short, high "tock", like a soft pen click. About 80 ms. */
+/**
+ * A soft mallet note, like a vibraphone or a wooden bar: the note itself, plus a quieter octave and
+ * a faint higher overtone that die away first, so it starts bright and settles warm.
+ */
+function mallet(c: AudioContext, out: AudioNode, freq: number, peak: number, at: number, length: number): void {
+  note(c, out, freq, peak, at, length)
+  note(c, out, freq * 2, peak * 0.16, at, length * 0.35)
+  note(c, out, freq * 4, peak * 0.05, at, length * 0.12)
+}
+
+/**
+ * The tick: a quick, soft two-note "pop" up a fourth (G then C, in the middle of the range), like a
+ * little wooden bar being struck twice. No pitch slides. About a quarter of a second.
+ */
 export function playTick(): void {
   const a = audio()
   if (!a) return
   const { ctx: c, out } = a
   const t = c.currentTime + 0.005
-
-  // The tap: a few milliseconds of filtered noise.
-  const len = Math.floor(c.sampleRate * 0.03)
-  const buffer = c.createBuffer(1, len, c.sampleRate)
-  const data = buffer.getChannelData(0)
-  for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 6)
-  const noise = c.createBufferSource()
-  noise.buffer = buffer
-  const band = c.createBiquadFilter()
-  band.type = 'bandpass'
-  band.frequency.value = 3200
-  band.Q.value = 1.4
-  const ng = c.createGain()
-  ng.gain.value = 0.18
-  noise.connect(band)
-  band.connect(ng)
-  ng.connect(out)
-  noise.start(t)
-
-  // The tock: a high sine that drops a little as it fades.
-  const o = c.createOscillator()
-  const g = c.createGain()
-  o.type = 'sine'
-  o.frequency.setValueAtTime(1900, t)
-  o.frequency.exponentialRampToValueAtTime(1350, t + 0.05)
-  g.gain.setValueAtTime(0.0001, t)
-  g.gain.exponentialRampToValueAtTime(0.09, t + 0.004)
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.08)
-  o.connect(g)
-  g.connect(out)
-  o.start(t)
-  o.stop(t + 0.1)
+  mallet(c, out, 783.99, 0.085, t, 0.22)
+  mallet(c, out, 1046.5, 0.095, t + 0.055, 0.3)
 }
 
 /**
- * Finishing a season: a rising four-note bell (E, G sharp, B, E, all high) with a soft sparkle an
- * octave up on each, ringing out for about two seconds. Richer than the tick, lighter than the
- * send-off.
+ * Finishing a season: a warm, rising four-note chord (C, E, G, then the C above, in the middle of
+ * the range) struck like a vibraphone and left to ring for about two seconds. Richer than the
+ * tick, gentler than the send-off, and nothing low.
  */
-export function playSeasonChime(delay = 0.12): void {
+export function playSeasonChime(delay = 0.18): void {
   const a = audio()
   if (!a) return
   const { ctx: c, out } = a
   const t = c.currentTime + delay
   const notes: [number, number][] = [
-    [1318.5, 0.055],
-    [1661.2, 0.05],
-    [1975.5, 0.045],
-    [2637.0, 0.04]
+    [523.25, 0.07],
+    [659.25, 0.065],
+    [783.99, 0.06],
+    [1046.5, 0.06]
   ]
-  notes.forEach(([f, v], i) => {
-    const at = t + i * 0.085
-    note(c, out, f, v, at, 2.2 - i * 0.2)
-    // A quieter, slightly detuned octave gives it the shimmer of a real bell.
-    note(c, out, f * 2.003, v * 0.25, at, 0.9)
-  })
-  // The last note rings again, softer, as it settles.
-  note(c, out, 2637.0, 0.018, t + 0.75, 1.6)
+  notes.forEach(([f, v], i) => mallet(c, out, f, v, t + i * 0.11, 2.4 - i * 0.15))
+  // The chord rings together for a moment at the end, softly.
+  for (const [f, v] of notes.slice(0, 3)) note(c, out, f, v * 0.3, t + 0.55, 1.8)
 }
 
 // ---- Listening for ticks ----

@@ -301,11 +301,12 @@ Export this doc as Markdown and save it in the project as `PLAN.md`. Then start 
 **Phase 54: sound design (built, waiting for you to try it)**
 
 - **Turn it on:** Settings → Appearance → *Sounds* → **On**. Turning it on plays both sounds once so you know what you'll hear. Off by default, and remembered on this computer only (like *Keep the poster wall still*).
-- **The tick:** a soft, short click (a tap of air and a high "tock", under a tenth of a second) whenever you tick an episode, wherever the tick comes from: a show's page, Home's *Tick it*, the tray, the phone remote, or the player finishing one. Ticking a whole season or *Watched up to here* clicks once.
-- **Finishing a season:** a brighter four-note chime that rises and rings out for about two seconds, just after the click. Rewatches and watches with someone count too.
+- **The tick:** a quick, soft two-note pop (like a little wooden bar struck twice, about a quarter of a second) whenever you tick an episode, wherever the tick comes from: a show's page, Home's *Tick it*, the tray, the phone remote, or the player finishing one. Ticking a whole season or *Watched up to here* clicks once.
+- **Finishing a season:** a warm four-note chord that rises like a vibraphone and rings out for about two seconds, just after the tick. Rewatches and watches with someone count too.
 - **Finishing a show:** the last episode clicks, then the send-off (46) plays with its own theme and chime, so there's no season chime on top of it.
 - **Quiet when it should be:** nothing for unticking, for marking things seen before (no date), or for old ticks a sync brings in from the phone page or the other computer. Only ticks dated today make a sound, and opening Eclipse is silent.
-- Decisions: the low swell when the credits roll was dropped, as decided with the send-off: everything is high and light (a filter stops anything low reaching the speakers), with no rumble or boom, and theme tunes still play only in the send-off. The sounds are made by Eclipse itself (Web Audio), so there are no sound files and no new packages. The send-off's own *Mute* is separate and works as before. Previews: `sounds/phase-54-tick.wav` and `sounds/phase-54-season-chime.wav` in the project files.
+- Changed after trying it (19 Nov): the first season chime was too high-pitched and the first tick sounded like a space laser, so both moved down to the middle of the range as soft mallet notes with no pitch slides.
+- Decisions: the low swell when the credits roll was dropped, as decided with the send-off: everything sits in the middle of the range (a filter stops anything low reaching the speakers), with no rumble or boom, and theme tunes still play only in the send-off. The sounds are made by Eclipse itself (Web Audio), so there are no sound files and no new packages. The send-off's own *Mute* is separate and works as before. Previews: `sounds/phase-54-tick.wav` and `sounds/phase-54-season-chime.wav` in the project files.
 
 **Phase 49: franchises as a star map (built, waiting for you to try it)**
 
