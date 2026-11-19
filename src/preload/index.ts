@@ -47,6 +47,7 @@ const api: EclipseApi = {
   setFavourite: (ref, on) => ipcRenderer.invoke('favourites:set', ref, on),
   moveFavourite: (from, to) => ipcRenderer.invoke('favourites:move', from, to),
   comingSoon: () => ipcRenderer.invoke('shelf:comingSoon'),
+  boxSet: (key) => ipcRenderer.invoke('shelf:boxSet', key),
 
   getLibrary: () => ipcRenderer.invoke('library:get'),
   setStatus: (item, status) => ipcRenderer.invoke('library:setStatus', item, status),

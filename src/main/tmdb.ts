@@ -1,5 +1,5 @@
 import type { TitleImages } from '@core/posters'
-import { comingSoon, comingSoonCandidates, type ComingSoon } from '@core/shelf'
+import { boxSetCard, comingSoon, comingSoonCandidates, type BoxSetCard, type ComingSoon } from '@core/shelf'
 import { errorText, report } from './health'
 import { net, safeStorage } from 'electron'
 import { cached, CACHE_TTL } from '@core/cache'
@@ -7,7 +7,7 @@ import { createTmdb, TmdbError, type Tmdb } from '@core/tmdb'
 import type { CollectionDetails, Credits, MediaType, PartEpisodes, PersonDetails, PersonResult, Provider, SearchResult, SeasonDetails, TitleDetails, TitleRef, TmdbListDetails, WatchProviders } from '@core/types'
 import { expandGuide, guideById, guideRefs, type Guide, type GuideTitleInfo } from '@core/guides'
 import { releaseOrder, sourceOf, findList, refOf } from '@core/lists'
-import type { Library, Trait } from '@core/types'
+import type { Library, TitleKey, Trait } from '@core/types'
 import { parseTitleKey } from '@core/types'
 import { followed, seasonsToCheck, upcomingReleases, type ReleaseEvent } from '@core/calendar'
 import { activeEntry, localDate, preferencesOf } from '@core/library'
@@ -447,6 +447,25 @@ export async function catchUpList(library: Library, now = new Date()): Promise<C
 export async function comingSoonList(library: Library, today = localDate(new Date())): Promise<ComingSoon[]> {
   const details = await detailsMany(comingSoonCandidates(library))
   return comingSoon(library, details, today, preferencesOf(library).region)
+}
+
+/**
+ * Phase 52: the back of a box set pulled off the shelf. Each part from TMDB is optional, so the card
+ * still shows your dates and who with when offline or when TMDB has nothing.
+ */
+export async function boxSet(library: Library, key: string): Promise<BoxSetCard> {
+  const entry = library.entries[key as TitleKey]
+  if (!entry) throw new Error('That isn’t in your library any more.')
+  const quiet = <T>(p: Promise<Fetched<T>>): Promise<T | undefined> => p.then((r) => r.data).catch(() => undefined)
+  const [d, c] = await Promise.all([quiet(details(entry.type, entry.id)), quiet(credits(entry.type, entry.id))])
+  const seasonNumbers = new Set<number>()
+  if (entry.type === 'tv') {
+    const ticks = [entry.episodes ?? {}, ...(entry.rewatches ?? []).map((r) => r.episodes ?? {})]
+    for (const t of ticks) for (const k of Object.keys(t)) seasonNumbers.add(Number(/^S(\d+)E/.exec(k)?.[1] ?? 0))
+    seasonNumbers.delete(0)
+  }
+  const seasons = (await Promise.all([...seasonNumbers].map((n) => quiet(season(entry.id, n))))).filter((s): s is SeasonDetails => !!s)
+  return boxSetCard(entry, d, c, seasons)
 }
 
 /**

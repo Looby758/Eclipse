@@ -298,6 +298,13 @@ Export this doc as Markdown and save it in the project as `PLAN.md`. Then start 
 
 ## Progress log
 
+**Phase 52: the shelf of everything you've finished (built, waiting for you to try it)**
+
+- **A shelf for each year:** the *Finished* part of the Shelf page is now a room of shelves, one per year you finished things in (newest first, each with a plate: "2026 · 14 box sets"), and a last shelf for what you saw before Eclipse.
+- **Pull one out:** clicking a box set lifts it off the shelf (leaving a gap) and opens it: the front cover big on the left, the back of the box on the right. The back has when you started and finished, the hours you've spent on it (every watch, rewatches and watches with someone included, at each episode's own length when TMDB knows it), episodes and seasons, how many days it took, how many times you've been all the way through, the most episodes in one day, the best-rated episode you saw (TMDB's rating, at least 20 votes), who you watched it with, who recommended it, your rating and note, a line for each watch ("First time: 1 June 2025 to 28 August 2025, 177 episodes"; "With Sam: since 1 September 2026"), and the credits small and centred like a DVD box ("Directed by", "Starring").
+- **Open its page** (or click the cover, which zooms in like any poster) goes to the title; **Put it back**, Escape or clicking outside closes it. *Keep the poster wall still* turns the pulling-out animation off.
+- Decisions: the card works from your library straight away (dates, who with, note) and fills in the hours, cast and best episode from TMDB, so it still opens offline. "Credits" here means the title's own cast and directors plus your history; the full end-credits moment when you finish a show is phase 46, still to discuss, and can reuse this card's numbers (`boxSetCard` in `src/core/shelf.ts`). No new packages.
+
 **Phases 55 to 60 (built, waiting for you to try them)**
 
 - **55, choose your own posters:** on a title page, **Change poster** (a pill on the Spotlight page, and under the poster on the Classic page when you hover it) opens every poster TMDB has in English or with no text, the usual one first and marked *Usual*. The one you pick is used everywhere: the wall, the shelf, the favourites wall, Home, Library, lists, search and the phone page. **Reset to the usual poster** goes back. Eclipse never asks about posters on its own. Saved in the library (`posters`), so both computers agree.

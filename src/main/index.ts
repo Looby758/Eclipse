@@ -319,6 +319,7 @@ function setupIpc(): void {
   ipcMain.handle('favourites:set', (_e, ref: TitleRef, on: boolean) => saveLibrary(setFavourite(getLibrary(), ref, !!on)))
   ipcMain.handle('favourites:move', (_e, from: number, to: number) => saveLibrary(moveFavourite(getLibrary(), Number(from), Number(to))))
   ipcMain.handle('shelf:comingSoon', () => attempt(() => tmdb.comingSoonList(getLibrary())))
+  ipcMain.handle('shelf:boxSet', (_e, key: string) => attempt(() => tmdb.boxSet(getLibrary(), String(key))))
   ipcMain.handle('soon:move', (_e, from: number, to: number) => saveLibrary(moveWatchSoon(getLibrary(), from, to)))
   ipcMain.handle('library:setFinishBy', (_e, key: string, day: string | null) => saveLibrary(setFinishBy(getLibrary(), key, day)))
   ipcMain.handle('library:snooze', (_e, key: string, until: string | null) => saveLibrary(snoozeTitle(getLibrary(), key, until)))
