@@ -7,11 +7,12 @@ const SHOW_FOR = 9000
 
 /**
  * Phase 53: a milestone, shown once as a small note at the top of the window, with a soft flare in
- * the eclipse's halo. It fades by itself; click it to put it away sooner.
+ * the eclipse's halo. It fades by itself; click it to put it away sooner. Several
+ * at once come one after another.
  */
 export default function MilestoneNote(): React.JSX.Element | null {
-  const note = useMilestone((s) => s.note)
-  const clear = useMilestone((s) => s.clear)
+  const note = useMilestone((s) => s.queue[0] ?? null)
+  const clear = useMilestone((s) => s.next)
 
   useEffect(() => {
     if (!note) return

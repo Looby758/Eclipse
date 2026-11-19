@@ -27,7 +27,8 @@ import { showExtensionFolder } from './extension'
 import { editMoment } from '@core/watching'
 import { orderPosters, setBackdrop, setPoster } from '@core/posters'
 import { moveFavourite, setFavourite } from '@core/favourites'
-import { markMilestones } from '@core/milestones'
+import { markMilestones, milestoneBoard, milestoneKeys } from '@core/milestones'
+import { allTimeStats } from '@core/stats'
 import { CATCH_UP_ID, dismissCatchUp } from '@core/catchup'
 import { answerRecommendation } from '@core/recommend'
 import { newRemoteCode, remoteStatus, setRemote, setupRemote, stopRemote } from './remote'
@@ -346,6 +347,14 @@ function setupIpc(): void {
       const lib = getLibrary()
       const { details, credits, lists } = await tmdb.yearData(lib, keysWatchedIn(lib, year))
       return yearInReview(getLibrary(), year, details, credits, lists, localDate(new Date()))
+    })
+  )
+  // Stats: everything you've watched over all time, and every milestone (phase 53).
+  ipcMain.handle('stats:all', () =>
+    attempt(async () => {
+      const details = await tmdb.detailsMany(milestoneKeys(getLibrary()))
+      const lib = getLibrary()
+      return { stats: allTimeStats(lib, details, localDate(new Date())), milestones: milestoneBoard(lib, details), shown: lib.milestones?.length ?? 0 }
     })
   )
   ipcMain.handle('recs:list', () => attempt(() => tmdb.recommendationsFor(getLibrary())))

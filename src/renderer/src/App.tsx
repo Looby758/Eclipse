@@ -14,6 +14,7 @@ import PicksSheet from './components/PicksSheet'
 import ServicesSheet from './components/ServicesSheet'
 import RepairSheet from './components/RepairSheet'
 import YearSheet from './components/YearSheet'
+import StatsSheet from './components/StatsSheet'
 import LibrarySheet from './components/LibrarySheet'
 import SearchSheet from './components/SearchSheet'
 import TitleSheet from './components/TitleSheet'
@@ -134,6 +135,7 @@ export default function App(): React.JSX.Element {
           {view.name === 'picks' && <PicksSheet />}
           {view.name === 'services' && <ServicesSheet />}
           {view.name === 'repair' && <RepairSheet />}
+          {view.name === 'stats' && <StatsSheet />}
           {view.name === 'year' && <YearSheet key={view.year ?? 'now'} year={view.year} />}
           {view.name === 'list' && <ListSheet key={view.id} id={view.id} />}
           {view.name === 'title' &&

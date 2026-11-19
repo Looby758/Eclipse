@@ -267,6 +267,8 @@ export interface EclipseApi {
 
   /** Your year in Eclipse: hours, busiest month, most-watched director and actor, longest binge. */
   yearReview(year: number): Promise<Result<YearReview>>
+  /** Stats (phase 53): everything you've watched over all time, and every milestone track. */
+  stats(): Promise<Result<{ stats: import('@core/stats').AllTimeStats; milestones: import('@core/milestones').MilestoneTrack[]; shown: number }>>
 
   /** Recommendations for Search and the poster wall, from what you've watched and your answers so far. */
   recommendations(): Promise<Result<Recommendation[]>>

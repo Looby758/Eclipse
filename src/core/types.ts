@@ -153,6 +153,9 @@ export interface PlannedTime {
   weekly?: boolean
 }
 
+/** A milestone's id (phase 53): its measure and step, e.g. "episodes:1000", "hours:tv:1402:100", "genre:Drama:25". */
+export const MILESTONE_ID = /^[a-z]+(:[^:\n]{1,80}){0,2}:\d+$/
+
 /** An episode ticked as seen with no date (watched before Eclipse). */
 export const UNDATED = 'seen'
 

@@ -70,6 +70,7 @@ const api: EclipseApi = {
   servicesHistory: () => ipcRenderer.invoke('services:history'),
   repairBatch: (batch, choice) => ipcRenderer.invoke('library:repair', batch, choice),
   yearReview: (year) => ipcRenderer.invoke('year:review', year),
+  stats: () => ipcRenderer.invoke('stats:all'),
   weekBudget: () => ipcRenderer.invoke('week:budget'),
   recommendations: () => ipcRenderer.invoke('recs:list'),
   answerRecommendation: (item, answer) => ipcRenderer.invoke('recs:answer', item, answer),
