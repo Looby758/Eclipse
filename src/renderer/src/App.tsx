@@ -42,6 +42,7 @@ import { handleArrows, isTyping } from './lib/keys'
 import { useStartAsk } from './lib/startAsk'
 import { startWelcome, useWelcome } from './lib/welcome'
 import { watchMilestones } from './lib/milestones'
+import { watchSounds } from './lib/sounds'
 
 export default function App(): React.JSX.Element {
   const status = useApp((s) => s.status)
@@ -67,6 +68,8 @@ export default function App(): React.JSX.Element {
     const stop = window.api.onLibraryChanged(setLibrary)
     // Phase 53: a small note when a tick takes you past a milestone.
     const stopMilestones = watchMilestones()
+    // Phase 54: a click for a tick and a chime for a finished season, when sounds are on.
+    const stopSounds = watchSounds()
     // Mouse back button, Alt+Left and Escape go back, like a browser.
     const onMouse = (e: MouseEvent): void => {
       if (e.button === 3) back()
@@ -87,6 +90,7 @@ export default function App(): React.JSX.Element {
     return () => {
       stop()
       stopMilestones()
+      stopSounds()
       window.removeEventListener('mouseup', onMouse)
       window.removeEventListener('keydown', onKey)
     }
