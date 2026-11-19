@@ -4,6 +4,7 @@ import type { EclipseApi } from '@shared/api'
 // IPC channels are named area:action, as in Orbit.
 const api: EclipseApi = {
   status: () => ipcRenderer.invoke('app:status'),
+  takeOpening: () => ipcRenderer.invoke('opening:take'),
   pickDataFolder: () => ipcRenderer.invoke('data:pick'),
   useDefaultDataFolder: () => ipcRenderer.invoke('data:useDefault'),
   revealDataFolder: () => ipcRenderer.invoke('data:reveal'),
