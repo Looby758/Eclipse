@@ -264,7 +264,7 @@ From a conversation about how I actually use Eclipse day to day: mostly ticking 
 51. **An opening for Eclipse.** A couple of seconds of intro when the app launches: the Halo-blue eclipse rises and my posters fly into the wall, like a studio logo before a film. Any key or click skips it, it's skipped when Eclipse starts quietly in the tray, and *Keep the poster wall still* (41) turns it off. *(Built.)* *Needs:* 34.
 52. **A shelf of everything I've finished.** A room with box sets on shelves, one for every show and film I've completed. Pull one out and it opens to my dates, hours, who I watched it with and its credits (46). Like a DVD collection, but it's my history. *Needs:* nothing new; shares the credits with 46.
 53. **Milestones.** *(Built.)* Quiet moments, not badges or points: "That was your 1,000th episode" with a soft flare in the halo, or "100 hours of The Walking Dead". Shown once, as a small note. *Needs:* nothing new.
-54. **Sound design.** A soft click when I tick an episode, a richer chime for finishing a season, a low swell when the credits roll (46). Off by default, with one switch in Settings → Appearance. *Needs:* nothing new.
+54. **Sound design.** A soft click when I tick an episode and a richer chime for finishing a season. Off by default, with one switch in Settings → Appearance. The low swell for the credits was dropped (19 Nov 2026): the send-off (46) keeps its own theme and soft chime, nothing low or rumbling anywhere, and theme tunes play only in the send-off. *Needs:* nothing new.
 55. **Choose my own posters (only when I want to).** Most titles have many alternative posters on TMDB. Eclipse keeps using the default poster on its own and never asks; on a title's page, a small *Change poster* opens a grid of the alternatives, and the one I pick is used everywhere (the wall, the shelf, Home, lists). *Reset* goes back to the default. Saved in the library so both computers agree. *Needs:* nothing new.
 56. **Opening a poster zooms into it.** Clicking a poster (on the wall, the shelf, a list) grows it smoothly into that title's page, so it feels like stepping into it rather than a page loading; closing shrinks it back. *Keep the poster wall still* (41) swaps it for a simple fade. *Needs:* nothing new.
 57. **My journey with a show.** On a long show's page, a ribbon of its seasons showing when I watched each one, who with (13), rewatches, and the gaps in between. The Walking Dead would show the whole year with it at a glance. Nothing past where I am. *Needs:* nothing new.
@@ -297,6 +297,15 @@ Export this doc as Markdown and save it in the project as `PLAN.md`. Then start 
 - I've built one app with Claude Code before but I'm not a professional developer, so explain how to run and test each phase in plain steps.
 
 ## Progress log
+
+**Phase 54: sound design (built, waiting for you to try it)**
+
+- **Turn it on:** Settings → Appearance → *Sounds* → **On**. Turning it on plays both sounds once so you know what you'll hear. Off by default, and remembered on this computer only (like *Keep the poster wall still*).
+- **The tick:** a soft, short click (a tap of air and a high "tock", under a tenth of a second) whenever you tick an episode, wherever the tick comes from: a show's page, Home's *Tick it*, the tray, the phone remote, or the player finishing one. Ticking a whole season or *Watched up to here* clicks once.
+- **Finishing a season:** a brighter four-note chime that rises and rings out for about two seconds, just after the click. Rewatches and watches with someone count too.
+- **Finishing a show:** the last episode clicks, then the send-off (46) plays with its own theme and chime, so there's no season chime on top of it.
+- **Quiet when it should be:** nothing for unticking, for marking things seen before (no date), or for old ticks a sync brings in from the phone page or the other computer. Only ticks dated today make a sound, and opening Eclipse is silent.
+- Decisions: the low swell when the credits roll was dropped, as decided with the send-off: everything is high and light (a filter stops anything low reaching the speakers), with no rumble or boom, and theme tunes still play only in the send-off. The sounds are made by Eclipse itself (Web Audio), so there are no sound files and no new packages. The send-off's own *Mute* is separate and works as before. Previews: `sounds/phase-54-tick.wav` and `sounds/phase-54-season-chime.wav` in the project files.
 
 **Phase 49: franchises as a star map (built, waiting for you to try it)**
 

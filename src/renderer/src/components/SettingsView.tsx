@@ -7,6 +7,7 @@ import {
 } from "../lib/themeMode";
 import { applyStill, savedStill } from "../lib/motion";
 import { setStarWhy, useStarWhy } from "../lib/starWhy";
+import { playSeasonChime, playTick, setSounds, useSounds } from "../lib/sounds";
 import { usePremiereMode, type PremiereMode } from "../lib/premiere";
 import { useApp } from "../store/app";
 import { useHomeStyle } from "../lib/homeStyle";
@@ -36,6 +37,7 @@ export default function SettingsView(): React.JSX.Element {
   const home = useHomeStyle();
   const [still, setStill] = useState(savedStill);
   const starWhy = useStarWhy();
+  const sounds = useSounds();
   const premiere = usePremiereMode();
 
   return (
@@ -141,6 +143,37 @@ export default function SettingsView(): React.JSX.Element {
               onClick={() => (setStill(true), applyStill(true))}
             >
               Still
+            </button>
+          </div>
+          <h3 className="card-sub">Sounds</h3>
+          <p className="muted small">
+            A soft click when you tick an episode, and a brighter chime when
+            that finishes a season. Finishing a whole show keeps its own
+            send-off.
+          </p>
+          <div className="segmented" role="radiogroup" aria-label="Sounds">
+            <button
+              role="radio"
+              aria-checked={!sounds}
+              className={!sounds ? "on" : ""}
+              onClick={() => setSounds(false)}
+            >
+              Off
+            </button>
+            <button
+              role="radio"
+              aria-checked={sounds}
+              className={sounds ? "on" : ""}
+              onClick={() => {
+                // Turning them on plays both once, so you know what you'll hear.
+                if (!sounds) {
+                  playTick();
+                  playSeasonChime(0.45);
+                }
+                setSounds(true);
+              }}
+            >
+              On
             </button>
           </div>
           <h3 className="card-sub">Star maps: why things connect</h3>
