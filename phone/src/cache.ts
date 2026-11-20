@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { MediaType, SearchResult, SeasonDetails, TitleDetails, WatchProviders } from '@core/types'
+import { parseTitleKey, type MediaType, type SearchResult, type SeasonDetails, type TitleDetails, type Trait, type WatchProviders } from '@core/types'
 import { usePhone } from './store'
 
 /**
@@ -10,7 +10,7 @@ import { usePhone } from './store'
 
 const PREFIX = 'eclipse.phone.tmdb:'
 const HOUR = 3_600_000
-export const TTL = { details: 7 * 24 * HOUR, season: 3 * 24 * HOUR, providers: 24 * HOUR, recs: 3 * 24 * HOUR }
+export const TTL = { details: 7 * 24 * HOUR, season: 3 * 24 * HOUR, providers: 24 * HOUR, recs: 3 * 24 * HOUR, traits: 7 * 24 * HOUR }
 
 const memory = new Map<string, { at: number; data: unknown }>()
 const inFlight = new Map<string, Promise<unknown>>()
@@ -105,6 +105,18 @@ export const getSeason = (tvId: number, n: number): Promise<SeasonDetails> => ca
 export const getProviders = (type: MediaType, id: number, region: string): Promise<WatchProviders> =>
   cached(`providers:${region}:${type}:${id}`, TTL.providers, () => slot(() => tmdb().providers(type, id, region)))
 export const getRecs = (type: MediaType, id: number): Promise<SearchResult[]> => cached(`recs:${type}:${id}`, TTL.recs, () => slot(() => tmdb().recommendations(type, id)))
+export const getSimilar = (type: MediaType, id: number): Promise<SearchResult[]> => cached(`similar:${type}:${id}`, TTL.recs, () => slot(() => tmdb().similar(type, id)))
+export const getTraits = (type: MediaType, id: number): Promise<Trait[]> => cached(`traits:${type}:${id}`, TTL.traits, () => slot(() => tmdb().traits(type, id)))
+
+/** The same TMDB answers, by title key, for the shared recommendation ranking in core/recommend.ts. */
+const byKey =
+  <T>(get: (type: MediaType, id: number) => Promise<T>) =>
+  (key: string): Promise<T> => {
+    const t = parseTitleKey(key)
+    if (!t) return Promise.reject(new Error(`Not a title: ${key}`))
+    return get(t.type, t.id)
+  }
+export const recSources = { recommendations: byKey(getRecs), similar: byKey(getSimilar), traits: byKey(getTraits) }
 
 /** Loads something for a screen: { data, error } with data null while it loads. */
 export function useLoad<T>(job: () => Promise<T>, deps: unknown[]): { data: T | null; error: string | null } {

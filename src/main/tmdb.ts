@@ -15,7 +15,7 @@ import { franchisesOf, sameUniverse, universeName, universeStrip, type UniverseI
 import { knownFrom, type KnownFrom } from '@core/knownfrom'
 import { catchUps, type CatchUp } from '@core/catchup'
 import { weekStart } from '@core/time'
-import { applyTaste, recommend, seedsOf, SIMILAR_WEIGHT, type Recommendation, type Seed } from '@core/recommend'
+import { candidateLists, rankRecommendations, seedsOf, type Recommendation } from '@core/recommend'
 import { weekSoFar, type WeekSoFar } from '@core/week'
 import type { Fetched, ListView } from '@shared/api'
 import { loadSettings, saveSettings } from './settings'
@@ -176,45 +176,14 @@ export async function detailsMany(keys: string[]): Promise<Record<string, TitleD
  * Interested and Not for me answers have taught it.
  */
 export async function recommendationsFor(library: Library, now = new Date()): Promise<Recommendation[]> {
-  const seeds = seedsOf(library, now)
-  const lists: { seed: Seed; results: SearchResult[] }[] = []
-  for (let i = 0; i < seeds.length; i += 5) {
-    await Promise.all(
-      seeds.slice(i, i + 5).flatMap((seed) => {
-        const t = parseTitleKey(seed.key)
-        if (!t) return []
-        const fetchList = async (source: 'recs' | 'similar'): Promise<void> => {
-          try {
-            const job = (): Promise<SearchResult[]> => (source === 'recs' ? tmdb().recommendations(t.type, t.id) : tmdb().similar(t.type, t.id))
-            const r = await cached(fileCache, `${source}:${seed.key}`, CACHE_TTL.credits, job, { shouldServeStale: serveStaleUnlessKeyProblem })
-            lists.push({ seed: source === 'recs' ? seed : { ...seed, weight: seed.weight * SIMILAR_WEIGHT }, results: r.data })
-          } catch {
-            // Skipped until it can be fetched.
-          }
-        }
-        return [fetchList('recs'), fetchList('similar')]
-      })
-    )
+  const list = (source: 'recs' | 'similar') => async (key: string): Promise<SearchResult[]> => {
+    const t = parseTitleKey(key)
+    if (!t) return []
+    const job = (): Promise<SearchResult[]> => (source === 'recs' ? tmdb().recommendations(t.type, t.id) : tmdb().similar(t.type, t.id))
+    return (await cached(fileCache, `${source}:${key}`, CACHE_TTL.credits, job, { shouldServeStale: serveStaleUnlessKeyProblem })).data
   }
-  const taste = library.recsTaste
-  const ranked = recommend(library, lists, 90)
-  if (!taste || !Object.keys(taste.weights).length) return ranked.slice(0, 40)
-  // Once it has learnt something, the strongest candidates' traits are fetched (saved for a week) so
-  // your answers can move them up or down.
-  const traits: Record<string, Trait[]> = {}
-  const top = ranked.slice(0, 60)
-  for (let i = 0; i < top.length; i += 8) {
-    await Promise.all(
-      top.slice(i, i + 8).map(async (r) => {
-        try {
-          traits[r.key] = await traitsOf(r.key)
-        } catch {
-          // Ranked without learning until it can be fetched.
-        }
-      })
-    )
-  }
-  return applyTaste(ranked, traits, taste, 40)
+  const lists = await candidateLists(seedsOf(library, now), { recommendations: list('recs'), similar: list('similar') })
+  return rankRecommendations(library, lists, { traits: traitsOf })
 }
 
 /** A title's creators, network, main cast and keywords, for learning from answers (saved for a week). */

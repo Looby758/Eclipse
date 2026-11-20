@@ -1,16 +1,19 @@
 import { useMemo, useState } from 'react'
 import { Heart, SkipForward, ThumbsDown, Play } from 'lucide-react'
-import { recommend, seedsOf, type Recommendation, type Seed } from '@core/recommend'
-import { parseTitleKey, type SearchResult } from '@core/types'
+import { candidateLists, rankRecommendations, seedsOf, whyText, type Recommendation } from '@core/recommend'
+import { learnableKeys, pendingChanges, phoneView } from '@core/phone'
+import type { Trait } from '@core/types'
 import { imageUrl } from '@core/tmdb'
 import { usePhone } from './store'
-import { getDetails, getRecs, useLoad } from './cache'
+import { getDetails, recSources, useLoad } from './cache'
 import { MyServices, itemOf, openTitle } from './ui'
 
 /**
  * Recommendations, one at a time: Interested (adds it to Want to watch), Not for me (never shown
- * again, on the computer too) or Skip (just for now). Built from TMDB's "if you liked this" lists
- * for what you've watched, the same way the computer does it.
+ * again, on the computer too) or Skip (just for now). Ranked exactly the way the computer ranks them
+ * (core/recommend.ts): TMDB's "recommended" and "similar" lists for what you've watched, added up,
+ * then raised or lowered by what your Interested and Not for me answers have taught it, including
+ * the ones on this phone that are still waiting for your computer.
  */
 export default function ForYouTab(): React.JSX.Element {
   const view = usePhone((s) => s.view)
@@ -20,9 +23,14 @@ export default function ForYouTab(): React.JSX.Element {
   const seedKey = seedsOf(view, new Date())
     .map((s) => s.key)
     .join(',')
-  const { data: lists, error } = useLoad(() => loadLists(seedsOf(usePhone.getState().view, new Date())), [seedKey])
-  const recs = useMemo(() => (lists ? recommend(view, lists, 80) : null), [lists, view])
-  const queue = recs?.filter((r) => !skipped.includes(r.key)) ?? null
+  // Ranked once each time the tab opens (like the computer's One at a time), so the card you're
+  // looking at never moves under your thumb; answers here count from the next time.
+  const { data: recs, error } = useLoad(loadPicks, [seedKey])
+  const queue = useMemo(() => {
+    if (!recs) return null
+    const hidden = new Set([...(view.recsHidden ?? []), ...(view.dropped ?? []).map((d) => d.entry.key), ...skipped])
+    return recs.filter((r) => !view.entries[r.key] && !hidden.has(r.key))
+  }, [recs, view, skipped])
   const rec = queue?.[0]
 
   const skip = (key: string): void => {
@@ -66,24 +74,25 @@ export default function ForYouTab(): React.JSX.Element {
   )
 }
 
-async function loadLists(seeds: Seed[]): Promise<{ seed: Seed; results: SearchResult[] }[]> {
-  const lists: { seed: Seed; results: SearchResult[] }[] = []
+async function loadPicks(): Promise<Recommendation[]> {
+  const { library, queue, view } = usePhone.getState()
+  const seeds = seedsOf(view, new Date())
+  const lists = await candidateLists(seeds, recSources)
+  if (!lists.length && seeds.length) throw new Error('Couldn’t reach TMDB for recommendations. Are you online?')
+  // The phone's own answers that haven't reached the computer yet teach it too.
+  const traits: Record<string, Trait[]> = {}
   await Promise.all(
-    seeds.map(async (seed) => {
-      const t = parseTitleKey(seed.key)
-      if (!t) return
+    learnableKeys(pendingChanges(library, queue)).map(async (key) => {
       try {
-        lists.push({ seed, results: await getRecs(t.type, t.id) })
+        traits[key] = await recSources.traits(key)
       } catch {
-        // Left out until it can be fetched.
+        // Learnt from once it can be fetched (or when the computer folds it in).
       }
     })
   )
-  if (!lists.length && seeds.length) throw new Error('Couldn’t reach TMDB for recommendations. Are you online?')
-  return lists
+  const taste = phoneView(library, queue, traits).recsTaste
+  return rankRecommendations(view, lists, recSources, { candidates: 120, withTraits: 80, limit: 80 }, taste)
 }
-
-const because = (names: string[]): string => (names.length <= 1 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`)
 
 function Card({ rec }: { rec: Recommendation }): React.JSX.Element {
   const { data: d } = useLoad(() => getDetails(rec.type, rec.id), [rec.key])
@@ -95,7 +104,7 @@ function Card({ rec }: { rec: Recommendation }): React.JSX.Element {
       <div className="rec-text">
         <h2>{rec.name}</h2>
         <p className="sub">{[rec.year, rec.type === 'tv' ? 'Show' : 'Film', d?.genres.slice(0, 2).join(', ')].filter(Boolean).join(' · ')}</p>
-        <p className="because">Because of {because(rec.because.slice(0, 3))}</p>
+        <p className="because">{whyText(rec)}</p>
         <MyServices type={rec.type} id={rec.id} />
         {rec.overview && <p className="overview clamp">{rec.overview}</p>}
         {d?.trailer && (

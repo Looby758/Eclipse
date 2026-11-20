@@ -236,10 +236,14 @@ export const pendingChanges = (library: Library, changes: PhoneChange[]): PhoneC
   return changes.filter((c) => !done.has(c.id))
 }
 
-/** What the phone shows: the library from Drive with its own not-yet-folded changes on top. */
-export function phoneView(library: Library, changes: PhoneChange[]): Library {
+/**
+ * What the phone shows: the library from Drive with its own not-yet-folded changes on top. With
+ * `traits` for the titles it answered, its Interested and Not for me answers also teach
+ * recommendations, just as they will when the computer folds them in.
+ */
+export function phoneView(library: Library, changes: PhoneChange[], traits: Record<string, Trait[]> = {}): Library {
   let lib = library
-  for (const c of pendingChanges(library, changes).sort((a, b) => a.at.localeCompare(b.at))) lib = applyPhone(lib, c)
+  for (const c of pendingChanges(library, changes).sort((a, b) => a.at.localeCompare(b.at))) lib = applyPhone(lib, c, traits)
   return lib
 }
 

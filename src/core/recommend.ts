@@ -100,6 +100,80 @@ export function applyTaste(recs: Recommendation[], traits: Record<string, Trait[
     .slice(0, limit)
 }
 
+/** Where the ranking gets its TMDB answers from (the computer and the phone each cache them their own way). */
+export interface RecSources {
+  /** TMDB's "recommended" list for a title key. */
+  recommendations(key: string): Promise<SearchResult[]>
+  /** TMDB's "similar" list for a title key. */
+  similar(key: string): Promise<SearchResult[]>
+  /** A title's creators, network, main cast and keywords. */
+  traits(key: string): Promise<Trait[]>
+}
+
+export type CandidateList = { seed: Seed; results: SearchResult[] }
+
+/**
+ * Both of TMDB's lists for each seed, a few seeds at a time. "Similar" counts for SIMILAR_WEIGHT of
+ * "recommended". A list that can't be fetched is left out until it can.
+ */
+export async function candidateLists(seeds: Seed[], sources: Pick<RecSources, 'recommendations' | 'similar'>): Promise<CandidateList[]> {
+  const lists: CandidateList[] = []
+  for (let i = 0; i < seeds.length; i += 5) {
+    await Promise.all(
+      seeds.slice(i, i + 5).flatMap((seed) =>
+        (['recs', 'similar'] as const).map(async (source) => {
+          try {
+            const results = await (source === 'recs' ? sources.recommendations(seed.key) : sources.similar(seed.key))
+            lists.push({ seed: source === 'recs' ? seed : { ...seed, weight: seed.weight * SIMILAR_WEIGHT }, results })
+          } catch {
+            // Skipped until it can be fetched.
+          }
+        })
+      )
+    )
+  }
+  return lists
+}
+
+export interface RankOptions {
+  /** How many candidates to rank before learning moves them (default 90). */
+  candidates?: number
+  /** How many of the strongest candidates have their traits fetched to learn from (default 60). */
+  withTraits?: number
+  /** How many to return (default 40). */
+  limit?: number
+}
+
+/**
+ * The full ranking, the same on the computer and the phone: the seeds' lists added up, then (once
+ * it has learnt something) the strongest candidates' traits are fetched so `taste` can move them up
+ * or down. `taste` defaults to the library's own.
+ */
+export async function rankRecommendations(
+  library: Library,
+  lists: CandidateList[],
+  sources: Pick<RecSources, 'traits'>,
+  { candidates = 90, withTraits = 60, limit = 40 }: RankOptions = {},
+  taste: Taste | undefined = library.recsTaste
+): Promise<Recommendation[]> {
+  const ranked = recommend(library, lists, Math.max(candidates, limit))
+  if (!taste || !Object.keys(taste.weights).length) return ranked.slice(0, limit)
+  const traits: Record<string, Trait[]> = {}
+  const top = ranked.slice(0, withTraits)
+  for (let i = 0; i < top.length; i += 8) {
+    await Promise.all(
+      top.slice(i, i + 8).map(async (r) => {
+        try {
+          traits[r.key] = await sources.traits(r.key)
+        } catch {
+          // Ranked without learning until it can be fetched.
+        }
+      })
+    )
+  }
+  return applyTaste(ranked, traits, taste, limit)
+}
+
 /** Why a pick is there, in a line: "Because of The Walking Dead and Shadowhunters · you liked Jensen Ackles". */
 export function whyText(r: Pick<Recommendation, 'because' | 'liked'>): string {
   const names = r.because.slice(0, 2)
