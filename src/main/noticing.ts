@@ -16,6 +16,7 @@ import {
   noKey,
   playingLine,
   recognise,
+  fromStreaming,
   refreshSuggestion,
   showPagesFromVisits,
   suggestFromVisits,
@@ -181,7 +182,9 @@ async function onPlaying(): Promise<void> {
   // The Chrome extension first, playing or paused: it names the episode. Then a media session
   // that's playing, then any media session, then browser windows (which only name the show).
   const order = (n: NowPlaying): number => (n.app.startsWith('Chrome extension') ? (n.status === 'playing' ? -2 : -1) : n.position != null && n.status === 'playing' ? 0 : n.position != null ? 1 : 2)
-  const now = [...report.items].sort((a, b) => order(a) - order(b)).map((n) => ({ n, r: recognise(n, lib, d, today, new Date()) })).find((x) => x.r)
+  // Only what's on a streaming service: a YouTube trailer called "Avengers: Doomsday" isn't the film.
+  const items = fromStreaming(report.items)
+  const now = [...items].sort((a, b) => order(a) - order(b)).map((n) => ({ n, r: recognise(n, lib, d, today, new Date()) })).find((x) => x.r)
   const next = now?.r ?? null
   updateDiscord(next, next ? lib.entries[next.key]?.title.posterPath : null)
   if (!noticing) {
@@ -191,7 +194,7 @@ async function onPlaying(): Promise<void> {
     if (moved) hooks.changed()
     return
   }
-  if (!next) void noticeUnknown(report.items, lib)
+  if (!next) void noticeUnknown(items, lib)
   if (unknown && ((unknown.match && lib.entries[unknown.match.key]) || Date.now() - unknown.at > 12 * 3_600_000)) {
     unknown = null
     hooks.changed()

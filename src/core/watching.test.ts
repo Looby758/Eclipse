@@ -20,6 +20,8 @@ import {
   showPagesFromVisits,
   suggestFromVisits,
   fromExtension,
+  fromStreaming,
+  namesService,
   pickShow,
   playingLine,
   unknownShow,
@@ -58,6 +60,8 @@ describe('recognising services, shows and episodes', () => {
     expect(serviceOf('https://www.nowtv.com/gb/watch/playback/vod/abc')?.playing).toBe(true)
     expect(serviceOf('https://www.bbc.co.uk/iplayer/episode/m001/x')?.service.name).toBe('BBC iPlayer')
     expect(serviceOf('https://example.com/play/1')).toBeNull()
+    // YouTube's videos are trailers, clips and reviews: not a service you watch shows on.
+    expect(serviceOf('https://www.youtube.com/watch?v=abc')).toBeNull()
     expect(serviceOf('not a url')).toBeNull()
   })
 
@@ -94,6 +98,12 @@ describe('recognising services, shows and episodes', () => {
 })
 
 describe('suggestions from browser history', () => {
+  it('doesn’t suggest from YouTube videos', () => {
+    const v = { url: 'https://www.youtube.com/watch?v=abc', title: 'Andor S2 E4 breakdown - YouTube', day: today, at: 1 }
+    expect(suggestFromVisits([v], lib, new Set())).toEqual([])
+    expect(showPagesFromVisits([v], lib)).toEqual([])
+  })
+
   const v = (url: string, title: string, day: string, at: number) => ({ url, title, day, at })
   it('suggests only episodes the title names, once each, and never guesses', () => {
     const visits = [
@@ -242,6 +252,48 @@ describe('the Chrome extension', () => {
     expect(np.title.split(' · ').slice(0, 2)).toEqual(['Andor', 'x'.repeat(200)])
     expect(np.title.split(' · ')).toHaveLength(12)
     expect([np.position, np.duration]).toEqual([null, null])
+  })
+})
+
+describe('only streaming services count', () => {
+  const films: Library = { ...lib, entries: { ...lib.entries, 'movie:6': entry('movie:6', 'Avengers: Doomsday', { status: 'want' }) } }
+  const playing = (items: Parameters<typeof fromStreaming>[0]) => fromStreaming(items).map((n) => recognise(n, films, details, today)).find(Boolean) ?? null
+  const media = (app: string, title: string, artist = '') => ({ app, title, artist, status: 'playing', position: 30, duration: 600 })
+
+  it('ignores a YouTube video named after a film, on Windows', () => {
+    // Windows' media controls give the video's title and channel, with no address; the window says YouTube.
+    const trailer = [media('Chrome', 'Avengers: Doomsday | Official Trailer', 'Marvel Entertainment'), { app: 'chrome', title: 'Avengers: Doomsday | Official Trailer - YouTube - Google Chrome' }]
+    expect(recognise(trailer[0], films, details, today)).toMatchObject({ key: 'movie:6' })
+    expect(fromStreaming(trailer)).toEqual([])
+    expect(playing(trailer)).toBeNull()
+    expect(playing([{ app: 'msedge', title: 'Avengers Doomsday trailer reaction - YouTube and 3 more pages - Personal - Microsoft​ Edge' }])).toBeNull()
+  })
+
+  it('ignores YouTube and other non-streaming pages on a Mac', () => {
+    expect(playing([{ app: 'Google Chrome', title: 'Avengers: Doomsday - Official Trailer - YouTube', url: 'https://www.youtube.com/watch?v=abc' }])).toBeNull()
+    expect(playing([{ app: 'Safari', title: 'Avengers: Doomsday (2026) - IMDb', url: 'https://www.imdb.com/title/tt1/' }])).toBeNull()
+    expect(playing([{ app: 'Safari', title: 'Avengers: Doomsday | Disney+', url: 'https://www.disneyplus.com/en-gb/play/abc' }])).toMatchObject({ key: 'movie:6', service: 'Disney+' })
+  })
+
+  it('still notices a film or show on a streaming service', () => {
+    // The window names the service, so the browser's media controls can be trusted to be its player.
+    const disney = [media('Chrome', 'Avengers: Doomsday'), { app: 'chrome', title: '🔊 Avengers: Doomsday | Disney+ - Google Chrome' }]
+    expect(fromStreaming(disney)).toEqual(disney)
+    expect(playing(disney)).toMatchObject({ key: 'movie:6', position: 30 })
+    expect(playing([{ app: 'chrome', title: 'Andor | Disney+ - Google Chrome' }])).toMatchObject({ key: 'tv:1' })
+    expect(playing([{ app: 'msedge', title: 'The Walking Dead - NOW - Microsoft​ Edge' }])).toMatchObject({ key: 'tv:2' })
+    // Streaming apps aren't browsers, and the extension only reports from streaming addresses.
+    expect(playing([media('Disney.37853FC22B2CE_6rarf9sa4v8jt!App', 'Andor')])).toMatchObject({ key: 'tv:1' })
+    expect(playing([fromExtension({ url: 'https://www.disneyplus.com/en-gb/play/abc', texts: ['Andor', 'S2:E4'], position: 60, duration: 2700, paused: false })!])).toMatchObject({ key: 'tv:1', season: 2, episode: 4 })
+  })
+
+  it('tells a streaming service’s window from other windows', () => {
+    expect(namesService('Andor | Disney+ - Google Chrome')).toBe(true)
+    expect(namesService('Netflix - Opera')).toBe(true)
+    expect(namesService('Disney+ | Andor')).toBe(true)
+    expect(namesService('Avengers: Doomsday - YouTube - Google Chrome')).toBe(false)
+    expect(namesService('Now and Then - Google Chrome')).toBe(false)
+    expect(namesService('Disney+ Day announcements - Google Chrome')).toBe(false)
   })
 })
 
