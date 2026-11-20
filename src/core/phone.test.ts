@@ -126,4 +126,14 @@ describe('the phone file', () => {
     const folded = foldPhone(emptyLibrary(), changes).library
     expect(phoneView(folded, changes)).toBe(folded)
   })
+
+  it('lets the phone learn from its own answers before the computer has them, and only once after', () => {
+    const changes: PhoneChange[] = [{ id: 'n', at: at('2026-11-12'), kind: 'notForMe', key: 'movie:11' }]
+    const traits = { 'movie:11': [{ id: 'creator:1', name: 'George Lucas' }] }
+    expect(phoneView(emptyLibrary(), changes).recsTaste).toBeUndefined()
+    expect(phoneView(emptyLibrary(), changes, traits).recsTaste).toMatchObject({ no: 1, weights: { 'creator:1': { w: -0.6 } } })
+    // Once the computer has folded it in, the phone doesn't count it a second time.
+    const folded = foldPhone(emptyLibrary(), changes, traits).library
+    expect(phoneView(folded, changes, traits).recsTaste).toEqual(folded.recsTaste)
+  })
 })

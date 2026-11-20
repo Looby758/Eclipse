@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { hideRecommendation, recommend, seedsOf } from './recommend'
+import { candidateLists, hideRecommendation, rankRecommendations, recommend, seedsOf, SIMILAR_WEIGHT } from './recommend'
 import { normalizeLibrary } from './library'
-import type { SearchResult } from './types'
+import type { SearchResult, Trait } from './types'
 
 const r = (key: string, name: string): SearchResult => {
   const [type, id] = key.split(':')
@@ -42,5 +42,42 @@ describe('recommendations', () => {
     const hidden = hideRecommendation(lib, 'movie:11')
     expect(recommend(hidden, [{ seed: by('Dune'), results: [r('movie:11', 'Blade Runner')] }])).toEqual([])
     expect(normalizeLibrary(JSON.parse(JSON.stringify(hidden))).recsHidden).toEqual(['movie:11'])
+  })
+})
+
+describe('the shared ranking (computer and phone)', () => {
+  const lists = {
+    'movie:2': [r('movie:10', 'Arrival'), r('movie:11', 'Blade Runner')],
+    'tv:1': [r('tv:20', 'Better Call Saul')]
+  } as Record<string, SearchResult[]>
+  const sources = {
+    recommendations: async (key: string) => lists[key] ?? [],
+    similar: async (key: string) => {
+      if (key === 'movie:3') throw new Error('offline')
+      return key === 'movie:2' ? [r('movie:12', 'Sicario')] : []
+    },
+    traits: async (key: string): Promise<Trait[]> => (key === 'movie:11' ? [{ id: 'creator:9', name: 'Ridley Scott' }] : [])
+  }
+
+  it('takes both lists for every seed, with similar counting for less, and skips ones it can’t fetch', async () => {
+    const got = await candidateLists(seedsOf(lib, now), sources)
+    const dune = got.filter((l) => l.seed.key === 'movie:2')
+    expect(dune).toHaveLength(2)
+    const [recs, similar] = [dune.find((l) => l.results[0].key === 'movie:10')!, dune.find((l) => l.results[0].key === 'movie:12')!]
+    expect(similar.seed.weight).toBeCloseTo(recs.seed.weight * SIMILAR_WEIGHT)
+    // Old film's "similar" failed, its "recommended" still came through.
+    expect(got.filter((l) => l.seed.key === 'movie:3')).toHaveLength(1)
+  })
+
+  it('moves picks by what it has learnt, and leaves them alone before then', async () => {
+    const got = await candidateLists(seedsOf(lib, now), sources)
+    const plain = await rankRecommendations(lib, got, sources)
+    expect(plain[0].key).toBe('movie:10')
+    const taught = { ...lib, recsTaste: { weights: { 'creator:9': { w: 2, name: 'Ridley Scott' } }, yes: 3, no: 0 } }
+    const learnt = await rankRecommendations(taught, got, sources)
+    expect(learnt[0]).toMatchObject({ key: 'movie:11', liked: ['Ridley Scott'] })
+    // A taste passed in (the phone's, with its own answers) wins over the library's.
+    const other = await rankRecommendations(lib, got, sources, { limit: 2 }, taught.recsTaste)
+    expect(other.map((x) => x.key)).toEqual(['movie:11', 'movie:10'])
   })
 })
