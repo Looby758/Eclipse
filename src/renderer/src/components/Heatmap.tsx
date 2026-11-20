@@ -8,6 +8,7 @@ import { hsl } from '../lib/posterColour'
 import { useHeatView } from '../lib/heatView'
 import { useApp } from '../store/app'
 import HeatToggle from './HeatToggle'
+import { tickEpisode } from '../lib/tickEpisode'
 
 const label = (c: HeatCell): string => `S${c.season} E${c.episode}`
 
@@ -19,6 +20,7 @@ function describe(c: HeatCell): string {
   else parts.push(`★ ${c.rating.toFixed(1)} from ${c.votes} vote${c.votes === 1 ? '' : 's'}${c.trusted ? '' : ' (too few to trust)'}`)
   if (c.watched) parts.push('watched')
   if (c.next) parts.push('up next')
+  if (c.aired) parts.push(c.watched ? 'double-click to untick' : 'double-click to tick')
   return parts.join(' · ')
 }
 
@@ -118,7 +120,7 @@ export default function Heatmap({ details, onPick }: { details: TitleDetails; on
                     const mcls = ['heat-cell', 'mine', m ? `r-${m.reaction}` : c.watched ? 'mine-seen' : 'none', m?.differs ? 'differs' : '', c.next ? 'next' : ''].filter(Boolean).join(' ')
                     return (
                       <td key={i}>
-                        <button className={mcls} title={describeMine(c, m)} aria-label={describeMine(c, m)} onClick={() => onPick(c.season, c.episode)}>
+                        <button className={mcls} title={describeMine(c, m)} aria-label={describeMine(c, m)} onClick={() => onPick(c.season, c.episode)} onDoubleClick={() => c.aired && void tickEpisode(details, c.season, c.episode, c.watched)}>
                           {m ? <span aria-hidden>{REACTIONS[m.reaction].emoji}</span> : c.watched ? <Check size={12} strokeWidth={3} aria-hidden /> : ''}
                         </button>
                       </td>
@@ -128,7 +130,7 @@ export default function Heatmap({ details, onPick }: { details: TitleDetails; on
                   const cls = ['heat-cell', colour ? 'rated' : c.rating !== null ? 'few' : 'none', c.watched ? 'seen' : '', c.next ? 'next' : ''].filter(Boolean).join(' ')
                   return (
                     <td key={i}>
-                      <button className={cls} style={colour ? { background: hsl(colour) } : undefined} title={describe(c)} aria-label={describe(c)} onClick={() => onPick(c.season, c.episode)}>
+                      <button className={cls} style={colour ? { background: hsl(colour) } : undefined} title={describe(c)} aria-label={describe(c)} onClick={() => onPick(c.season, c.episode)} onDoubleClick={() => c.aired && void tickEpisode(details, c.season, c.episode, c.watched)}>
                         {c.rating !== null ? c.rating.toFixed(1) : '–'}
                         {c.watched && <Check className="heat-seen" size={10} strokeWidth={3.5} aria-hidden />}
                       </button>

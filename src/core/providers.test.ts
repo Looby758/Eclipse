@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { availability, guessServices, onMyServices, passesFilter } from './providers'
+import { availability, guessServices, onMyServices, onService, passesFilter, servicesIn } from './providers'
 import { parseProviders, parseSeason } from './tmdb'
 
 const disney = { provider_id: 337, provider_name: 'Disney Plus', logo_path: '/d.png', display_priority: 2 }
@@ -50,5 +50,26 @@ describe('seasons', () => {
     expect(s.episodes.map((e) => e.name)).toEqual(['A', 'B'])
     expect(s.episodes[0]).toMatchObject({ airDate: '2022-09-21', runtime: 40, voteAverage: 8.1 })
     expect(s.episodes[1].voteAverage).toBeNull()
+  })
+})
+
+describe('one service at a time (Library)', () => {
+  const disney = { id: 337, name: 'Disney Plus', logoPath: null }
+  const now = { id: 39, name: 'NOW TV', logoPath: null }
+  const netflix = { id: 8, name: 'Netflix', logoPath: null }
+  const iplayer = { id: 38, name: 'BBC iPlayer', logoPath: null }
+  type P = typeof disney
+  const p = (stream: P[], free: P[] = []) => ({ region: 'GB', link: null, stream, free, rent: [], buy: [] })
+
+  it('says whether a title is on one service, counting free ones', () => {
+    expect(onService(p([disney]), 337)).toBe(true)
+    expect(onService(p([], [iplayer]), 38)).toBe(true)
+    expect(onService(p([netflix]), 337)).toBe(false)
+    expect(onService(undefined, 337)).toBe(false)
+  })
+
+  it('offers your services first, then the others most titles are on', () => {
+    const list = servicesIn([p([netflix]), p([netflix, disney]), p([], [iplayer]), undefined], [disney, now])
+    expect(list.map((s) => s.name)).toEqual(['Disney Plus', 'NOW TV', 'Netflix', 'BBC iPlayer'])
   })
 })

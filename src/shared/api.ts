@@ -181,6 +181,8 @@ export interface EclipseApi {
   details(type: MediaType, id: number, refresh?: boolean): Promise<Result<Fetched<TitleDetails>>>
   /** This week's trending titles (saved for a day), to fill the poster wall. */
   trending(): Promise<Result<Fetched<SearchResult[]>>>
+  /** The film or show an IMDb id belongs to (for pasting an IMDb link into search), or null. */
+  findImdb(imdbId: string): Promise<Result<Fetched<{ type: MediaType; id: number } | null>>>
   season(tvId: number, season: number, refresh?: boolean): Promise<Result<Fetched<SeasonDetails>>>
   /** Where to watch in your region. */
   providers(type: MediaType, id: number, refresh?: boolean): Promise<Result<Fetched<WatchProviders>>>
@@ -308,6 +310,11 @@ export interface EclipseApi {
   setTray(on: boolean): Promise<boolean>
 
   /** Phase 44: the Discord status while you watch. */
+  /** Text size (the window's zoom, 1 is normal), remembered on this computer. */
+  zoom(): Promise<number>
+  setZoom(zoom: number): Promise<number>
+  /** Ctrl + / Ctrl − / Ctrl 0 or Ctrl + the mouse wheel changed it. */
+  onZoomChanged(callback: (zoom: number) => void): () => void
   discordStatus(): Promise<DiscordStatus>
   setDiscord(patch: { on?: boolean; appId?: string }): Promise<DiscordStatus>
   onDiscordChanged(callback: (status: DiscordStatus) => void): () => void

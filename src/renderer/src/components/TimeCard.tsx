@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { activeEntry, localDate, preferencesOf } from '@core/library'
 import { formatRuntime, formatShortDay, plural } from '@core/format'
 import { onMyServices } from '@core/providers'
-import { bedtimeTonight, dayBefore, episodeMinutes, finishPlan, fitTonight, formatHours, nextFriday, nextPremiere, nextRenewal, startBy, timeLeft } from '@core/time'
+import { bedtimeTonight, dayBefore, episodeMinutes, finishPlan, fitTonight, formatHours, nextFriday, nextPremiere, nextRenewal, seasonLeft, startBy, timeLeft } from '@core/time'
 import type { Provider, TitleDetails } from '@core/types'
 import { useApp } from '../store/app'
 
@@ -35,6 +35,7 @@ export default function TimeCard({ details: d }: { details: TitleDetails }): Rea
 
   const today = localDate(now)
   const left = timeLeft(d, entry, today)
+  const thisSeason = seasonLeft(d, entry, today)
   const each = d.type === 'movie' ? d.runtime || 0 : episodeMinutes(d)
   const bed = bedtimeTonight(now, prefs)
 
@@ -88,6 +89,7 @@ export default function TimeCard({ details: d }: { details: TitleDetails }): Rea
         <span className="muted small">
           {plural(left.episodes, 'episode')} left · {left.estimated ? 'about ' : ''}
           {formatHours(left.minutes)}
+          {thisSeason && thisSeason.episodes < left.episodes && ` (${plural(thisSeason.episodes, 'episode')}, ${thisSeason.estimated ? 'about ' : ''}${formatHours(thisSeason.minutes)} in season ${thisSeason.season})`}
         </span>
       </div>
       <div className="deadline-chips">

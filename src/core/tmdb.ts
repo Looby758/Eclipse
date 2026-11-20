@@ -87,6 +87,8 @@ export interface Tmdb {
   images(type: MediaType, id: number): Promise<TitleImages>
   /** A show's TheTVDB number (null if TMDB doesn't know it), used to find its theme tune (phase 46). */
   tvdbId(id: number): Promise<number | null>
+  /** The film or show an IMDb id ("tt0903747") belongs to, or null if TMDB doesn't know it. */
+  findImdb(imdbId: string): Promise<{ type: MediaType; id: number } | null>
 }
 
 export function createTmdb({ key, fetch, language = 'en-GB' }: TmdbOptions): Tmdb {
@@ -212,6 +214,14 @@ export function createTmdb({ key, fetch, language = 'en-GB' }: TmdbOptions): Tmd
     async tvdbId(id) {
       const raw = await get<{ tvdb_id?: number | null }>(`/tv/${id}/external_ids`)
       return typeof raw.tvdb_id === 'number' && raw.tvdb_id > 0 ? raw.tvdb_id : null
+    },
+
+    async findImdb(imdbId) {
+      const raw = await get<{ movie_results?: { id: number }[]; tv_results?: { id: number }[] }>(`/find/${encodeURIComponent(imdbId)}`, { external_source: 'imdb_id' })
+      const movie = raw.movie_results?.[0]
+      if (movie) return { type: 'movie', id: movie.id }
+      const tv = raw.tv_results?.[0]
+      return tv ? { type: 'tv', id: tv.id } : null
     },
 
     async details(type, id) {

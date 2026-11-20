@@ -4,7 +4,7 @@ import { useApp } from '../store/app'
 import Poster from './Poster'
 
 /** A poster with its name and year underneath; opens the title's page. */
-export default function TitleCard({ type, id, name, year, posterPath, status, extra }: { type: MediaType; id: number; name: string; year: number | null; posterPath: string | null; status?: WatchStatus; extra?: string }): React.JSX.Element {
+export default function TitleCard({ type, id, name, year, posterPath, status, extra, note }: { type: MediaType; id: number; name: string; year: number | null; posterPath: string | null; status?: WatchStatus; extra?: string; note?: { text: string; stalled?: boolean } }): React.JSX.Element {
   const go = useApp((s) => s.go)
   return (
     <button className="title-card" onClick={() => go({ name: 'title', type, id })} title={name}>
@@ -17,6 +17,7 @@ export default function TitleCard({ type, id, name, year, posterPath, status, ex
         {type === 'movie' ? 'Film' : 'Show'}
         {extra ? ` · ${extra}` : year ? ` · ${year}` : ''}
       </div>
+      {note && <div className={`title-card-note ${note.stalled ? 'stalled' : ''}`}>{note.text}</div>}
     </button>
   )
 }

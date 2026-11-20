@@ -30,3 +30,22 @@ export function wallPosters(own: string[], trending: string[], size = WALL_SIZE,
   // Repeat the pool to fill the wall, shifting each pass so the same poster doesn't line up in a row.
   return Array.from({ length: size }, (_, i) => pool[(i + Math.floor(i / pool.length) * 3) % pool.length])
 }
+
+/** Spotlight Home's rows: each poster's size and the gap, matching --row-tile-w/h and --row-gap in theme.css. */
+export const ROW_TILE_W = 132
+export const ROW_TILE_H = 198
+export const ROW_GAP = 14
+/** How far the rows reach past the window's edges (the -60px -200px inset on .wall-rows). */
+const OVER_Y = 60
+const OVER_X = 200
+
+/**
+ * How many rows, and posters in each, it takes to cover a window this size (in CSS pixels, which
+ * grow when you zoom out). Each row holds its posters twice and slides by half, so one copy has to
+ * reach past both sides. Never fewer than the 6 rows of 14 the wall always had.
+ */
+export function wallGrid(width: number, height: number): { rows: number; perRow: number } {
+  const rows = Math.max(6, Math.ceil((height + 2 * OVER_Y) / (ROW_TILE_H + ROW_GAP)) + 1)
+  const perRow = Math.max(14, Math.ceil((width + 2 * OVER_X) / (ROW_TILE_W + ROW_GAP)) + 1)
+  return { rows, perRow }
+}

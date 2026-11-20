@@ -38,6 +38,8 @@ export interface Settings {
   /** Phase 44: show what's playing as your Discord status (this computer only), and the Discord application it shows under. */
   discordOn?: boolean
   discordAppId?: string
+  /** Text size (the window's zoom) on this computer, 1 being normal. */
+  zoom?: number
 }
 
 const defaults: Settings = { dataFolder: null }

@@ -1,6 +1,7 @@
 import { Clapperboard } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { guideForQuery, guideTitleCount } from '@core/guides'
+import { parseTitleLink } from '@core/links'
 import { listIdFor } from '@core/lists'
 import { plural } from '@core/format'
 import type { PersonResult, SearchResult } from '@core/types'
@@ -42,6 +43,31 @@ export default function SearchSheet(): React.JSX.Element {
     }
     let cancelled = false
     setLoading(true)
+    // A pasted TMDB or IMDb link goes straight to that title (the box is cleared, so Back doesn't jump again).
+    const link = parseTitleLink(q)
+    if (link) {
+      setPeople([])
+      setResults([])
+      setError('')
+      const open = (type: 'movie' | 'tv', id: number): void => {
+        useApp.getState().setQuery('')
+        useApp.getState().go({ name: 'title', type, id })
+      }
+      if (link.kind === 'tmdb') {
+        open(link.type, link.id)
+        return
+      }
+      window.api.findImdb(link.imdbId).then((r) => {
+        if (cancelled) return
+        setLoading(false)
+        if (!r.ok) setError(r.error)
+        else if (!r.value.data) setError('TMDB doesn’t know that IMDb link.')
+        else open(r.value.data.type, r.value.data.id)
+      })
+      return () => {
+        cancelled = true
+      }
+    }
     // Wait until typing pauses, so TMDB isn't asked on every key.
     const timer = setTimeout(async () => {
       const [r, p] = await Promise.all([window.api.search(q), window.api.searchPeople(q)])
@@ -72,7 +98,7 @@ export default function SearchSheet(): React.JSX.Element {
       </div>
       {stale && <p className="notice">Offline: showing results saved earlier.</p>}
       {error && <p className="error">{error}</p>}
-      {!query.trim() && <p className="muted">Type a film, show or person in the search box below, or pick from these.</p>}
+      {!query.trim() && <p className="muted">Type a film, show or person in the search box below (or paste a TMDB or IMDb link), or pick from these.</p>}
       {!query.trim() && <Recommendations />}
       {order && (
         <button className="order-card" onClick={() => go({ name: 'list', id: listIdFor({ kind: 'guide', guideId: order.id }) })}>

@@ -1,3 +1,4 @@
+import TrailerButton from './TrailerButton'
 import { ExternalLink, Image as ImageIcon, Popcorn, RefreshCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { formatDate, formatRuntime, plural, stingerLine } from '@core/format'
@@ -112,6 +113,7 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
           )}
           <StatusPicker details={d} />
           <WatchSoonToggle details={d} />
+          <TrailerButton className="btn glass fav-toggle" details={d} />
           <CountdownButton className="btn glass fav-toggle" details={d} />
           <FavouriteButton className="btn glass fav-toggle" title={{ key: d.key, type: d.type, id: d.id, name: d.name, year: d.year, posterPath: d.posterPath, date: d.date }} />
           <div className="row" style={{ marginTop: 10 }}>

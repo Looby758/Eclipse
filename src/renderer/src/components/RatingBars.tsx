@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { buildHeatmap, compareMine, type HeatCell, type MineCell } from '@core/heatmap'
 import { localDate } from '@core/library'
 import { reactionsOf } from '@core/reactions'
@@ -15,8 +15,22 @@ import HeatToggle from './HeatToggle'
  * next one. Hovering shows the episode, but its picture only once you've seen it, and its name only
  * up to where you've got to.
  */
-export default function RatingBars({ seasons, entry, onPick }: { seasons: SeasonDetails[]; entry: LibraryEntry | undefined; onPick: (season: number, episode: number) => void }): React.JSX.Element | null {
+export default function RatingBars({ seasons, entry, onPick, onTick }: { seasons: SeasonDetails[]; entry: LibraryEntry | undefined; onPick: (season: number, episode: number) => void; onTick?: (season: number, episode: number, watched: boolean) => void }): React.JSX.Element | null {
   const [hover, setHover] = useState<number | null>(null)
+  // A click opens the episode; a double-click ticks it instead, so the click waits a moment to see which it is.
+  const clickTimer = useRef<number | undefined>(undefined)
+  useEffect(() => () => window.clearTimeout(clickTimer.current), [])
+  const click = (c: HeatCell, detail: number): void => {
+    window.clearTimeout(clickTimer.current)
+    if (!onTick || !c.aired) return onPick(c.season, c.episode)
+    // A keyboard press (Enter or Space) has no double: open straight away.
+    if (detail === 0) return onPick(c.season, c.episode)
+    if (detail === 1) clickTimer.current = window.setTimeout(() => onPick(c.season, c.episode), 240)
+  }
+  const doubleClick = (c: HeatCell): void => {
+    window.clearTimeout(clickTimer.current)
+    if (onTick && c.aired) onTick(c.season, c.episode, c.watched)
+  }
   // Phase 60: bars lit just now fill up from the bottom.
   const inked = useJustTicked(Object.keys(entry?.episodes ?? {}), entry?.key ?? '')
   const map = buildHeatmap(seasons, entry, localDate(new Date()))
@@ -63,8 +77,8 @@ export default function RatingBars({ seasons, entry, onPick }: { seasons: Season
               ? 'No reactions yet: tick an episode and tap how it hit you'
               : `Coloured by how they hit you${mine.differ.length ? ` · ringed: you and TMDB disagree (${mine.differ.length})` : ''}`
             : entry
-              ? 'Lit bars are watched · hover for the episode'
-              : 'Hover for the episode'}
+              ? `Lit bars are watched · hover for the episode${onTick ? ' · double-click to tick' : ''}`
+              : `Hover for the episode${onTick ? ' · double-click to tick' : ''}`}
         </span>
       </div>
       <div className="st-bars-wrap" style={{ ['--n' as string]: cells.length }}>
@@ -78,7 +92,8 @@ export default function RatingBars({ seasons, entry, onPick }: { seasons: Season
               onMouseEnter={() => setHover(i)}
               onFocus={() => setHover(i)}
               onBlur={() => setHover(null)}
-              onClick={() => onPick(c.season, c.episode)}
+              onClick={(e) => click(c, e.detail)}
+              onDoubleClick={() => doubleClick(c)}
             />
           ))}
           {next >= 0 && hover === null && (
