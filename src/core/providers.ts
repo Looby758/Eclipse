@@ -52,3 +52,31 @@ export function guessServices(all: Provider[], names = ['disney plus', 'now tv',
   const found = all.filter((p) => names.includes(clean(p.name)))
   return [...new Set(found.map((p) => p.id))]
 }
+
+/** Whether one service streams it (or shows it free). Unknown availability (not checked yet) doesn't pass. */
+export function onService(p: WatchProviders | null | undefined, serviceId: number): boolean {
+  if (!p) return false
+  return [...p.stream, ...p.free].some((s) => s.id === serviceId)
+}
+
+/**
+ * The services to offer in Library's "Service" picker: yours first (in your order), then any
+ * other service that streams or shows something in the list, most titles first.
+ */
+export function servicesIn(providers: (WatchProviders | null | undefined)[], mine: Provider[]): Provider[] {
+  const counts = new Map<number, { p: Provider; n: number }>()
+  for (const p of providers) {
+    if (!p) continue
+    const seen = new Set<number>()
+    for (const s of [...p.stream, ...p.free]) {
+      if (seen.has(s.id)) continue
+      seen.add(s.id)
+      const c = counts.get(s.id)
+      if (c) c.n++
+      else counts.set(s.id, { p: s, n: 1 })
+    }
+  }
+  const mineIds = new Set(mine.map((m) => m.id))
+  const others = [...counts.values()].filter((c) => !mineIds.has(c.p.id)).sort((a, b) => b.n - a.n || a.p.name.localeCompare(b.p.name))
+  return [...mine, ...others.map((c) => c.p)]
+}

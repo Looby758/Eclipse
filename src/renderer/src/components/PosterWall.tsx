@@ -1,8 +1,9 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { imageUrl } from '@core/tmdb'
 import { posterFor } from '@core/posters'
 import { OWN_ENOUGH, WALL_COLUMNS, WALL_PER_COLUMN, wallPosters } from '../lib/wall'
-import type { MediaType, SearchResult } from '@core/types'
+import type { MediaType, SearchResult, TitleRef as FullRef } from '@core/types'
+import PosterMenu, { justClosedMenu, type PosterMenuAt } from './PosterMenu'
 import { useApp } from '../store/app'
 import { isTyping } from '../lib/keys'
 import { usePremiereWall } from '../lib/premiere'
@@ -73,21 +74,35 @@ function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: b
     return recTitles.filter((t) => !library.entries[t.key] && !hidden.has(t.key)).map((t) => t.posterPath!)
   }, [recTitles, library])
 
-  // Which title each poster belongs to, so clicking a poster on Spotlight Home opens its page.
+  // Which title each poster belongs to, so clicking a poster on Spotlight Home opens its page (and right-clicking it gives its menu).
   const titles = useMemo(() => {
-    const map = new Map<string, TitleRef>()
+    const map = new Map<string, FullRef>()
     for (const e of Object.values(library.entries)) {
       const path = posterFor(library, e.key, e.title.posterPath)
-      if (path && !map.has(path)) map.set(path, { type: e.type, id: e.id })
+      if (path && !map.has(path)) map.set(path, { key: e.key, type: e.type, id: e.id, name: e.title.name, year: e.title.year, posterPath: e.title.posterPath })
     }
-    for (const t of recTitles) if (t.posterPath && !map.has(t.posterPath)) map.set(t.posterPath, { type: t.type, id: t.id })
-    for (const t of trendingTitles) if (t.posterPath && !map.has(t.posterPath)) map.set(t.posterPath, { type: t.type, id: t.id })
+    for (const t of [...recTitles, ...trendingTitles]) if (t.posterPath && !map.has(t.posterPath)) map.set(t.posterPath, { key: t.key, type: t.type, id: t.id, name: t.name, year: t.year, posterPath: t.posterPath })
     return map
   }, [library, recTitles, trendingTitles])
-  usePointerLift(rowsRef, rows && alive, (path) => {
-    const ref = premiere?.show ?? titles.get(path)
-    if (ref) go({ name: 'title', type: ref.type, id: ref.id })
-  })
+  const [menu, setMenu] = useState<PosterMenuAt | null>(null)
+  const closeMenu = useCallback(() => setMenu(null), [])
+  useEffect(() => {
+    if (!(rows && alive)) setMenu(null)
+  }, [rows, alive])
+  usePointerLift(
+    rowsRef,
+    rows && alive,
+    (path) => {
+      const ref: TitleRef | undefined = premiere?.show ?? titles.get(path)
+      if (ref) go({ name: 'title', type: ref.type, id: ref.id })
+    },
+    (path, x, y) => {
+      // On premiere night every poster is that show's: its menu is the show's.
+      const show = premiere?.show ? Object.values(library.entries).find((e) => e.type === premiere.show!.type && e.id === premiere.show!.id) : undefined
+      const title = show ? { key: show.key, type: show.type, id: show.id, name: show.title.name, year: show.title.year, posterPath: show.title.posterPath } : premiere?.show ? undefined : titles.get(path)
+      if (title) setMenu({ title, x, y })
+    }
+  )
 
   const columns = useMemo(() => {
     const posters = wallPosters(own, trending, undefined, recs)
@@ -133,6 +148,7 @@ function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: b
           ))}
         </div>
         <div className="wall-torch" />
+        {menu && <PosterMenu at={menu} onClose={closeMenu} />}
       </div>
     )
   }
@@ -162,9 +178,11 @@ function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: b
  * with the wall kept still. Letting go of Shift, pressing another key, or leaving the window brings
  * everything back. Shift is left alone while you're typing in a field.
  */
-function usePointerLift(ref: React.RefObject<HTMLDivElement | null>, enabled: boolean, onOpen: (path: string) => void): void {
+function usePointerLift(ref: React.RefObject<HTMLDivElement | null>, enabled: boolean, onOpen: (path: string) => void, onMenu: (path: string, x: number, y: number) => void): void {
   const open = useRef(onOpen)
   open.current = onOpen
+  const menu = useRef(onMenu)
+  menu.current = onMenu
   useEffect(() => {
     const wall = ref.current
     if (!enabled || !wall) return
@@ -212,7 +230,7 @@ function usePointerLift(ref: React.RefObject<HTMLDivElement | null>, enabled: bo
     }
     // Over the dial, buttons, pills or the Home column the wall stays as it is (while peeking they're faded
     // out and can't be pointed at, so everything counts as the wall).
-    const OVER = '.spot-center, .spot-pills, .spot-waiting, .opening-layer, button, a, input, select'
+    const OVER = '.spot-center, .spot-pills, .spot-waiting, .opening-layer, .poster-menu, button, a, input, select'
     const overUi = (t: EventTarget | null): boolean => !peek && t instanceof Element && !!t.closest(OVER)
     const onMove = (e: PointerEvent): void => {
       x = e.clientX
@@ -251,13 +269,22 @@ function usePointerLift(ref: React.RefObject<HTMLDivElement | null>, enabled: bo
       if (document.hidden) setPeek(false)
     }
     const onClick = (e: MouseEvent): void => {
-      if (e.button !== 0 || !inside || !lifted || e.defaultPrevented || overUi(e.target)) return
+      if (e.button !== 0 || !inside || !lifted || e.defaultPrevented || overUi(e.target) || justClosedMenu()) return
       const path = lifted.getAttribute('data-path')
       if (path) open.current(path)
+    }
+    // Right-click: the lifted poster's menu (Open, Watch soon, Mark watched, Add to a list).
+    const onContext = (e: MouseEvent): void => {
+      if (!inside || !lifted || overUi(e.target)) return
+      const path = lifted.getAttribute('data-path')
+      if (!path) return
+      e.preventDefault()
+      menu.current(path, e.clientX, e.clientY)
     }
     const tick = window.setInterval(() => inside && queue(), 150)
     window.addEventListener('pointermove', onMove)
     window.addEventListener('click', onClick)
+    window.addEventListener('contextmenu', onContext)
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('keyup', onKeyUp)
     document.addEventListener('visibilitychange', onHidden)
@@ -268,6 +295,7 @@ function usePointerLift(ref: React.RefObject<HTMLDivElement | null>, enabled: bo
       if (frame) cancelAnimationFrame(frame)
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('click', onClick)
+      window.removeEventListener('contextmenu', onContext)
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('keyup', onKeyUp)
       document.removeEventListener('visibilitychange', onHidden)

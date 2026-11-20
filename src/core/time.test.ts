@@ -18,6 +18,7 @@ import {
   nightsBetween,
   planFor,
   startBy,
+  seasonLeft,
   timeLeft,
   tonight,
   watchlistHours,
@@ -203,5 +204,32 @@ describe('watchlistHours', () => {
   })
   it('has evening defaults', () => {
     expect(DEFAULT_PREFERENCES).toMatchObject({ startTime: '20:00', bedtime: '23:00' })
+  })
+})
+
+describe('time left in the season you’re on', () => {
+  const ticks = (keys: string[]) => Object.fromEntries(keys.map((k) => [k, '2026-11-01'])) as LibraryEntry['episodes']
+  const today = '2026-11-17'
+
+  it('counts the rest of the first season with something left', () => {
+    const e = entry({ episodes: ticks(['S1E1', 'S1E2', 'S1E3']) })
+    expect(seasonLeft(show(), e, today)).toEqual({ season: 1, episodes: 7, minutes: 7 * 45, estimated: false })
+  })
+
+  it('moves on to the next season once one is finished', () => {
+    const e = entry({ episodes: ticks(Array.from({ length: 10 }, (_, i) => `S1E${i + 1}`)) })
+    expect(seasonLeft(show(), e, today)?.season).toBe(2)
+  })
+
+  it('adds up real episode lengths when the season is loaded, and skips ones not out yet', () => {
+    const e = entry({ episodes: ticks(Array.from({ length: 10 }, (_, i) => `S1E${i + 1}`)) })
+    const episodes = Array.from({ length: 8 }, (_, i) => ({ number: i + 1, airDate: i < 3 ? '2026-11-0' + (i + 1) : '2026-12-01', runtime: 50 + i }))
+    expect(seasonLeft(show(), e, today, [{ number: 2, episodes: episodes as never }])).toEqual({ season: 2, episodes: 3, minutes: 50 + 51 + 52, estimated: false })
+  })
+
+  it('says nothing before you start, or once you’re caught up', () => {
+    expect(seasonLeft(show(), entry({}), today)).toBeNull()
+    const all = [...Array.from({ length: 10 }, (_, i) => `S1E${i + 1}`), ...Array.from({ length: 8 }, (_, i) => `S2E${i + 1}`)]
+    expect(seasonLeft(show(), entry({ episodes: ticks(all) }), today)).toBeNull()
   })
 })

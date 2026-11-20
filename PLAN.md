@@ -589,6 +589,18 @@ You asked for Phases 4, 5, 6 and 7 together while you slept, so I made the calls
 - Done: any key or click skips it straight to Home, and does nothing else (Escape doesn't go back, a click doesn't open a poster).
 - Done: it plays once per launch. Not when Eclipse starts quietly in the tray (even when you open the window from the tray later), not when the window is reopened from the tray or the Mac's dock, not during the welcome or setup, and not with *Keep the poster wall still* or the computer's reduce-animations setting. The Settings description for that switch now mentions it.
 
+**Small things (built 20 Nov 2026, waiting for you to try them)**
+
+- Done: **right-click a poster on Home** for a small menu: Open, Watch soon, Mark watched and Add to a list (tick your lists, or start a new one). Escape or a click elsewhere closes it.
+- Done: **Back keeps your place.** Going back to Library, a list, Search or any other page lands where you'd scrolled to, not the top. Opening a page afresh still starts at the top.
+- Done: **time left in the season you're on**, beside the whole show's: "4 episodes and 3h 10m left in season 3", using each episode's real length when it's known.
+- Done: **Library by service.** A *Service* picker beside Sort: your services first, then any other service something in that tab is on. Works with the existing where-to-watch filters.
+- Done: a **Trailer** button on every film and show page that has one on TMDB. It plays over the page; Escape, the ✕ or a click outside closes it.
+- Done: **text size that sticks.** Ctrl + / Ctrl − / Ctrl 0 (⌘ on a Mac) and Ctrl + mouse wheel are remembered on each computer, and Settings → Appearance has Smaller, Normal, Larger and Largest.
+- Done: **paste a link into search.** A TMDB or IMDb link (or an IMDb id like tt0903747) goes straight to that title.
+- Done: **"Last watched 3 weeks ago"** under each card in Library's Watching tab, in the stopped colour once it's been 60 days.
+- Done: **double-click to tick** in the rating bars on the Spotlight page and the heatmap (double-clicking a ticked episode unticks it). The episode dots already did this.
+
 **Future ideas**
 
 - Added to the plan (17 Nov 2026): future ideas from a brainstorm, listed under Future ideas as candidate phases 12 to 32. Group A (12 to 26) stand on their own; Group B (27 to 31) is the chain about noticing what I watch, in order; Group C (32, Apple TV) waits until I have a TV. Calendar-aware planning is a maybe. I mostly watch on the computer for now (an Apple TV and iPhone later).

@@ -31,6 +31,16 @@ export function daysAgo(n: number): string {
   return n < 730 ? 'over a year ago' : `${Math.floor(n / 365)} years ago`
 }
 
+/** For "Last watched …" in Library: "today", "yesterday", "4 days ago", "3 weeks ago", "5 months ago", "over a year ago". */
+export function sinceLabel(n: number): string {
+  if (n <= 0) return 'today'
+  if (n === 1) return 'yesterday'
+  if (n < 14) return `${n} days ago`
+  if (n < 60) return `${Math.round(n / 7)} weeks ago`
+  if (n < 365) return `${Math.round(n / 30)} months ago`
+  return n < 730 ? 'over a year ago' : `${Math.floor(n / 365)} years ago`
+}
+
 export function plural(n: number, one: string, many = `${one}s`): string {
   return `${n} ${n === 1 ? one : many}`
 }

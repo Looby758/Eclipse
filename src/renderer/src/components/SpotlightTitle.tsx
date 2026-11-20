@@ -1,9 +1,11 @@
+import { tickEpisode } from '../lib/tickEpisode'
+import TrailerButton from './TrailerButton'
 import { Bookmark, Check, ChevronDown, CircleCheck, CirclePause, CirclePlay, ExternalLink, Hourglass, Image, Plus, Popcorn, RectangleHorizontal, RectangleVertical, RefreshCw, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { formatDate, formatRuntime, plural, stingerLine } from '@core/format'
 import { activeEntry, currentRewatch, localDate, nextEpisodeFor, preferencesOf, watchCount } from '@core/library'
 import { removeQuestion } from '@core/safety'
-import { formatHours } from '@core/time'
+import { formatHours, seasonLeft } from '@core/time'
 import { imageUrl, tmdbPageUrl } from '@core/tmdb'
 import { showCount, universeName, type UniverseItem } from '@core/universe'
 import { isWatchSoon } from '@core/watchsoon'
@@ -66,7 +68,7 @@ export default function SpotlightTitle({ type, id }: { type: MediaType; id: numb
         e.preventDefault()
         e.stopImmediatePropagation()
         setBare(false)
-      } else if (e.key.toLowerCase() === 'p' && !e.ctrlKey && !e.metaKey && !e.altKey && !isTyping(e.target) && !document.querySelector('.st-drawer')) {
+      } else if (e.key.toLowerCase() === 'p' && !e.ctrlKey && !e.metaKey && !e.altKey && !isTyping(e.target) && !document.querySelector('.st-drawer, .trailer-layer')) {
         e.preventDefault()
         setBare(true)
       }
@@ -133,6 +135,7 @@ export default function SpotlightTitle({ type, id }: { type: MediaType; id: numb
   const backdrop = imageUrl(chosenBackdrop ?? d.backdropPath, 'original')
   const logo = imageUrl(d.logoPath, 'w500')
   const count = tv ? showCount(d, entry, today) : null
+  const thisSeason = tv ? seasonLeft(d, entry, today, seasons) : null
   const next = tv ? nextEpisodeFor(entry, d.seasons) : null
   const nextEp = next ? seasons.find((s) => s.number === next.season)?.episodes.find((e) => e.number === next.episode) : undefined
   const nextAired = next && (!nextEp ? !d.nextEpisode || d.nextEpisode.season > next.season || (d.nextEpisode.season === next.season && d.nextEpisode.episode > next.episode) || (!!d.nextEpisode.airDate && d.nextEpisode.airDate <= today) : !!nextEp.airDate && nextEp.airDate <= today)
@@ -255,6 +258,7 @@ export default function SpotlightTitle({ type, id }: { type: MediaType; id: numb
                     {p.label}
                   </button>
                 ))}
+              <TrailerButton className="st-chip" details={d} />
               <SoonChip details={d} />
               <CountdownButton className="st-chip" details={d} />
               <FavouriteButton className="st-chip" title={{ key: d.key, type: d.type, id: d.id, name: d.name, year: d.year, posterPath: d.posterPath, date: d.date }} />
@@ -280,7 +284,13 @@ export default function SpotlightTitle({ type, id }: { type: MediaType; id: numb
                   <small> / {count.total}</small>
                 </b>
                 <span>episodes watched</span>
-                {count.minutesLeft > 0 && <span>about {formatHours(count.minutesLeft)} to go</span>}
+                {thisSeason && count.minutesLeft > thisSeason.minutes && (
+                  <span>
+                    {plural(thisSeason.episodes, 'episode')} and {thisSeason.estimated ? 'about ' : ''}
+                    {formatHours(thisSeason.minutes)} left in season {thisSeason.season}
+                  </span>
+                )}
+                {count.minutesLeft > 0 && <span>{thisSeason && count.minutesLeft > thisSeason.minutes ? `about ${formatHours(count.minutesLeft)} to finish the show` : `about ${formatHours(count.minutesLeft)} to go`}</span>}
               </div>
             )}
             <WhereChip type={d.type} id={d.id} onOpen={() => setPanel('where')} />
@@ -289,7 +299,7 @@ export default function SpotlightTitle({ type, id }: { type: MediaType; id: numb
         </div>
 
         <div className="st-body">
-          {tv && seasons.length > 0 && <RatingBars seasons={seasons} entry={entry} onPick={openEpisode} />}
+          {tv && seasons.length > 0 && <RatingBars seasons={seasons} entry={entry} onPick={openEpisode} onTick={(season, episode, watched) => void tickEpisode(d, season, episode, watched)} />}
           <CastStrip details={d} universe={name} onMore={() => setPanel('more')} />
           <UniverseStrip name={name} items={universe.items} onAll={() => setPanel('universe')} />
         </div>

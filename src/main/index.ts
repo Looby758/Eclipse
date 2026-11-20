@@ -38,6 +38,7 @@ import { carryForward, carryUndo, remember, undoTarget } from './undo'
 import { setReaction } from '@core/reactions'
 import { loginStatus, markAsked, setStartAtLogin, startedHidden } from './login'
 import { backupFor, dailyBackup, listBackups } from './backups'
+import { getZoom, setupZoom, setZoom } from './zoom'
 import { foldFromPhone, phoneAsks, resolveAsk, startPhone } from './phone'
 import { finaleImage, themeFor } from './finale'
 import { errorText, healthStatus, log, onHealthChanged, recentLog, report } from './health'
@@ -259,6 +260,7 @@ function setupIpc(): void {
   ipcMain.handle('tmdb:universe', (_e, type: 'movie' | 'tv', id: number) => attempt(() => tmdb.universeFor(type, id, getLibrary())))
   ipcMain.handle('tmdb:detailsMany', (_e, keys: string[]) => tmdb.detailsMany(keys))
   ipcMain.handle('tmdb:services', () => attempt(() => tmdb.services(region())))
+  ipcMain.handle('tmdb:findImdb', (_e, imdbId: string) => attempt(() => tmdb.findImdb(imdbId)))
   ipcMain.handle('tmdb:trending', () => attempt(() => tmdb.trending()))
   ipcMain.handle('tmdb:details', (_e, type: 'movie' | 'tv', id: number, refresh?: boolean) => attempt(() => tmdb.details(type, id, refresh)))
   ipcMain.handle('cache:clear', () => clearCache())
@@ -395,6 +397,8 @@ function setupIpc(): void {
   })
   ipcMain.handle('tray:get', () => trayOn())
   ipcMain.handle('tray:set', (_e, on: boolean) => setTray(!!on))
+  ipcMain.handle('zoom:get', () => getZoom())
+  ipcMain.handle('zoom:set', (_e, z: unknown) => setZoom(typeof z === 'number' ? z : 1))
   ipcMain.handle('discord:status', () => discordStatus())
   ipcMain.handle('discord:set', (_e, patch: { on?: unknown; appId?: unknown }) =>
     changeDiscord({ ...(typeof patch?.on === 'boolean' ? { on: patch.on } : {}), ...(typeof patch?.appId === 'string' ? { appId: patch.appId } : {}) })
@@ -520,6 +524,7 @@ function createWindow(): BrowserWindow {
     saveSettings({ window: { ...(win.isMaximized() ? (loadSettings().window ?? win.getNormalBounds()) : win.getBounds()), maximized: win.isMaximized() } })
   }
   win.on('close', remember)
+  setupZoom(win, IS_MAC)
 
   // Links never open inside the app: web links go to your browser.
   win.webContents.setWindowOpenHandler(({ url }) => {

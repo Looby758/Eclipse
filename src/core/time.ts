@@ -1,4 +1,4 @@
-import type { LibraryEntry, Preferences, TitleDetails, WatchProviders } from './types'
+import type { LibraryEntry, SeasonDetails, Preferences, TitleDetails, WatchProviders } from './types'
 import { episodeKey } from './types'
 import { localDate } from './library'
 import { onMyServices } from './providers'
@@ -41,6 +41,44 @@ export function timeLeft(d: RuntimeInfo, entry: LibraryEntry | undefined, today:
     for (let e = 1; e <= s.episodeCount; e++) if (!seen[episodeKey(s.number, e)] && !unaired(s.number, e)) episodes++
   }
   return { episodes, minutes: episodes * episodeMinutes(d), estimated: !d.runtime }
+}
+
+/** What's left of the season you're on: "4 episodes and 3h 10m left in season 3". */
+export interface SeasonLeft extends TimeLeft {
+  season: number
+}
+
+/**
+ * The season you're on is the one with your next unticked episode that's out. Counts that season's
+ * unticked, aired episodes. With the season's episode list (from `seasons`, when it's loaded) it adds
+ * up their real lengths, otherwise it uses the show's usual episode length. Null for films, before
+ * you've ticked anything (then the whole show is what's left), or when nothing out is left.
+ */
+export function seasonLeft(d: RuntimeInfo, entry: LibraryEntry | undefined, today: string, seasons: Pick<SeasonDetails, 'number' | 'episodes'>[] = []): SeasonLeft | null {
+  if (d.type !== 'tv' || entry?.status === 'watched') return null
+  const seen = entry?.episodes ?? {}
+  if (!Object.keys(seen).length) return null
+  const next = d.nextEpisode
+  const unaired = (s: number, e: number): boolean =>
+    !!next && (!next.airDate || next.airDate > today) && (s > next.season || (s === next.season && e >= next.episode))
+  for (const s of [...d.seasons].filter((x) => x.number > 0).sort((a, b) => a.number - b.number)) {
+    if (s.airDate && s.airDate > today) continue
+    const list = seasons.find((x) => x.number === s.number)?.episodes ?? []
+    const left = { season: s.number, episodes: 0, minutes: 0, estimated: false }
+    for (let e = 1; e <= s.episodeCount; e++) {
+      if (seen[episodeKey(s.number, e)] || unaired(s.number, e)) continue
+      const ep = list.find((x) => x.number === e)
+      if (ep?.airDate && ep.airDate > today) continue
+      left.episodes++
+      if (ep?.runtime) left.minutes += ep.runtime
+      else {
+        left.minutes += episodeMinutes(d)
+        if (!d.runtime) left.estimated = true
+      }
+    }
+    if (left.episodes) return left
+  }
+  return null
 }
 
 // ---- Your evenings ----

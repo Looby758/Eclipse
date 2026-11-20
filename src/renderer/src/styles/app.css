@@ -124,6 +124,8 @@ code { font-size: 0.92em; }
 .title-card:hover .title-card-poster, .title-card:focus-visible .title-card-poster { transform: translateY(-6px) scale(1.02); box-shadow: 0 20px 50px rgba(110, 100, 255, 0.35), 0 0 0 1px var(--line); }
 .title-card-name { margin-top: 10px; color: var(--text-strong); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .title-card-meta { font-size: var(--text-sm); color: var(--text-muted); }
+.title-card-note { font-size: 12px; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.title-card-note.stalled { color: var(--status-stopped); }
 .poster { display: block; width: 100%; aspect-ratio: 2 / 3; object-fit: cover; background: var(--glass-soft); border-radius: inherit; }
 .poster-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--text-faint); padding: 10px; text-align: center; font-size: var(--text-sm); background: linear-gradient(165deg, rgba(139, 107, 255, 0.35), rgba(79, 184, 255, 0.12)); }
 .status-badge { position: absolute; left: 8px; bottom: 8px; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: rgba(4, 3, 9, 0.7); color: #fff; backdrop-filter: blur(6px); }
@@ -1490,3 +1492,23 @@ select:hover { border-color: var(--accent); }
 .st-sky-cue { text-align: center; color: var(--st-ink-3); font-size: 12.5px; padding-top: 18px; }
 .st-sky-loading { padding: 80px 16px; color: var(--st-ink-3); }
 .stitle.bare .st-sky { opacity: 0; pointer-events: none; }
+
+/* Trailer on a title page */
+.trailer-layer { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 40px; background: rgba(4, 3, 9, 0.78); backdrop-filter: blur(10px); }
+.trailer-box { width: min(960px, 100%); }
+.trailer-box .clearout-trailer { max-width: none; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6); }
+.trailer-head { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; color: #fff; }
+.trailer-head b { flex: 1; font-size: var(--text-lg); }
+.trailer-head .link-btn { color: rgba(255, 255, 255, 0.8); }
+.trailer-x { border: 0; background: rgba(255, 255, 255, 0.12); color: #fff; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; }
+.trailer-x:hover, .trailer-x:focus-visible { background: rgba(255, 255, 255, 0.24); }
+
+/* Right-click a poster on Home */
+.poster-menu { position: fixed; z-index: 95; min-width: 220px; max-width: 300px; padding: 6px; border-radius: 14px; display: grid; gap: 2px; background: rgba(18, 19, 38, 0.97); border: 1px solid rgba(255, 255, 255, 0.16); backdrop-filter: blur(30px) saturate(1.5); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 20px 50px rgba(0, 0, 0, 0.5); color: #fff; }
+.poster-menu-name { padding: 6px 10px 6px; font-weight: 700; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.poster-menu-name span { font-weight: 500; color: rgba(255, 255, 255, 0.55); }
+.poster-menu button { display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 10px; border: 0; border-radius: 9px; background: transparent; color: inherit; cursor: pointer; font: 500 13.5px var(--font-ui); text-align: left; }
+.poster-menu button:hover, .poster-menu button:focus-visible { background: rgba(255, 255, 255, 0.1); outline: none; }
+.poster-menu-lists { display: grid; gap: 2px; padding: 2px 0 2px 14px; border-left: 1px solid rgba(255, 255, 255, 0.12); margin-left: 16px; max-height: 240px; overflow-y: auto; }
+.poster-menu-check { width: 14px; display: inline-grid; place-items: center; }
+.poster-menu input { width: 100%; height: 32px; padding: 0 10px; border-radius: 9px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.06); color: #fff; font: 500 13px var(--font-ui); }

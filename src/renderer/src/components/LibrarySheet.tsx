@@ -10,13 +10,18 @@ import type { MediaType, WatchStatus } from "@core/types";
 import { STATUS_LABELS, WATCH_STATUSES } from "@core/types";
 import {
   FILTER_LABELS,
+  onService,
   passesFilter,
+  servicesIn,
   type AvailabilityFilter as Filter,
 } from "@core/providers";
+import type { Provider } from "@core/types";
+import { daysBetween } from "@core/finale";
 import { timeLeft, watchlistHours, type TimeLeft } from "@core/time";
-import { formatRuntime, plural } from "@core/format";
+import { formatRuntime, plural, sinceLabel } from "@core/format";
 import {
   isSort,
+  lastWatched,
   matchesQuery,
   SORT_LABELS,
   sortEntries,
@@ -34,6 +39,8 @@ import WatchlistHours from "./WatchlistHours";
 
 const SORT_KEY = "eclipse.librarySort";
 const FIRST_CARDS = 42;
+/** Watching cards say when you last watched; after this many days it's highlighted as stalled. */
+const STALLED_DAYS = 60;
 
 function savedSort(): LibrarySort {
   try {
@@ -67,6 +74,16 @@ export default function LibrarySheet(): React.JSX.Element {
   );
   const [type, setType] = useState<MediaType | undefined>();
   const [filter, setFilter] = useState<Filter>("any");
+  // One service ("On Disney+"), or null for any.
+  const [service, setService] = useState<number | null>(null);
+  const [allServices, setAllServices] = useState<Provider[]>([]);
+  useEffect(() => {
+    let live = true;
+    window.api.services().then((r) => live && r.ok && setAllServices(r.value.data));
+    return () => {
+      live = false;
+    };
+  }, []);
   const [sort, setSortState] = useState<LibrarySort>(savedSort);
   const [query, setQuery] = useState("");
   const setSort = (s: LibrarySort): void => {
@@ -89,8 +106,19 @@ export default function LibrarySheet(): React.JSX.Element {
   const keys = inTab.map((e) => e.key);
   const { map, providers, checking } = useAvailability(
     keys,
-    filter !== "any" || timed,
+    filter !== "any" || service !== null || timed,
   );
+  const mine = services
+    .map((id) => allServices.find((p) => p.id === id))
+    .filter((p): p is Provider => !!p);
+  const serviceOptions = servicesIn(
+    keys.map((k) => providers[k]),
+    mine,
+  );
+  const serviceName =
+    service === null
+      ? null
+      : (serviceOptions.find((p) => p.id === service)?.name ?? "that service");
   const { map: details, checking: loadingTimes } = useDetailsMany(keys, timed);
   const today = localDate(new Date());
   const left: Record<string, TimeLeft> = {};
@@ -103,7 +131,10 @@ export default function LibrarySheet(): React.JSX.Element {
   for (const k in left) minutes[k] = left[k].minutes;
   const entries = sortEntries(
     inTab.filter(
-      (e) => matchesQuery(e, query) && passesFilter(filter, map[e.key]),
+      (e) =>
+        matchesQuery(e, query) &&
+        passesFilter(filter, map[e.key]) &&
+        (service === null || onService(providers[e.key], service)),
     ),
     sortNow,
     minutes,
@@ -128,6 +159,16 @@ export default function LibrarySheet(): React.JSX.Element {
       )
     : null;
   const empty = Object.keys(library.entries).length === 0;
+  // Watching cards: "Last watched 3 weeks ago", highlighted once it's been a while.
+  const watchingNote = (
+    e: (typeof inTab)[number],
+  ): { text: string; stalled: boolean } | undefined => {
+    if (e.status !== "watching") return undefined;
+    const last = lastWatched(e);
+    if (!last) return undefined;
+    const days = Math.max(0, daysBetween(last, today));
+    return { text: `Last watched ${sinceLabel(days)}`, stalled: days >= STALLED_DAYS };
+  };
 
   return (
     <Sheet>
@@ -219,6 +260,23 @@ export default function LibrarySheet(): React.JSX.Element {
                   ))}
               </select>
             </label>
+            <label className="sort-select">
+              <span>Service</span>
+              <select
+                value={service ?? ""}
+                onChange={(e) =>
+                  setService(e.target.value ? Number(e.target.value) : null)
+                }
+                aria-label="Only show what's on one service"
+              >
+                <option value="">Any</option>
+                {serviceOptions.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
           <AvailabilityFilter
             value={filter}
@@ -238,10 +296,10 @@ export default function LibrarySheet(): React.JSX.Element {
         <div className="empty">
           <p>
             {query.trim()
-              ? `Nothing called “${query.trim()}” in ${STATUS_LABELS[tab]}${filter !== "any" ? ` that’s ${FILTER_LABELS[filter].toLowerCase()}` : ""}.`
-              : checking && filter !== "any"
+              ? `Nothing called “${query.trim()}” in ${STATUS_LABELS[tab]}${filter !== "any" ? ` that’s ${FILTER_LABELS[filter].toLowerCase()}` : ""}${serviceName ? ` on ${serviceName}` : ""}.`
+              : checking && (filter !== "any" || service !== null)
                 ? "Checking where to watch…"
-                : `Nothing marked “${STATUS_LABELS[tab]}”${type ? ` in ${type === "movie" ? "films" : "shows"}` : ""}${filter !== "any" ? ` that’s ${FILTER_LABELS[filter].toLowerCase()}` : ""}.`}
+                : `Nothing marked “${STATUS_LABELS[tab]}”${type ? ` in ${type === "movie" ? "films" : "shows"}` : ""}${filter !== "any" ? ` that’s ${FILTER_LABELS[filter].toLowerCase()}` : ""}${serviceName ? ` on ${serviceName}` : ""}.`}
           </p>
           {elsewhere.length > 0 && (
             <div className="row" style={{ justifyContent: "center" }}>
@@ -264,12 +322,13 @@ export default function LibrarySheet(): React.JSX.Element {
               year={e.title.year}
               posterPath={e.title.posterPath}
               extra={leftLabel(e.type, left[e.key], e.status)}
+              note={watchingNote(e)}
             />
           ))}
         </div>
       )}
       {tab === "want" && <RecentlyDropped limit={5} />}
-      <Credits justWatch={filter !== "any" || timed} />
+      <Credits justWatch={filter !== "any" || service !== null || timed} />
     </Sheet>
   );
 }

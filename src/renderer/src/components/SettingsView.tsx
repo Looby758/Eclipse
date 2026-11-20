@@ -12,6 +12,7 @@ import { usePremiereMode, type PremiereMode } from "../lib/premiere";
 import { useApp } from "../store/app";
 import { useHomeStyle } from "../lib/homeStyle";
 import KeyForm from "./KeyForm";
+import TextSize from "./TextSize";
 import Sheet from "./Sheet";
 import Credits from "./Credits";
 import ServicesCard from "./ServicesCard";
@@ -67,6 +68,7 @@ export default function SettingsView(): React.JSX.Element {
               </button>
             ))}
           </div>
+          <TextSize />
           <h3 className="card-sub">Home</h3>
           <p className="muted small">
             Spotlight puts tonight’s pick inside the Tonight dial. Classic is

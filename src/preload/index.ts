@@ -17,6 +17,7 @@ const api: EclipseApi = {
   searchPeople: (query) => ipcRenderer.invoke('tmdb:searchPeople', query),
   details: (type, id, refresh) => ipcRenderer.invoke('tmdb:details', type, id, refresh),
   trending: () => ipcRenderer.invoke('tmdb:trending'),
+  findImdb: (imdbId) => ipcRenderer.invoke('tmdb:findImdb', imdbId),
   season: (tvId, n, refresh) => ipcRenderer.invoke('tmdb:season', tvId, n, refresh),
   providers: (type, id, refresh) => ipcRenderer.invoke('tmdb:providers', type, id, refresh),
   providersMany: (keys) => ipcRenderer.invoke('tmdb:providersMany', keys),
@@ -86,6 +87,13 @@ const api: EclipseApi = {
   milestonesSeen: (ids) => ipcRenderer.invoke('milestones:seen', ids),
   trayOn: () => ipcRenderer.invoke('tray:get'),
   setTray: (on) => ipcRenderer.invoke('tray:set', on),
+  zoom: () => ipcRenderer.invoke('zoom:get'),
+  setZoom: (zoom) => ipcRenderer.invoke('zoom:set', zoom),
+  onZoomChanged: (callback) => {
+    const handler = (_e: unknown, z: number): void => callback(z)
+    ipcRenderer.on('zoom:changed', handler)
+    return () => ipcRenderer.removeListener('zoom:changed', handler)
+  },
   discordStatus: () => ipcRenderer.invoke('discord:status'),
   setDiscord: (patch) => ipcRenderer.invoke('discord:set', patch),
   onDiscordChanged: (callback) => {
