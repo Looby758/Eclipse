@@ -30,9 +30,11 @@ export const SERVICES: StreamingService[] = [
   { id: 'itvx', name: 'ITVX', hosts: /(^|\.)itv\.com$/, play: /\/watch\/.+\/.+/, suffix: /\s*[|–-]\s*ITVX.*$/i },
   { id: 'channel4', name: 'Channel 4', hosts: /(^|\.)channel4\.com$/, play: /\/programmes\/.+\/on-demand\//, suffix: /\s*[|–-]\s*(Channel 4|All 4).*$/i },
   { id: 'apple', name: 'Apple TV+', hosts: /(^|\.)tv\.apple\.com$/, play: /\/episode\//, suffix: /\s*[|–-]\s*Apple TV.*$/i },
-  { id: 'paramount', name: 'Paramount+', hosts: /(^|\.)paramountplus\.com$/, play: /\/video\//, suffix: /\s*[|–-]\s*Paramount\+.*$/i },
-  { id: 'youtube', name: 'YouTube', hosts: /(^|\.)youtube\.com$/, play: /\/watch\b/, suffix: /\s*[|–-]\s*YouTube.*$/i }
+  { id: 'paramount', name: 'Paramount+', hosts: /(^|\.)paramountplus\.com$/, play: /\/video\//, suffix: /\s*[|–-]\s*Paramount\+.*$/i }
 ]
+// YouTube isn't a service here on purpose: a video called "Avengers: Doomsday" there is a trailer,
+// a clip or a review, not you watching the film. The same goes for any other site that isn't a
+// streaming service, so a title only counts when it comes from one of the services above.
 
 /** Which service a web address is on, and whether it's the player or a page about a show. */
 export function serviceOf(url: string): { service: StreamingService; playing: boolean } | null {
@@ -54,6 +56,37 @@ export function cleanTitle(title: string): string {
   t = t.replace(/\s*[-–]\s*(Google Chrome|Microsoft​? Edge|Microsoft Edge|Brave|Safari|Firefox|Mozilla Firefox|Opera GX|Opera).*$/i, '')
   t = t.replace(/^(🔊|🔈|\(\d+\))\s*/, '')
   return t.replace(/^(Watch|Stream)\s+/i, '').trim()
+}
+
+// Browsers, as Windows' media controls and window list and the Mac name them. Firefox calls itself
+// "308046B0AF4A39CB" in Windows' media controls.
+const BROWSER = /chrome|msedge|edge|opera|brave|vivaldi|firefox|safari|^arc$|308046B0AF4A39CB/i
+// What a browser window title says the site is: "Andor | Disney+ - Google Chrome" → Disney+.
+const SERVICE_NAMES = new Set([...SERVICES.map((s) => s.name), 'NOW TV', 'Prime', 'Amazon Prime Video', 'iPlayer', 'All 4', 'Apple TV'].map((n) => n.toLowerCase()))
+
+/** Whether a browser window title is a streaming service's page: one of its parts is the service's name. */
+export function namesService(title: string): boolean {
+  const t = title.replace(/^(🔊|🔈|\(\d+\))\s*/, '').replace(/\s+[-–]\s+(Google Chrome|Microsoft​? Edge|Brave|Safari|Mozilla Firefox|Firefox|Opera GX|Opera|Vivaldi)\b.*$/i, '')
+  return t.split(/\s+[|–-]\s+/).some((p) => SERVICE_NAMES.has(p.trim().toLowerCase()))
+}
+
+/**
+ * Of what the computer says is playing, what can count as watching: the extension and Mac tabs on a
+ * streaming service's address, apps (the Disney+ or Netflix app on Windows), and browser windows
+ * whose title names a service. A browser's media controls don't say which site is playing, so they
+ * count only while a browser window is on a streaming service. Anything else from a browser (a
+ * YouTube trailer, a review, a Wikipedia page) only mentions a film: it isn't watching it.
+ */
+export function fromStreaming(items: NowPlaying[]): NowPlaying[] {
+  const browser = (n: NowPlaying): boolean => BROWSER.test(n.app)
+  // A window from the list of browser windows: just a title (media controls always give a status and position, if only null).
+  const isWindow = (n: NowPlaying): boolean => browser(n) && n.status === undefined && n.position === undefined
+  const onService = items.some((n) => isWindow(n) && namesService(n.title))
+  return items.filter((n) => {
+    if (n.url) return !!serviceOf(n.url)
+    if (!browser(n)) return true
+    return isWindow(n) ? namesService(n.title) : onService
+  })
 }
 
 // ---- Shows and episodes ----
