@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { OWN_ENOUGH, RECS_ON_WALL, wallPosters } from './wall'
+import { OWN_ENOUGH, RECS_ON_WALL, wallGrid, wallPosters } from './wall'
 
 const range = (n: number, p: string): string[] => Array.from({ length: n }, (_, i) => `/${p}${i}.jpg`)
 
@@ -38,5 +38,18 @@ describe('poster wall', () => {
     const wall = wallPosters([], range(40, 't'), 56, range(5, 'r'))
     expect(wall[0]).toBe('/r0.jpg')
     expect(new Set(wall).size).toBe(OWN_ENOUGH)
+  })
+})
+
+describe('covering the window with rows', () => {
+  it('never goes below 6 rows of 14, and fills a full-HD window', () => {
+    expect(wallGrid(1920, 1040)).toEqual({ rows: 7, perRow: 17 })
+    expect(wallGrid(1280, 720)).toEqual({ rows: 6, perRow: 14 })
+  })
+
+  it('adds rows and posters when zoomed out, so nothing shows through', () => {
+    const { rows, perRow } = wallGrid(1920 / 0.67, 1040 / 0.67)
+    expect(rows * (198 + 14)).toBeGreaterThan(1040 / 0.67 + 120)
+    expect(perRow * (132 + 14)).toBeGreaterThan(1920 / 0.67 + 400)
   })
 })

@@ -1,15 +1,33 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { imageUrl } from '@core/tmdb'
 import { posterFor } from '@core/posters'
-import { OWN_ENOUGH, WALL_COLUMNS, WALL_PER_COLUMN, wallPosters } from '../lib/wall'
+import { OWN_ENOUGH, WALL_COLUMNS, WALL_PER_COLUMN, wallGrid, wallPosters } from '../lib/wall'
 import type { MediaType, SearchResult, TitleRef as FullRef } from '@core/types'
 import PosterMenu, { justClosedMenu, type PosterMenuAt } from './PosterMenu'
 import { useApp } from '../store/app'
 import { isTyping } from '../lib/keys'
 import { usePremiereWall } from '../lib/premiere'
 
-const ROWS = 6
-const PER_ROW = 14
+/** Rows and posters per row enough to cover the window, worked out again when it's resized or zoomed. */
+function useWallGrid(): { rows: number; perRow: number } {
+  const [grid, setGrid] = useState(() => wallGrid(window.innerWidth, window.innerHeight))
+  useEffect(() => {
+    let frame = 0
+    const onResize = (): void => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => {
+        const next = wallGrid(window.innerWidth, window.innerHeight)
+        setGrid((g) => (g.rows === next.rows && g.perRow === next.perRow ? g : next))
+      })
+    }
+    window.addEventListener('resize', onResize)
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('resize', onResize)
+    }
+  }, [])
+  return grid
+}
 
 // Cool stand-in colours, only used if there are no posters at all (offline on first launch).
 const HUES = [330, 195, 265, 285, 240, 220, 210, 300, 200, 250, 180, 310]
@@ -30,6 +48,7 @@ type TitleRef = { type: MediaType; id: number }
  */
 function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: boolean }): React.JSX.Element {
   const rowsRef = useRef<HTMLDivElement>(null)
+  const { rows: ROWS, perRow: PER_ROW } = useWallGrid()
   const library = useApp((s) => s.library)
   const hasKey = useApp((s) => !!s.status?.hasKey)
   const go = useApp((s) => s.go)
@@ -128,7 +147,7 @@ function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: b
       })
       return [...row, ...row.map((t) => ({ ...t, key: `${t.key}b` }))]
     })
-  }, [own, trending, recs, premiere?.posters])
+  }, [own, trending, recs, premiere?.posters, ROWS, PER_ROW])
 
   const tile = (t: Tile): React.JSX.Element =>
     t.url ? (
