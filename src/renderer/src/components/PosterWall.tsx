@@ -269,7 +269,9 @@ function usePointerLift(ref: React.RefObject<HTMLDivElement | null>, enabled: bo
     // Over the dial, buttons, pills or the Home column the wall stays as it is (while peeking they're faded
     // out and can't be pointed at, so everything counts as the wall).
     const OVER = '.spot-center, .spot-pills, .spot-waiting, .opening-layer, .poster-menu, button, a, input, select'
-    const overUi = (t: EventTarget | null): boolean => !peek && t instanceof Element && !!t.closest(OVER)
+    // A layer on top of everything (a turned-over poster, a trailer) always shields the wall, even while peeking.
+    const ABOVE = '.flip-scrim, .flip, .trailer-layer'
+    const overUi = (t: EventTarget | null): boolean => t instanceof Element && (!!t.closest(ABOVE) || (!peek && !!t.closest(OVER)))
     const onMove = (e: PointerEvent): void => {
       x = e.clientX
       y = e.clientY
