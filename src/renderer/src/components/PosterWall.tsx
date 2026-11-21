@@ -282,8 +282,8 @@ function usePointerLift(ref: React.RefObject<HTMLDivElement | null>, enabled: bo
         return
       }
       const box = wall.getBoundingClientRect()
-      wall.style.setProperty('--px', `${x - box.left}px`)
-      wall.style.setProperty('--py', `${y - box.top}px`)
+      const torch = wall.querySelector<HTMLElement>('.wall-torch')
+      if (torch) torch.style.transform = `translate(${x - box.left}px, ${y - box.top}px)`
       wall.classList.add('lit')
       let hit: Element | null = null
       for (const tile of wall.querySelectorAll('.wall-tile')) {

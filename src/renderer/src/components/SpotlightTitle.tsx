@@ -216,9 +216,15 @@ export default function SpotlightTitle({ type, id }: { type: MediaType; id: numb
         const el = e.currentTarget
         const sky = el.querySelector<HTMLElement>('.st-sky')
         if (!sky) return
-        const p = Math.min(1, Math.max(0, 1 - (sky.offsetTop - el.scrollTop) / el.clientHeight))
-        el.style.setProperty('--sky', p.toFixed(3))
-        el.querySelector('.st-sky-head')?.classList.toggle('on', p > 0.8)
+        const p = Math.min(1, Math.max(0, 1 - (sky.offsetTop - el.scrollTop) / el.clientHeight)).toFixed(3)
+        // Set only on the two things that use it: set on the whole page, every scroll restyled everything on it.
+        const bg = el.querySelector<HTMLElement>('.st-bg')
+        const head = el.querySelector<HTMLElement>('.st-sky-head')
+        if (bg?.style.getPropertyValue('--sky') === p) return
+        bg?.style.setProperty('--sky', p)
+        head?.style.setProperty('--sky', p)
+        head?.classList.toggle('on', Number(p) > 0.8)
+        bg?.classList.toggle('sky-on', Number(p) > 0)
       }}
       onClickCapture={(e) => {
         if (!bare) return

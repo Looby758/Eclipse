@@ -31,7 +31,11 @@ export default function Dock({ tucked = false }: { tucked?: boolean }): React.JS
     }
     if (isTucked.current) {
       useApp.getState().go({ name: 'search' })
-      requestAnimationFrame(() => requestAnimationFrame(go))
+      // Focus straight away, so what's typed straight after Ctrl+K lands in the box. The check a couple of frames
+      // later only puts the cursor back if it was lost: selecting again then would select the first letter you'd
+      // typed, and the next one would replace it.
+      go()
+      requestAnimationFrame(() => requestAnimationFrame(() => document.activeElement !== input.current && go()))
     } else go()
   }
 

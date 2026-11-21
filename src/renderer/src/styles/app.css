@@ -53,6 +53,8 @@ code { font-size: 0.92em; }
 .corner { position: absolute; left: 40px; top: 30px; z-index: 6; }
 [data-platform='mac'] .corner { left: 90px; top: 26px; }
 .brand { display: flex; align-items: center; gap: 10px; font: 800 16px var(--font-display); letter-spacing: 0.14em; color: var(--text-strong); }
+/* Over Spotlight's wall the name sits on the same glass as the pills, so it reads over bright posters. */
+.app.spot .brand { height: 44px; padding: 0 16px 0 8px; border-radius: 99px; background: var(--spot-glass); border: 1px solid var(--line); backdrop-filter: blur(14px); box-shadow: var(--frost-rim); }
 .brand-logo { display: block; flex-shrink: 0; filter: drop-shadow(0 4px 14px rgba(63, 91, 255, 0.35)); }
 .back-btn { display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 18px 0 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--glass); backdrop-filter: blur(16px); cursor: pointer; font-weight: 500; -webkit-app-region: no-drag; transition: background var(--fast); }
 .back-btn:hover { background: var(--glass-hover); }
@@ -89,7 +91,7 @@ code { font-size: 0.92em; }
 .mini-sub { display: block; font-size: 12px; color: var(--text-muted); }
 
 /* ---- The dock ---- */
-.dock { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 10; display: flex; align-items: center; gap: 6px; padding: 8px; border-radius: 24px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(28px); box-shadow: var(--shadow); }
+.dock { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 10; display: flex; align-items: center; gap: 6px; padding: 8px; border-radius: 24px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(28px); box-shadow: var(--shadow);; transition: transform 0.38s var(--ease), opacity 0.22s ease; }
 .dock-btn { width: 76px; height: 58px; border-radius: 16px; border: 0; background: none; cursor: pointer; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 600; transition: transform 0.2s var(--ease), background var(--fast), color var(--fast); }
 .dock-btn:hover { color: var(--text); background: var(--glass-soft); }
 .dock-btn.on { color: var(--on-accent); background: var(--accent-gradient); box-shadow: var(--accent-shadow); transform: translateY(-6px); }
@@ -105,6 +107,10 @@ code { font-size: 0.92em; }
 @keyframes sheet-rise { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 /* Pages come up quicker and from nearer than the welcome does, so clicking feels immediate. */
 @keyframes page-rise { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+/* Page to page (the dock, a link): the glass stays where it is and only what's on it changes, so the wall never flashes through between them. */
+.app.swap .sheet { animation: none; }
+.app.swap .sheet-scroll { animation: page-swap 0.26s var(--ease) both; }
+@keyframes page-swap { from { opacity: 0; transform: translateY(10px); } }
 .sheet-scroll { position: absolute; inset: 0; overflow-y: auto; padding: 30px var(--page-side) 40px; border-radius: inherit; user-select: text; }
 .sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
 .sheet-lifted { position: absolute; left: var(--page-side); top: calc(-1 * var(--poster-lift)); z-index: 2; transition: opacity var(--slow) var(--ease), transform var(--slow) var(--ease); }
@@ -619,13 +625,17 @@ button.list-seen.undo:hover { background: var(--glass-hover); }
 
 /* ---- Spotlight Home (Phase 34): drifting rows, a pool of shadow, the Tonight dial ---- */
 .wall.rows { overflow: hidden; }
+/* A Spotlight title page is solid, so once its poster zoom has finished the wall behind it is put away: otherwise
+   its drift keeps the glass pills on the page re-blurring every frame for nothing. It's back the moment you leave. */
+.app.st-open .wall.rows { visibility: hidden; transition: visibility 0s 1.6s; }
 .wall-rows { position: absolute; inset: -60px -200px; display: flex; flex-direction: column; gap: var(--row-gap); }
 .wall-row { display: flex; gap: var(--row-gap); width: max-content; animation: row-left var(--row-speed) linear infinite; }
 .wall-row.right { animation-name: row-right; }
 .wall.rows .wall-tile { width: var(--row-tile-w); height: var(--row-tile-h); border-radius: 10px; box-shadow: var(--row-tile-shadow); transition: transform 0.5s var(--ease), filter 0.5s var(--ease), box-shadow 0.5s var(--ease); }
 /* The poster under the mouse lifts and brightens, and a soft light follows the mouse (Spotlight Home only). */
 .wall.rows .wall-tile.lifted { position: relative; z-index: 1; transform: scale(1.14); filter: brightness(1.18) saturate(1.15); box-shadow: var(--row-tile-lift-shadow); }
-.wall-torch { position: absolute; inset: 0; pointer-events: none; opacity: 0; mix-blend-mode: soft-light; background: radial-gradient(circle var(--torch-size) at var(--px, -999px) var(--py, -999px), var(--torch), transparent); transition: opacity 0.6s var(--ease); }
+/* The light is a small disc moved with a transform, so following the mouse repaints nothing and restyles none of the posters. */
+.wall-torch { position: absolute; left: 0; top: 0; width: calc(var(--torch-size) * 2); height: calc(var(--torch-size) * 2); margin: calc(-1 * var(--torch-size)) 0 0 calc(-1 * var(--torch-size)); pointer-events: none; opacity: 0; mix-blend-mode: soft-light; background: radial-gradient(circle var(--torch-size) at center, var(--torch), transparent); transform: translate(-999px, -999px); will-change: transform; transition: opacity 0.6s var(--ease); }
 .wall.rows.lit .wall-torch { opacity: 1; }
 :root.wall-pointing .app.spot, :root.wall-pointing .app.spot .spotlight { cursor: pointer; }
 /* Holding Shift on Spotlight Home: everything over the wall fades away so any poster can be clicked. */
@@ -679,6 +689,12 @@ button.list-seen.undo:hover { background: var(--glass-hover); }
 .spotlight:has(.spot-waiting :is(.note, .otd)) .spot-center { left: calc(50% - var(--wait-shift, 190px)); }
 @media (max-width: 1180px) { .spotlight { --wait-shift: 170px; } }
 .dock.tucked { opacity: 0; pointer-events: none; transform: translate(-50%, 140%); }
+/* Coming back to Home: the dial, its words and the pills settle in instead of popping up. Each piece moves on its own
+   (not the whole middle), so the glass buttons keep blurring the wall while they do. */
+.spotlight .dial, .spotlight .spot-under > :not(.spot-btns), .spotlight .spot-btns > *, .spotlight .spot-pills > * { animation: home-in 0.4s var(--ease) backwards; }
+.spotlight .spot-under > :not(.spot-btns) { animation-delay: 40ms; }
+.spotlight .spot-btns > * { animation-delay: 80ms; }
+@keyframes home-in { from { opacity: 0; transform: translateY(10px); } }
 .app.spot .home-credit { right: 30px; bottom: 34px; }
 /* Keep Spotlight's pills clickable over the drag strip, and clear of Windows' minimise, maximise and close buttons. */
 .spot-pills { -webkit-app-region: no-drag; z-index: 6; }
@@ -825,11 +841,13 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px
 /* Phase 41: keep the poster wall (and every other moving touch) still */
 :root[data-still] .wall-col, :root[data-still] .wall-row, :root[data-still] .aurora, :root[data-still] .glow-text,
 :root[data-still] .timeline-dot.next, :root[data-still] .heat-cell.next, :root[data-still] .sheet, :root[data-still] .setup,
-:root[data-still] .home-side, :root[data-still] .spot-waiting > *, :root[data-still] .guard.nudge, :root[data-still] .undo-bar { animation: none; }
+:root[data-still] .home-side, :root[data-still] .spot-waiting > *, :root[data-still] .guard.nudge, :root[data-still] .undo-bar,
+:root[data-still] .sheet-scroll, :root[data-still] .spotlight .dial, :root[data-still] .spotlight .spot-under > *, :root[data-still] .spotlight .spot-btns > *, :root[data-still] .spotlight .spot-pills > * { animation: none; }
 :root[data-still] .timeline-dot.next, :root[data-still] .heat-cell.next { box-shadow: 0 0 0 2px var(--cyan), 0 0 16px var(--halo); }
 :root[data-still] *, :root[data-still] *::before, :root[data-still] *::after { transition-duration: 0s !important; scroll-behavior: auto !important; }
 @media (prefers-reduced-motion: reduce) {
-  .aurora, .glow-text, .heat-cell.next, .sheet, .setup, .home-side, .spot-waiting > *, .guard.nudge, .undo-bar { animation: none; }
+  .aurora, .glow-text, .heat-cell.next, .sheet, .setup, .home-side, .spot-waiting > *, .guard.nudge, .undo-bar,
+  .sheet-scroll, .spotlight .dial, .spotlight .spot-under > *, .spotlight .spot-btns > *, .spotlight .spot-pills > * { animation: none; }
 }
 
 /* Phase 42: the welcome for someone new */
@@ -871,7 +889,9 @@ select:hover { border-color: var(--accent); }
 .stitle h1, .stitle h2, .stitle h3 { color: var(--st-ink); background: none; -webkit-text-fill-color: currentColor; }
 .stitle .st-drawer h2, .stitle .st-drawer h3 { color: var(--text); }
 .st-bg { position: fixed; inset: 0; overflow: hidden; pointer-events: none; }
-.st-bg img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 25%; animation: st-drift 40s ease-in-out infinite alternate, st-fade 0.8s ease both; }
+/* The picture pushes in slowly once when the page opens, then holds. Drifting for ever made every glass pill and card
+   on the page blur it again on every frame, which kept the graphics chip busy the whole time a title was open. */
+.st-bg img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 25%; animation: st-drift 16s cubic-bezier(0.25, 0.6, 0.3, 1) both, st-fade 0.8s ease both; }
 .st-bg::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 70% 80% at 0% 40%, rgba(5, 6, 16, 0.88) 10%, rgba(5, 6, 16, 0.4) 45%, rgba(5, 6, 16, 0) 75%), linear-gradient(0deg, rgba(5, 6, 16, 0.96) 0%, rgba(5, 6, 16, 0.72) 38%, rgba(5, 6, 16, 0) 62%), linear-gradient(180deg, rgba(5, 6, 16, 0.55), rgba(5, 6, 16, 0) 22%), linear-gradient(270deg, rgba(5, 6, 16, 0.5), rgba(5, 6, 16, 0) 30%); }
 @keyframes st-drift { from { transform: scale(1.04); } to { transform: scale(1.1) translate(-1%, -1%); } }
 @keyframes st-fade { from { opacity: 0; } }
@@ -1040,7 +1060,7 @@ select:hover { border-color: var(--accent); }
 
 /* Phase 56: opening a poster zooms into it */
 .zoom-layer { position: fixed; inset: 0; pointer-events: none; z-index: 200; }
-.zoom-ghost { position: fixed; object-fit: cover; box-shadow: var(--zoom-shadow); will-change: left, top, width, height, opacity; }
+.zoom-ghost { position: fixed; object-fit: cover; box-shadow: var(--zoom-shadow); transform-origin: 0 0; will-change: transform, opacity; }
 .zoom-veil { position: fixed; inset: 0; background: var(--zoom-veil); opacity: 0; }
 /* While it grows, the page underneath comes up a beat later, through the poster. */
 /* The show's page stays hidden while the poster travels: its picture fades in behind the big
@@ -1475,10 +1495,13 @@ select:hover { border-color: var(--accent); }
 
 /* …and on a show's page: scroll past the cast into the sky */
 .stitle { --sky: 0; }
-.st-bg img { filter: blur(calc(var(--sky) * 34px)) brightness(calc(1 - var(--sky) * 0.68)) saturate(calc(1 + var(--sky) * 0.2)); }
+/* Only while the sky is showing: a filter, even one that changes nothing, costs a pass over the whole picture every frame. */
+.st-bg.sky-on img { filter: blur(calc(var(--sky) * 34px)) brightness(calc(1 - var(--sky) * 0.68)) saturate(calc(1 + var(--sky) * 0.2)); }
 .st-sky { position: relative; min-height: 100vh; padding: 0 40px 40px; box-sizing: border-box; -webkit-app-region: no-drag; }
-.st-sky-head { position: sticky; top: 0; z-index: 4; display: flex; align-items: center; gap: 22px; padding: 22px 16px 26px; margin: 0 -40px 0; padding-left: 56px; background: linear-gradient(180deg, rgba(5, 6, 16, 0.85), rgba(5, 6, 16, 0)); opacity: calc((var(--sky) - 0.55) * 2.5); pointer-events: none; }
-[data-platform='win'] .st-sky-head { padding-top: 52px; }
+/* Lines up beside the Back button rather than under it, and stays dark long enough that the sky's own heading
+   scrolling up underneath doesn't show through the name. */
+.st-sky-head { position: sticky; top: 0; z-index: 4; display: flex; align-items: center; gap: 22px; padding: 33px 16px 34px 160px; margin: 0 -40px 0; background: linear-gradient(180deg, rgba(5, 6, 16, 0.97), rgba(5, 6, 16, 0.94) 70%, rgba(5, 6, 16, 0)); opacity: calc((var(--sky) - 0.55) * 2.5); pointer-events: none; }
+[data-platform='mac'] .st-sky-head { padding-top: 29px; padding-left: 210px; }
 .st-sky-head.on { pointer-events: auto; }
 .st-sky-head img { max-height: 40px; max-width: 220px; object-fit: contain; }
 .st-sky-head b { font: 800 22px/1.1 var(--font-display); color: var(--st-ink); }

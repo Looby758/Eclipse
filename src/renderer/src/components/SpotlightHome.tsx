@@ -65,11 +65,14 @@ function HomeColumn(): React.JSX.Element {
 }
 
 /** The new Home (Phase 34): tonight's pick inside the Tonight dial, over drifting rows of posters. */
+/** Tonight's pick's details from earlier visits to Home this session, by title key. */
+const seenDetails = new Map<string, TitleDetails>()
+
 export default function SpotlightHome(): React.JSX.Element {
   const library = useApp((s) => s.library)
   const { go, setLibrary } = useApp.getState()
   const [skip, setSkip] = useState(0)
-  const [details, setDetails] = useState<TitleDetails | null>(null)
+  const [stateDetails, setDetails] = useState<TitleDetails | null>(null)
   const [busy, setBusy] = useState(false)
   // Phase 60: the tick mark pops each time Tick it works.
   const [ticked, setTicked] = useState(0)
@@ -95,15 +98,21 @@ export default function SpotlightHome(): React.JSX.Element {
   }, [])
 
   useEffect(() => {
-    setDetails(null)
+    // Coming back to Home shows the last answer straight away, so the line under the title and the dial don't flicker in.
+    setDetails(pick ? (seenDetails.get(pick.key) ?? null) : null)
     if (!pick) return
     let live = true
-    window.api.details(pick.type, pick.id).then((r) => live && r.ok && setDetails(r.value.data))
+    window.api.details(pick.type, pick.id).then((r) => {
+      if (!r.ok) return
+      seenDetails.set(r.value.data.key, r.value.data)
+      if (live) setDetails(r.value.data)
+    })
     return () => {
       live = false
     }
   }, [pick?.key])
 
+  const details = stateDetails?.key === pick?.key ? stateDetails : pick ? (seenDetails.get(pick.key) ?? null) : null
   const isShow = pick?.type === 'tv'
   const next = details && isShow ? nextOutEpisodeFor(pick!, details, localDate(now)) : null
   const each = details ? (isShow ? episodeMinutes(details) : details.runtime || 120) : 45
