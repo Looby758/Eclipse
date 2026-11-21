@@ -78,23 +78,38 @@ export default function ZoomLayer(): React.JSX.Element {
       const h = Math.min(window.innerHeight * 0.8, (window.innerWidth * 0.7) / ratio)
       const big: Box = { left: (window.innerWidth - h * ratio) / 2, top: (window.innerHeight - h) / 2, width: h * ratio, height: h }
       const grown = (r: Box, k: number): Box => ({ left: r.left - (r.width * (k - 1)) / 2, top: r.top - (r.height * (k - 1)) / 2, width: r.width * k, height: r.height * k })
-      const frame = (r: Box, rad: string, opacity: number, offset: number, easing = 'cubic-bezier(0.65, 0, 0.35, 1)'): Keyframe => ({ left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px`, borderRadius: rad, opacity, offset, easing })
+      // The copy is laid out once at its big size and moved with transforms only, so the graphics chip can run the
+      // whole flight by itself: it stays smooth while the page underneath is still being put together.
+      Object.assign(img.style, { left: `${big.left}px`, top: `${big.top}px`, width: `${big.width}px`, height: `${big.height}px` })
+      const place = (r: Box): string => `translate(${r.left - big.left}px, ${r.top - big.top}px) scale(${r.width / big.width}, ${r.height / big.height})`
+      const frame = (r: Box, opacity: number, offset: number, easing = 'cubic-bezier(0.65, 0, 0.35, 1)'): Keyframe => ({ transform: place(r), opacity, offset, easing })
+      // Corners are drawn at the big size, so they're scaled up to stay as round as the poster's own on the way.
+      const px = parseFloat(radius) || 12
+      const corner = (r: Box, rad: number, offset: number, easing = 'cubic-bezier(0.65, 0, 0.35, 1)'): Keyframe => ({ borderRadius: `${(rad * big.width) / r.width}px`, offset, easing })
+      const timing = { duration: ms, fill: 'forwards' as const }
       const anim = img.animate(
         growing
           ? [
               // Lift off the page and hold a beat, glide to the middle as a big poster, hold while the
               // show's own picture fades in behind it, then let it melt into the page.
-              frame(source, radius, 1, 0, 'ease-out'),
-              frame(grown(source, 1.08), radius, 1, 0.12),
-              frame(grown(source, 1.08), radius, 1, 0.2),
-              frame(big, '14px', 1, 0.52, 'linear'),
-              frame(big, '14px', 1, 0.7, 'ease-in'),
-              frame(grown(big, 1.04), '14px', 0, 1)
+              frame(source, 1, 0, 'ease-out'),
+              frame(grown(source, 1.08), 1, 0.12),
+              frame(grown(source, 1.08), 1, 0.2),
+              frame(big, 1, 0.52, 'linear'),
+              frame(big, 1, 0.7, 'ease-in'),
+              frame(grown(big, 1.04), 0, 1)
             ]
-          : [frame(grown(big, 1.04), '14px', 0, 0, 'ease-out'), frame(big, '14px', 1, 0.2), frame(grown(source, 1.08), radius, 1, 0.78, 'ease-out'), frame(source, radius, 1, 0.9), frame(source, radius, 0, 1)],
-        { duration: ms, fill: 'forwards' }
+          : [frame(grown(big, 1.04), 0, 0, 'ease-out'), frame(big, 1, 0.2), frame(grown(source, 1.08), 1, 0.78, 'ease-out'), frame(source, 1, 0.9), frame(source, 0, 1)],
+        timing
       )
-      veil.animate(growing ? [{ opacity: 0 }, { opacity: 1, offset: 0.3 }, { opacity: 1, offset: 0.5 }, { opacity: 0, offset: 0.8 }, { opacity: 0 }] : [{ opacity: 0.9 }, { opacity: 0.9, offset: 0.2 }, { opacity: 0 }], { duration: ms, fill: 'forwards' })
+      img.animate(
+        growing
+          ? [corner(source, px, 0, 'ease-out'), corner(grown(source, 1.08), px, 0.12), corner(grown(source, 1.08), px, 0.2), corner(big, 14, 0.52, 'linear'), corner(big, 14, 0.7, 'ease-in'), corner(grown(big, 1.04), 14, 1)]
+          : [corner(grown(big, 1.04), 14, 0, 'ease-out'), corner(big, 14, 0.2), corner(grown(source, 1.08), px, 0.78, 'ease-out'), corner(source, px, 0.9), corner(source, px, 1)],
+        timing
+      )
+      // The page underneath has already changed, so the veil comes up quickly enough to hide that, not over a third of the flight.
+      veil.animate(growing ? [{ opacity: 0 }, { opacity: 1, offset: 0.1 }, { opacity: 1, offset: 0.5 }, { opacity: 0, offset: 0.8 }, { opacity: 0 }] : [{ opacity: 0.9 }, { opacity: 0.9, offset: 0.2 }, { opacity: 0 }], timing)
       if (growing) {
         // Swap in the bigger picture once it has loaded, so the full-window frame isn't blurry.
         const big = new Image()
