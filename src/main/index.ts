@@ -31,6 +31,7 @@ import { markMilestones, milestoneBoard, milestoneKeys } from '@core/milestones'
 import { allTimeStats } from '@core/stats'
 import { setCountdown } from '@core/countdowns'
 import { CATCH_UP_ID, dismissCatchUp } from '@core/catchup'
+import { markAnnouncedSeen } from '@core/announced'
 import { answerRecommendation } from '@core/recommend'
 import { newRemoteCode, remoteStatus, setRemote, setupRemote, stopRemote } from './remote'
 import { guardStatus, readOnlyReason, startGuard, stopGuard, takeOver } from './guard'
@@ -389,6 +390,7 @@ function setupIpc(): void {
   ipcMain.handle('week:budget', () => attempt(() => tmdb.weekBudget(getLibrary())))
   ipcMain.handle('catchup:list', () => attempt(() => tmdb.catchUpList(getLibrary())))
   ipcMain.handle('catchup:dismiss', (_e, id: string) => (CATCH_UP_ID.test(String(id)) ? saveLibrary(dismissCatchUp(getLibrary(), String(id))) : getLibrary()))
+  ipcMain.handle('announced:seen', (_e, id: string) => saveLibrary(markAnnouncedSeen(getLibrary(), String(id))))
   // Phase 51: the opening plays for the first window of a launch only.
   ipcMain.handle('opening:take', () => {
     const play = !openingTaken

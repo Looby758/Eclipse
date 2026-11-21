@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ArrowLeft, Check, ChevronDown, ExternalLink, Play } from 'lucide-react'
-import { activeEntry, nextEpisodeFor, preferencesOf } from '@core/library'
+import { activeEntry, nextEpisodeFor, nextOutEpisodeFor, preferencesOf } from '@core/library'
 import { freeElsewhere, onMyServices, JUSTWATCH_URL } from '@core/providers'
 import { imageUrl, tmdbPageUrl } from '@core/tmdb'
 import { formatDate, formatRuntime } from '@core/format'
@@ -82,7 +82,8 @@ function NextUp({ d }: { d: TitleDetails }): React.JSX.Element | null {
   const raw = usePhone((s) => s.view.entries[d.key])
   const act = usePhone((s) => s.act)
   const entry = activeEntry(raw)
-  const next = nextEpisodeFor(entry, d.seasons)
+  // Only an episode that's out: when the next one hasn't aired you're caught up.
+  const next = nextOutEpisodeFor(entry, d, today())
   const { data: season } = useLoad(() => (next ? getSeason(d.id, next.season) : Promise.resolve(null)), [d.id, next?.season])
   if (!next) return <div className="card next-card">All caught up{d.nextEpisode?.airDate ? `. Next episode ${formatDate(d.nextEpisode.airDate)}.` : '.'}</div>
   const ep = season?.episodes.find((e) => e.number === next.episode)

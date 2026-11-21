@@ -366,6 +366,42 @@ export function nextEpisodeFor(entry: LibraryEntry | undefined, seasons: SeasonC
   return order[last + 1] ?? null
 }
 
+type AirInfo = Pick<TitleDetails, 'seasons' | 'nextEpisode'>
+
+/**
+ * Whether an episode is out by `today`. Not out: anything in a season that starts later, anything from
+ * TMDB's next episode on while that hasn't aired, and anything in an announced season with no date yet
+ * (a season with no air date after every season that has one).
+ */
+export function episodeIsOut(d: AirInfo, today: string, season: number, episode: number): boolean {
+  const s = d.seasons.find((x) => x.number === season)
+  if (s?.airDate && s.airDate > today) return false
+  if (s && !s.airDate) {
+    const lastDated = Math.max(0, ...d.seasons.filter((x) => x.number > 0 && x.airDate).map((x) => x.number))
+    if (season > lastDated) return false
+  }
+  const next = d.nextEpisode
+  if (next && (!next.airDate || next.airDate > today) && (season > next.season || (season === next.season && episode >= next.episode))) return false
+  return true
+}
+
+/** The next episode to watch, but only once it's out: null when you're through or waiting for it to air. */
+export function nextOutEpisodeFor(entry: LibraryEntry | undefined, d: AirInfo, today: string): { season: number; episode: number } | null {
+  const next = nextEpisodeFor(entry, d.seasons)
+  return next && episodeIsOut(d, today, next.season, next.episode) ? next : null
+}
+
+/**
+ * Home's picks without the shows you can't watch anything of tonight: caught up and waiting for the
+ * next episode or season to air (or not out at all yet). Shows whose details aren't loaded yet stay.
+ */
+export function withoutWaiting<T extends LibraryEntry>(picks: T[], details: Record<string, AirInfo | undefined>, today: string): T[] {
+  return picks.filter((p) => {
+    const d = p.type === 'tv' ? details[p.key] : undefined
+    return !d || !!nextOutEpisodeFor(p, d, today)
+  })
+}
+
 /**
  * Reads a library from whatever was in the file, keeping every entry that makes sense and quietly
  * dropping broken ones, so a hand edit or a half-synced file never stops the app from opening.
@@ -380,6 +416,7 @@ export function normalizeLibrary(raw: unknown): Library {
   const rawDropped = raw && typeof raw === 'object' ? (raw as { dropped?: unknown }).dropped : undefined
   const rawLeft = raw && typeof raw === 'object' ? (raw as { repairLeft?: unknown }).repairLeft : undefined
   const rawCatch = raw && typeof raw === 'object' ? (raw as { catchUpDismissed?: unknown }).catchUpDismissed : undefined
+  const rawAnnounced = raw && typeof raw === 'object' ? (raw as { announcedSeen?: unknown }).announcedSeen : undefined
   const rawHidden = raw && typeof raw === 'object' ? (raw as { recsHidden?: unknown }).recsHidden : undefined
   const rawTaste = raw && typeof raw === 'object' ? (raw as { recsTaste?: unknown }).recsTaste : undefined
   const rawApplied = raw && typeof raw === 'object' ? (raw as { phoneApplied?: unknown }).phoneApplied : undefined
@@ -414,6 +451,10 @@ export function normalizeLibrary(raw: unknown): Library {
     if (Array.isArray(rawCatch)) {
       const no = [...new Set(rawCatch.filter((x): x is string => typeof x === 'string' && /^(movie|tv):\d+(@S\d+)?>(movie|tv):\d+(@S\d+)?$/.test(x)))]
       if (no.length) lib.catchUpDismissed = no.slice(-300)
+    }
+    if (Array.isArray(rawAnnounced)) {
+      const seen = [...new Set(rawAnnounced.filter((x): x is string => typeof x === 'string' && /^tv:\d+@S\d+$/.test(x)))]
+      if (seen.length) lib.announcedSeen = seen.slice(-500)
     }
     if (Array.isArray(rawLeft)) {
       const left = [...new Set(rawLeft.filter((x): x is string => typeof x === 'string' && /^(movie|tv):\d+@\d{4}-\d{2}-\d{2}$/.test(x)))]
@@ -698,16 +739,11 @@ export function settleSeenShows(library: Library, details: Record<string, Pick<T
 }
 
 /** Every regular episode that's out by today, by episodeKey. */
-function airedEpisodes(d: Pick<TitleDetails, 'seasons' | 'nextEpisode'>, today: string): string[] {
-  const next = d.nextEpisode
-  const upcoming = next && (!next.airDate || next.airDate > today)
+function airedEpisodes(d: AirInfo, today: string): string[] {
   const out: string[] = []
   for (const s of d.seasons) {
-    if (s.number <= 0 || (s.airDate && s.airDate > today)) continue
-    for (let n = 1; n <= s.episodeCount; n++) {
-      if (upcoming && (s.number > next.season || (s.number === next.season && n >= next.episode))) continue
-      out.push(episodeKey(s.number, n))
-    }
+    if (s.number <= 0) continue
+    for (let n = 1; n <= s.episodeCount; n++) if (episodeIsOut(d, today, s.number, n)) out.push(episodeKey(s.number, n))
   }
   return out
 }

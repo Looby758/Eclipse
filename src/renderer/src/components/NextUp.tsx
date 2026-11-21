@@ -1,6 +1,6 @@
 import { Check } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { isTogether, localDate, nextEpisodeFor, preferencesOf } from '@core/library'
+import { isTogether, localDate, nextOutEpisodeFor, preferencesOf } from '@core/library'
 import { onMyServices, freeElsewhere } from '@core/providers'
 import { formatRuntime, formatShortDay, plural } from '@core/format'
 import { bedtimeTonight, episodeMinutes, finishPlan, fitTonight, startBy, timeLeft } from '@core/time'
@@ -35,7 +35,8 @@ export default function NextUp({ entry }: { entry: LibraryEntry }): React.JSX.El
     }
   }, [entry.key, services.join(',')])
 
-  const next = details && entry.type === 'tv' ? nextEpisodeFor(entry, details.seasons.map((s) => ({ number: s.number, episodeCount: s.episodeCount }))) : null
+  // Only an episode that's out: a show you're waiting on has no "up next".
+  const next = details && entry.type === 'tv' ? nextOutEpisodeFor(entry, details, localDate(new Date())) : null
 
   useEffect(() => {
     setEp(null)

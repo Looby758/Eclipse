@@ -269,6 +269,8 @@ export interface Library {
   repairLeft?: string[]
   /** Catch up before the sequel: ones you said "Not now" to ("movie:438631>movie:1170608"). */
   catchUpDismissed?: string[]
+  /** New season announced: the ones you said "Got it" to ("tv:1234@S4"), so each shows once. */
+  announcedSeen?: string[]
   /** Recommendations you said "Not for me" to, by title key. */
   recsHidden?: string[]
   /** What recommendations have learnt from your Interested and Not for me answers (phase 43). */

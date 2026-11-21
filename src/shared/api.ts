@@ -302,6 +302,9 @@ export interface EclipseApi {
   /** "Not now": don't suggest this one again. */
   dismissCatchUp(id: string): Promise<Library>
 
+  /** New season announced: "Got it" ("tv:1234@S4"), so it doesn't show again. */
+  announcedSeen(id: string): Promise<Library>
+
   /** Phase 53: notes milestones as shown ("episodes:1000"), so each shows only once on either computer. */
   milestonesSeen(ids: string[]): Promise<Library>
 

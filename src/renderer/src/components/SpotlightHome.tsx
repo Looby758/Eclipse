@@ -1,6 +1,6 @@
 import { ChartNoAxesColumn, Check, Hourglass, Library, LibraryBig, ListChecks, Moon, Search, Settings, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { entriesWith, isTogether, nextEpisodeFor, nextSession, preferencesOf, withTogether } from '@core/library'
+import { entriesWith, isTogether, localDate, nextOutEpisodeFor, nextSession, preferencesOf, withTogether } from '@core/library'
 import { sessionLabel } from '../lib/together'
 import { formatRuntime, plural } from '@core/format'
 import { clock, episodeMinutes, fitTonight, startBy, tonight } from '@core/time'
@@ -12,7 +12,7 @@ import TonightDial from './TonightDial'
 import JustTonight from './JustTonight'
 import HomeNotes from './HomeNotes'
 import OnThisDay from './OnThisDay'
-import { candidates } from './HomeHero'
+import { candidates, useReadyPicks } from './HomeHero'
 import { focusSearch } from './Dock'
 import PremiereNight from './PremiereNight'
 import { seasonId, usePremieres, usePremiereMode } from '../lib/premiere'
@@ -84,7 +84,7 @@ export default function SpotlightHome(): React.JSX.Element {
 
   const all = entriesWith(library)
   // Watches with someone ("with Jack") are picks too, with that watch's own progress.
-  const picks = withTogether(candidates(all, (library.watchSoon ?? []).map((r) => r.key)), library)
+  const picks = useReadyPicks(withTogether(candidates(all, (library.watchSoon ?? []).map((r) => r.key)), library))
   const pick: LibraryEntry | null = picks.length ? picks[skip % picks.length] : null
 
   // The dot moves with the clock.
@@ -104,7 +104,7 @@ export default function SpotlightHome(): React.JSX.Element {
   }, [pick?.key])
 
   const isShow = pick?.type === 'tv'
-  const next = details && isShow ? nextEpisodeFor(pick!, details.seasons.map((s) => ({ number: s.number, episodeCount: s.episodeCount }))) : null
+  const next = details && isShow ? nextOutEpisodeFor(pick!, details, localDate(now)) : null
   const each = details ? (isShow ? episodeMinutes(details) : details.runtime || 120) : 45
   // Watching with someone at a time you've arranged: count from when it starts.
   const session = isTogether(pick) ? nextSession(pick.rewatches![pick.together.index], now) : null

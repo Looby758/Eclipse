@@ -1,6 +1,6 @@
-import { Check, Eye, EyeOff, History, Hourglass, Play, Sparkles, Tv, Users, X } from 'lucide-react'
+import { CalendarPlus, Check, Eye, EyeOff, History, Hourglass, Megaphone, Play, Sparkles, Tv, Users, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { localDate, nextEpisodeFor, nextSession, preferencesOf, sessionIsOn, watchesWith } from '@core/library'
+import { localDate, nextOutEpisodeFor, nextSession, preferencesOf, sessionIsOn, watchesWith } from '@core/library'
 import { sessionLabel } from '../lib/together'
 import { comebacks, daysAfter, stalledShows, type ComebackShow } from '@core/nudges'
 import { servicesNews } from '@core/services'
@@ -16,6 +16,8 @@ import { useServiceHistory } from '../lib/services'
 import { useNoticing } from '../lib/noticing'
 import { useDiscord } from '../lib/discord'
 import { suggestionWith } from '@core/watching'
+import { ANNOUNCED_MAX, announcedCandidates, announcedSeasons } from '@core/announced'
+import { hasCountdown } from '@core/countdowns'
 
 const itemOf = (e: LibraryEntry): { key: LibraryEntry['key']; type: LibraryEntry['type']; id: number; title: LibraryEntry['title'] } => ({ key: e.key, type: e.type, id: e.id, title: e.title })
 
@@ -38,7 +40,7 @@ function Together(): React.JSX.Element | null {
     .flatMap((e) =>
       watchesWith(e).map(({ index, watch }) => {
         const d = map[e.key]
-        const next = d ? nextEpisodeFor({ ...e, episodes: watch.episodes }, d.seasons) : null
+        const next = d ? nextOutEpisodeFor({ ...e, episodes: watch.episodes }, d, localDate(now)) : null
         const session = nextSession(watch, now)
         const on = sessionIsOn(watch, now)
         const fits = on && d && next ? fitTonight(session && session > now ? session : now, preferencesOf(library), episodeMinutes(d)) : 0
@@ -261,6 +263,54 @@ const listDays = (days: string[], today: string): string => {
   return names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : (names[0] ?? '')
 }
 
+/** Home: "Season 2 of The Ones Who Live is coming" for a show you're caught up on, until you say Got it. */
+function Announced(): React.JSX.Element | null {
+  const library = useApp((s) => s.library)
+  const { go, setLibrary } = useApp.getState()
+  const today = localDate(new Date())
+  const keys = announcedCandidates(library)
+  const { map } = useDetailsMany(keys, keys.length > 0)
+  const shown = announcedSeasons(library, map, today).slice(0, ANNOUNCED_MAX)
+  if (!shown.length) return null
+  return (
+    <>
+      {shown.map((a) => {
+        const e = library.entries[a.key]
+        const counting = hasCountdown(library, a.key)
+        return (
+          <section key={a.id} className="note" aria-label="New season announced">
+            <div className="note-kicker">
+              <Megaphone size={14} /> New season announced
+            </div>
+            <div className="note-line">
+              <button className="note-open" onClick={() => go({ name: 'title', type: 'tv', id: a.tvId })}>
+                <strong>{a.name}</strong>
+              </button>{' '}
+              is getting a season {a.season}. {a.date ? `It starts ${a.date > today ? formatShortDay(a.date) : 'soon'}.` : 'No date yet.'}
+            </div>
+            <div className="row">
+              {!counting && (
+                <button
+                  className="chip"
+                  onClick={async () => {
+                    setLibrary(await window.api.setCountdown({ key: a.key, type: 'tv', id: a.tvId, name: a.name, year: e?.title.year ?? null, posterPath: a.posterPath, date: null }, true))
+                    setLibrary(await window.api.announcedSeen(a.id))
+                  }}
+                >
+                  <CalendarPlus size={14} /> Count down on Home
+                </button>
+              )}
+              <button className="chip" onClick={async () => setLibrary(await window.api.announcedSeen(a.id))}>
+                <Check size={14} /> Got it
+              </button>
+            </div>
+          </section>
+        )
+      })}
+    </>
+  )
+}
+
 /** Home: catch up before the sequel, a few weeks before a film or new season comes out. */
 function CatchUpNote(): React.JSX.Element | null {
   const library = useApp((s) => s.library)
@@ -481,6 +531,7 @@ export default function HomeNotes(): React.JSX.Element {
       <Noticed />
       <YearNote />
       <Together />
+      <Announced />
       <CatchUpNote />
       <Comebacks />
       <ServicesNote />

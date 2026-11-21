@@ -1,6 +1,6 @@
 import { CalendarClock, Check, Users, X } from 'lucide-react'
 import { useState } from 'react'
-import { companions, nextEpisodeFor, nextSession, showProgress, watchesWith } from '@core/library'
+import { companions, localDate, nextOutEpisodeFor, nextSession, showProgress, watchesWith } from '@core/library'
 import { formatDate } from '@core/format'
 import { sessionLabel, toLocalInput } from '../lib/together'
 import { episodeKey, type TitleDetails } from '@core/types'
@@ -42,7 +42,7 @@ export default function WatchWithPanel({ details: d }: { details: TitleDetails }
     <div className="with">
       {watches.map(({ index, watch }) => {
         const view = { ...entry!, episodes: watch.episodes }
-        const next = nextEpisodeFor(view, d.seasons)
+        const next = nextOutEpisodeFor(view, d, localDate(new Date()))
         const p = showProgress(view, d.seasons)
         const nextKey = next ? episodeKey(next.season, next.episode) : null
         const session = nextSession(watch, new Date())
