@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Check } from 'lucide-react'
-import { activeEntry, localDate, nextEpisodeFor } from '@core/library'
+import { activeEntry, localDate, nextOutEpisodeFor } from '@core/library'
 import { episodeKey, STATUS_LABELS, type LibraryEntry, type WatchStatus } from '@core/types'
 import { usePhone } from './store'
 import { getDetails, useLoad } from './cache'
@@ -81,7 +81,8 @@ function Row({ entry, showStatus, providers }: { entry: LibraryEntry; showStatus
 function useNext(entry: LibraryEntry): { season: number; episode: number } | null | undefined {
   const { data } = useLoad(() => getDetails('tv', entry.id), [entry.id])
   if (!data) return undefined
-  return nextEpisodeFor(entry, data.seasons)
+  // Only an episode that's out: when you're waiting on the next one there's nothing to tick.
+  return nextOutEpisodeFor(entry, data, localDate(new Date()))
 }
 
 function NextLine({ entry }: { entry: LibraryEntry }): React.JSX.Element | null {

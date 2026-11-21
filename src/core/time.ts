@@ -1,6 +1,6 @@
 import type { LibraryEntry, SeasonDetails, Preferences, TitleDetails, WatchProviders } from './types'
 import { episodeKey } from './types'
-import { localDate } from './library'
+import { episodeIsOut, localDate } from './library'
 import { onMyServices } from './providers'
 
 /**
@@ -29,16 +29,12 @@ export const episodeMinutes = (d: Pick<TitleDetails, 'runtime'>): number => d.ru
 export function timeLeft(d: RuntimeInfo, entry: LibraryEntry | undefined, today: string): TimeLeft {
   if (entry?.status === 'watched') return { episodes: 0, minutes: 0, estimated: false }
   if (d.type === 'movie') return { episodes: 0, minutes: d.runtime ?? 0, estimated: !d.runtime }
-  const next = d.nextEpisode
-  const unaired = (s: number, e: number): boolean =>
-    !!next && (!next.airDate || next.airDate > today) && (s > next.season || (s === next.season && e >= next.episode))
   const seen = entry?.episodes ?? {}
   let episodes = 0
   for (const s of d.seasons) {
     if (s.number <= 0) continue
-    // A season that hasn't started yet doesn't count at all.
-    if (s.airDate && s.airDate > today) continue
-    for (let e = 1; e <= s.episodeCount; e++) if (!seen[episodeKey(s.number, e)] && !unaired(s.number, e)) episodes++
+    // Episodes (and whole seasons) that aren't out yet don't count at all.
+    for (let e = 1; e <= s.episodeCount; e++) if (!seen[episodeKey(s.number, e)] && episodeIsOut(d, today, s.number, e)) episodes++
   }
   return { episodes, minutes: episodes * episodeMinutes(d), estimated: !d.runtime }
 }
@@ -58,15 +54,11 @@ export function seasonLeft(d: RuntimeInfo, entry: LibraryEntry | undefined, toda
   if (d.type !== 'tv' || entry?.status === 'watched') return null
   const seen = entry?.episodes ?? {}
   if (!Object.keys(seen).length) return null
-  const next = d.nextEpisode
-  const unaired = (s: number, e: number): boolean =>
-    !!next && (!next.airDate || next.airDate > today) && (s > next.season || (s === next.season && e >= next.episode))
   for (const s of [...d.seasons].filter((x) => x.number > 0).sort((a, b) => a.number - b.number)) {
-    if (s.airDate && s.airDate > today) continue
     const list = seasons.find((x) => x.number === s.number)?.episodes ?? []
     const left = { season: s.number, episodes: 0, minutes: 0, estimated: false }
     for (let e = 1; e <= s.episodeCount; e++) {
-      if (seen[episodeKey(s.number, e)] || unaired(s.number, e)) continue
+      if (seen[episodeKey(s.number, e)] || !episodeIsOut(d, today, s.number, e)) continue
       const ep = list.find((x) => x.number === e)
       if (ep?.airDate && ep.airDate > today) continue
       left.episodes++
