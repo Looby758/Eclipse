@@ -629,7 +629,8 @@ button.list-seen.undo:hover { background: var(--glass-hover); }
 .wall.rows .wall-tile { width: var(--row-tile-w); height: var(--row-tile-h); border-radius: 10px; box-shadow: var(--row-tile-shadow); transition: transform 0.5s var(--ease), filter 0.5s var(--ease), box-shadow 0.5s var(--ease); }
 /* The poster under the mouse lifts and brightens, and a soft light follows the mouse (Spotlight Home only). */
 .wall.rows .wall-tile.lifted { position: relative; z-index: 1; transform: scale(1.14); filter: brightness(1.18) saturate(1.15); box-shadow: var(--row-tile-lift-shadow); }
-.wall-torch { position: absolute; inset: 0; pointer-events: none; opacity: 0; mix-blend-mode: soft-light; background: radial-gradient(circle var(--torch-size) at var(--px, -999px) var(--py, -999px), var(--torch), transparent); transition: opacity 0.6s var(--ease); }
+/* The light is a small disc moved with a transform, so following the mouse repaints nothing and restyles none of the posters. */
+.wall-torch { position: absolute; left: 0; top: 0; width: calc(var(--torch-size) * 2); height: calc(var(--torch-size) * 2); margin: calc(-1 * var(--torch-size)) 0 0 calc(-1 * var(--torch-size)); pointer-events: none; opacity: 0; mix-blend-mode: soft-light; background: radial-gradient(circle var(--torch-size) at center, var(--torch), transparent); transform: translate(-999px, -999px); will-change: transform; transition: opacity 0.6s var(--ease); }
 .wall.rows.lit .wall-torch { opacity: 1; }
 :root.wall-pointing .app.spot, :root.wall-pointing .app.spot .spotlight { cursor: pointer; }
 /* Holding Shift on Spotlight Home: everything over the wall fades away so any poster can be clicked. */
