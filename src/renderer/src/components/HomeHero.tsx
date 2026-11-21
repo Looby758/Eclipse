@@ -1,6 +1,7 @@
 import { Search } from 'lucide-react'
 import { useState } from 'react'
-import { entriesWith, isTogether, withTogether } from '@core/library'
+import { entriesWith, isTogether, localDate, withoutWaiting, withTogether } from '@core/library'
+import { useDetailsMany } from '../lib/availability'
 import type { LibraryEntry } from '@core/types'
 import { useApp } from '../store/app'
 import Poster from './Poster'
@@ -21,6 +22,16 @@ export function candidates(entries: LibraryEntry[], soon: string[]): LibraryEntr
   return [...watching, ...next, ...want]
 }
 
+/**
+ * Leaves out shows you're caught up on and waiting for (the next episode or season isn't out yet), so
+ * Home never suggests something you can't watch. Checks the shows you're watching.
+ */
+export function useReadyPicks(picks: LibraryEntry[]): LibraryEntry[] {
+  const keys = [...new Set(picks.filter((p) => p.type === 'tv' && p.status === 'watching').map((p) => p.key))]
+  const { map } = useDetailsMany(keys, keys.length > 0)
+  return withoutWaiting(picks, map, localDate(new Date()))
+}
+
 /** The home screen: one suggestion, big, over the moving poster wall. */
 export default function HomeHero(): React.JSX.Element {
   const library = useApp((s) => s.library)
@@ -28,7 +39,7 @@ export default function HomeHero(): React.JSX.Element {
   const [skip, setSkip] = useState(0)
   // A show you're rewatching counts as one you're watching, with the rewatch's progress.
   const all = entriesWith(library)
-  const picks = withTogether(candidates(all, (library.watchSoon ?? []).map((r) => r.key)), library)
+  const picks = useReadyPicks(withTogether(candidates(all, (library.watchSoon ?? []).map((r) => r.key)), library))
   const pick = picks.length ? picks[skip % picks.length] : null
   const others = picks.filter((e) => e !== pick).slice(0, 3)
   const watchingCount = all.filter((e) => e.status === 'watching').length

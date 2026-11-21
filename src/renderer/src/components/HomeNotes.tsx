@@ -1,6 +1,6 @@
 import { Check, Eye, EyeOff, History, Hourglass, Play, Sparkles, Tv, Users, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { localDate, nextEpisodeFor, nextSession, preferencesOf, sessionIsOn, watchesWith } from '@core/library'
+import { localDate, nextOutEpisodeFor, nextSession, preferencesOf, sessionIsOn, watchesWith } from '@core/library'
 import { sessionLabel } from '../lib/together'
 import { comebacks, daysAfter, stalledShows, type ComebackShow } from '@core/nudges'
 import { servicesNews } from '@core/services'
@@ -38,7 +38,7 @@ function Together(): React.JSX.Element | null {
     .flatMap((e) =>
       watchesWith(e).map(({ index, watch }) => {
         const d = map[e.key]
-        const next = d ? nextEpisodeFor({ ...e, episodes: watch.episodes }, d.seasons) : null
+        const next = d ? nextOutEpisodeFor({ ...e, episodes: watch.episodes }, d, localDate(now)) : null
         const session = nextSession(watch, now)
         const on = sessionIsOn(watch, now)
         const fits = on && d && next ? fitTonight(session && session > now ? session : now, preferencesOf(library), episodeMinutes(d)) : 0
