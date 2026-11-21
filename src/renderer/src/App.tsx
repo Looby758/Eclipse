@@ -111,7 +111,7 @@ export default function App(): React.JSX.Element {
   const openingClass = !playing ? '' : opening === 'play' ? 'opening-hide opening-reveal' : 'opening-reveal'
 
   return (
-    <div className={`app ${onHome ? 'on-home' : 'on-page'} ${spot ? 'spot' : ''} ${swap.current && !onHome ? 'swap' : ''} ${homeStyle === 'spotlight' ? 'frost' : ''} ${openingClass}`}>
+    <div className={`app ${onHome ? 'on-home' : 'on-page'} ${spot ? 'spot' : ''} ${swap.current && !onHome ? 'swap' : ''} ${homeStyle === 'spotlight' ? 'frost' : ''} ${view.name === 'title' && homeStyle === 'spotlight' ? 'st-open' : ''} ${openingClass}`}>
       {/* Spotlight's flat drifting rows stay behind every page, so leaving Home doesn't swap the wall. */}
       <PosterWall rows={homeStyle === 'spotlight'} alive={spot} />
       <div className="veil" aria-hidden />

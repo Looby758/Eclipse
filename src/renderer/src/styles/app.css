@@ -53,6 +53,8 @@ code { font-size: 0.92em; }
 .corner { position: absolute; left: 40px; top: 30px; z-index: 6; }
 [data-platform='mac'] .corner { left: 90px; top: 26px; }
 .brand { display: flex; align-items: center; gap: 10px; font: 800 16px var(--font-display); letter-spacing: 0.14em; color: var(--text-strong); }
+/* Over Spotlight's wall the name sits on the same glass as the pills, so it reads over bright posters. */
+.app.spot .brand { height: 44px; padding: 0 16px 0 8px; border-radius: 99px; background: var(--spot-glass); border: 1px solid var(--line); backdrop-filter: blur(14px); box-shadow: var(--frost-rim); }
 .brand-logo { display: block; flex-shrink: 0; filter: drop-shadow(0 4px 14px rgba(63, 91, 255, 0.35)); }
 .back-btn { display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 18px 0 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--glass); backdrop-filter: blur(16px); cursor: pointer; font-weight: 500; -webkit-app-region: no-drag; transition: background var(--fast); }
 .back-btn:hover { background: var(--glass-hover); }
@@ -623,6 +625,9 @@ button.list-seen.undo:hover { background: var(--glass-hover); }
 
 /* ---- Spotlight Home (Phase 34): drifting rows, a pool of shadow, the Tonight dial ---- */
 .wall.rows { overflow: hidden; }
+/* A Spotlight title page is solid, so once its poster zoom has finished the wall behind it is put away: otherwise
+   its drift keeps the glass pills on the page re-blurring every frame for nothing. It's back the moment you leave. */
+.app.st-open .wall.rows { visibility: hidden; transition: visibility 0s 1.6s; }
 .wall-rows { position: absolute; inset: -60px -200px; display: flex; flex-direction: column; gap: var(--row-gap); }
 .wall-row { display: flex; gap: var(--row-gap); width: max-content; animation: row-left var(--row-speed) linear infinite; }
 .wall-row.right { animation-name: row-right; }
@@ -1493,8 +1498,10 @@ select:hover { border-color: var(--accent); }
 /* Only while the sky is showing: a filter, even one that changes nothing, costs a pass over the whole picture every frame. */
 .st-bg.sky-on img { filter: blur(calc(var(--sky) * 34px)) brightness(calc(1 - var(--sky) * 0.68)) saturate(calc(1 + var(--sky) * 0.2)); }
 .st-sky { position: relative; min-height: 100vh; padding: 0 40px 40px; box-sizing: border-box; -webkit-app-region: no-drag; }
-.st-sky-head { position: sticky; top: 0; z-index: 4; display: flex; align-items: center; gap: 22px; padding: 22px 16px 26px; margin: 0 -40px 0; padding-left: 56px; background: linear-gradient(180deg, rgba(5, 6, 16, 0.85), rgba(5, 6, 16, 0)); opacity: calc((var(--sky) - 0.55) * 2.5); pointer-events: none; }
-[data-platform='win'] .st-sky-head { padding-top: 52px; }
+/* Lines up beside the Back button rather than under it, and stays dark long enough that the sky's own heading
+   scrolling up underneath doesn't show through the name. */
+.st-sky-head { position: sticky; top: 0; z-index: 4; display: flex; align-items: center; gap: 22px; padding: 33px 16px 34px 160px; margin: 0 -40px 0; background: linear-gradient(180deg, rgba(5, 6, 16, 0.94), rgba(5, 6, 16, 0.86) 62%, rgba(5, 6, 16, 0)); opacity: calc((var(--sky) - 0.55) * 2.5); pointer-events: none; }
+[data-platform='mac'] .st-sky-head { padding-top: 29px; padding-left: 210px; }
 .st-sky-head.on { pointer-events: auto; }
 .st-sky-head img { max-height: 40px; max-width: 220px; object-fit: contain; }
 .st-sky-head b { font: 800 22px/1.1 var(--font-display); color: var(--st-ink); }
