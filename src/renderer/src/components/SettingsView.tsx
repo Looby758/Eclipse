@@ -41,7 +41,6 @@ export default function SettingsView(): React.JSX.Element {
   const starWhy = useStarWhy();
   const sounds = useSounds();
   const posterFill = usePosterLook((s) => s.fill);
-  const rainbowWall = usePosterLook((s) => s.rainbow);
   const posterLook = usePosterLook.getState();
   const premiere = usePremiereMode();
 
@@ -177,29 +176,6 @@ export default function SettingsView(): React.JSX.Element {
               onClick={() => posterLook.setFill(false)}
             >
               Off
-            </button>
-          </div>
-          <h3 className="card-sub">Rainbow wall</h3>
-          <p className="muted small">
-            Arranges the poster wall by colour, so it runs through the rainbow
-            from top to bottom.
-          </p>
-          <div className="segmented" role="radiogroup" aria-label="Rainbow wall">
-            <button
-              role="radio"
-              aria-checked={!rainbowWall}
-              className={!rainbowWall ? "on" : ""}
-              onClick={() => posterLook.setRainbow(false)}
-            >
-              Off
-            </button>
-            <button
-              role="radio"
-              aria-checked={rainbowWall}
-              className={rainbowWall ? "on" : ""}
-              onClick={() => posterLook.setRainbow(true)}
-            >
-              On
             </button>
           </div>
           <h3 className="card-sub">Sounds</h3>
