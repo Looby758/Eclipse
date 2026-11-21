@@ -1,6 +1,6 @@
 import { tickEpisode } from '../lib/tickEpisode'
 import TrailerButton from './TrailerButton'
-import { Bookmark, Check, ChevronDown, CircleCheck, CirclePause, CirclePlay, ExternalLink, Hourglass, Image, Plus, Popcorn, RectangleHorizontal, RectangleVertical, RefreshCw, X } from 'lucide-react'
+import { Bookmark, ChartNoAxesGantt, Check, ChevronDown, CircleCheck, CirclePause, CirclePlay, ExternalLink, Hourglass, Image, Plus, Popcorn, RectangleHorizontal, RectangleVertical, RefreshCw, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { formatDate, formatRuntime, plural, stingerLine } from '@core/format'
 import { activeEntry, currentRewatch, localDate, nextEpisodeFor, preferencesOf, watchCount } from '@core/library'
@@ -33,6 +33,8 @@ import TickRing from './TickRing'
 import { FavouriteButton } from './ShelfSheet'
 import { CountdownButton } from './Countdowns'
 import JourneyRibbon from './JourneyRibbon'
+import MyTerms from './MyTerms'
+import { onTimeline } from '@core/timeline'
 import TitleSky from './TitleSky'
 import { journeyOf } from '@core/journey'
 
@@ -265,6 +267,11 @@ export default function SpotlightTitle({ type, id }: { type: MediaType; id: numb
                   </button>
                 ))}
               <TrailerButton className="st-chip" details={d} />
+              {onTimeline(raw) && (
+                <button className="st-chip" onClick={() => useApp.getState().go({ name: 'timeline', focus: d.key })} title="Show me on my timeline">
+                  <ChartNoAxesGantt size={13} /> On my timeline
+                </button>
+              )}
               <SoonChip details={d} />
               <CountdownButton className="st-chip" details={d} />
               <FavouriteButton className="st-chip" title={{ key: d.key, type: d.type, id: d.id, name: d.name, year: d.year, posterPath: d.posterPath, date: d.date }} />
@@ -299,6 +306,7 @@ export default function SpotlightTitle({ type, id }: { type: MediaType; id: numb
                 {count.minutesLeft > 0 && <span>{thisSeason && count.minutesLeft > thisSeason.minutes ? `about ${formatHours(count.minutesLeft)} to finish the show` : `about ${formatHours(count.minutesLeft)} to go`}</span>}
               </div>
             )}
+            <MyTerms titleKey={d.key} className="st-terms" />
             <WhereChip type={d.type} id={d.id} onOpen={() => setPanel('where')} />
             {stale && <span className="st-stale">Offline: details saved earlier</span>}
           </div>

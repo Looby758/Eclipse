@@ -1,7 +1,9 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { imageUrl } from '@core/tmdb'
-import { posterFor } from '@core/posters'
+import { shownPoster } from '@core/posterLook'
 import { OWN_ENOUGH, WALL_COLUMNS, WALL_PER_COLUMN, wallGrid, wallPosters } from '../lib/wall'
+import { usePosterLook } from '../lib/posterLook'
+import { FilledPoster } from './Poster'
 import type { MediaType, SearchResult, TitleRef as FullRef } from '@core/types'
 import PosterMenu, { justClosedMenu, type PosterMenuAt } from './PosterMenu'
 import { useApp } from '../store/app'
@@ -37,6 +39,8 @@ interface Tile {
   url: string | null
   path: string | null
   hue: number
+  /** Phase 63: how much of it is in colour, for a show you're part-way through. */
+  fill?: number | null
 }
 
 type TitleRef = { type: MediaType; id: number }
@@ -57,14 +61,16 @@ function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: b
   const [recTitles, setRecTitles] = useState<SearchResult[]>([])
   // Phase 50: on premiere night, Home's rows are all that show's posters.
   const premiere = usePremiereWall((s) => (rows && alive && s.posters?.length ? s : null))
+  const info = usePosterLook((s) => s.info)
+  const fillOn = usePosterLook((s) => s.fill)
 
   const own = useMemo(
     () =>
       Object.values(library.entries)
-        .filter((e) => posterFor(library, e.key, e.title.posterPath))
+        .filter((e) => shownPoster(library, e.key, e.title.posterPath, info[e.key]))
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-        .map((e) => posterFor(library, e.key, e.title.posterPath)!),
-    [library]
+        .map((e) => shownPoster(library, e.key, e.title.posterPath, info[e.key])!),
+    [library, info]
   )
   const needTrending = hasKey && new Set(own).size < OWN_ENOUGH
 
@@ -97,12 +103,23 @@ function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: b
   const titles = useMemo(() => {
     const map = new Map<string, FullRef>()
     for (const e of Object.values(library.entries)) {
-      const path = posterFor(library, e.key, e.title.posterPath)
+      const path = shownPoster(library, e.key, e.title.posterPath, info[e.key])
       if (path && !map.has(path)) map.set(path, { key: e.key, type: e.type, id: e.id, name: e.title.name, year: e.title.year, posterPath: e.title.posterPath })
     }
     for (const t of [...recTitles, ...trendingTitles]) if (t.posterPath && !map.has(t.posterPath)) map.set(t.posterPath, { key: t.key, type: t.type, id: t.id, name: t.name, year: t.year, posterPath: t.posterPath })
     return map
-  }, [library, recTitles, trendingTitles])
+  }, [library, recTitles, trendingTitles, info])
+  // Phase 63: how far through each part-watched show's poster is, by the poster shown on the wall.
+  const fills = useMemo(() => {
+    const out = new Map<string, number>()
+    if (!fillOn) return out
+    for (const [path, t] of titles) {
+      const f = info[t.key]?.fill
+      if (f != null) out.set(path, f)
+    }
+    return out
+  }, [titles, info, fillOn])
+
   const [menu, setMenu] = useState<PosterMenuAt | null>(null)
   const closeMenu = useCallback(() => setMenu(null), [])
   useEffect(() => {
@@ -130,12 +147,12 @@ function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: b
       const col: Tile[] = []
       for (let k = 0; k < WALL_PER_COLUMN; k++) {
         const path = posters[c + k * WALL_COLUMNS]
-        col.push({ key: `${c}-${k}`, url: path ? imageUrl(path, 'w185') : null, path: path ?? null, hue: HUES[(c * 5 + k) % HUES.length] })
+        col.push({ key: `${c}-${k}`, url: path ? imageUrl(path, 'w185') : null, path: path ?? null, hue: HUES[(c * 5 + k) % HUES.length], fill: path ? fills.get(path) : null })
       }
       cols.push([...col, ...col.map((t) => ({ ...t, key: `${t.key}b` }))])
     }
     return cols
-  }, [own, trending, recs])
+  }, [own, trending, recs, fills])
 
   // Spotlight Home: flat rows drifting sideways, alternate rows the other way.
   const lines = useMemo(() => {
@@ -143,14 +160,16 @@ function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: b
     return Array.from({ length: ROWS }, (_, r) => {
       const row: Tile[] = Array.from({ length: PER_ROW }, (_, k) => {
         const path = posters[r + k * ROWS]
-        return { key: `${r}-${k}`, url: path ? imageUrl(path, 'w185') : null, path: path ?? null, hue: HUES[(r * 5 + k) % HUES.length] }
+        return { key: `${r}-${k}`, url: path ? imageUrl(path, 'w185') : null, path: path ?? null, hue: HUES[(r * 5 + k) % HUES.length], fill: path && !premiere ? fills.get(path) : null }
       })
       return [...row, ...row.map((t) => ({ ...t, key: `${t.key}b` }))]
     })
-  }, [own, trending, recs, premiere?.posters, ROWS, PER_ROW])
+  }, [own, trending, recs, premiere?.posters, ROWS, PER_ROW, fills])
 
   const tile = (t: Tile): React.JSX.Element =>
-    t.url ? (
+    t.url && t.fill != null ? (
+      <FilledPoster key={t.key} className="wall-tile" url={t.url} name="" fill={t.fill} data-path={t.path ?? undefined} />
+    ) : t.url ? (
       <img key={t.key} className="wall-tile" src={t.url} alt="" decoding="async" draggable={false} data-path={t.path ?? undefined} />
     ) : (
       <div key={t.key} className="wall-tile" style={{ background: `linear-gradient(165deg, hsl(${t.hue} 85% 62%), hsl(272 65% 28%) 70%, hsl(250 50% 10%))` }} />
@@ -250,7 +269,9 @@ function usePointerLift(ref: React.RefObject<HTMLDivElement | null>, enabled: bo
     // Over the dial, buttons, pills or the Home column the wall stays as it is (while peeking they're faded
     // out and can't be pointed at, so everything counts as the wall).
     const OVER = '.spot-center, .spot-pills, .spot-waiting, .opening-layer, .poster-menu, button, a, input, select'
-    const overUi = (t: EventTarget | null): boolean => !peek && t instanceof Element && !!t.closest(OVER)
+    // A layer on top of everything (a turned-over poster, a trailer) always shields the wall, even while peeking.
+    const ABOVE = '.flip-scrim, .flip, .trailer-layer'
+    const overUi = (t: EventTarget | null): boolean => t instanceof Element && (!!t.closest(ABOVE) || (!peek && !!t.closest(OVER)))
     const onMove = (e: PointerEvent): void => {
       x = e.clientX
       y = e.clientY

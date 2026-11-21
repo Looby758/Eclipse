@@ -287,6 +287,8 @@ export interface Library {
   milestones?: string[]
   /** Countdowns on Home: films and shows you're waiting for, in the order you added them. */
   countdowns?: TitleRef[]
+  /** Phase 64: names you gave eras on your timeline, by era id ("tv:1402@2021-11"). */
+  eraNames?: Record<string, string>
 }
 
 /**

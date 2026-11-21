@@ -12,6 +12,7 @@ import Sheet from './Sheet'
 import Poster from './Poster'
 import { usePremieres } from '../lib/premiere'
 import StarRating from './StarRating'
+import MyTerms from './MyTerms'
 
 type Room = 'shelf' | 'favourites'
 
@@ -236,6 +237,7 @@ function BoxCase({ box, onClose }: { box: FinishedBox; onClose: () => void }): R
             {c.days && c.days > 1 && <Stat value={plural(c.days, 'day')} label="from first to last" />}
             {c.timesThrough > 1 && <Stat value={`${c.timesThrough}×`} label="all the way through" />}
           </div>
+          <MyTerms titleKey={box.key} className="case-terms" />
 
           {facts.length > 0 && (
             <dl className="case-facts">

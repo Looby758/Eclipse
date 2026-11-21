@@ -7,6 +7,7 @@ import { normalizeLinks, normalizeMoments } from './watching'
 import { normalizeTaste } from './taste'
 import { normalizePosters } from './posters'
 import { normalizeFavourites } from './favourites'
+import { normalizeEraNames } from './timeline'
 import { normalizeCountdowns } from './countdowns'
 import { cleanReactions, dropUnticked } from './reactions'
 
@@ -425,6 +426,7 @@ export function normalizeLibrary(raw: unknown): Library {
   const rawFavourites = raw && typeof raw === 'object' ? (raw as { favourites?: unknown }).favourites : undefined
   const rawMilestones = raw && typeof raw === 'object' ? (raw as { milestones?: unknown }).milestones : undefined
   const rawCountdowns = raw && typeof raw === 'object' ? (raw as { countdowns?: unknown }).countdowns : undefined
+  const rawEraNames = raw && typeof raw === 'object' ? (raw as { eraNames?: unknown }).eraNames : undefined
   const finish = (): Library => {
     const posters = normalizePosters(rawPosters)
     if (posters) lib.posters = posters
@@ -438,6 +440,8 @@ export function normalizeLibrary(raw: unknown): Library {
     }
     const countdowns = normalizeCountdowns(rawCountdowns)
     if (countdowns) lib.countdowns = countdowns
+    const eraNames = normalizeEraNames(rawEraNames)
+    if (eraNames) lib.eraNames = eraNames
     const taste = normalizeTaste(rawTaste)
     if (taste) lib.recsTaste = taste
     if (Array.isArray(rawApplied)) {

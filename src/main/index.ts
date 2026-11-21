@@ -29,6 +29,9 @@ import { orderPosters, setBackdrop, setPoster } from '@core/posters'
 import { moveFavourite, setFavourite } from '@core/favourites'
 import { markMilestones, milestoneBoard, milestoneKeys } from '@core/milestones'
 import { allTimeStats } from '@core/stats'
+import { myTerms } from '@core/myterms'
+import type { TitleKey } from '@core/types'
+import { setEraName, timelineOf } from '@core/timeline'
 import { setCountdown } from '@core/countdowns'
 import { CATCH_UP_ID, dismissCatchUp } from '@core/catchup'
 import { markAnnouncedSeen } from '@core/announced'
@@ -374,6 +377,21 @@ function setupIpc(): void {
       return { stats: allTimeStats(lib, details, localDate(new Date())), milestones: milestoneBoard(lib, details), shown: lib.milestones?.length ?? 0 }
     })
   )
+  // Phase 61: your time on something, in terms of your own history.
+  ipcMain.handle('stats:myTerms', (_e, key: string) =>
+    attempt(async () => {
+      const details = await tmdb.detailsMany(milestoneKeys(getLibrary()))
+      return myTerms(getLibrary(), details, String(key) as TitleKey)
+    })
+  )
+  // Phase 64: everything you've watched along a line of dates, with the eras of your watching.
+  ipcMain.handle('timeline:data', () =>
+    attempt(async () => {
+      const details = await tmdb.detailsMany(milestoneKeys(getLibrary()))
+      return timelineOf(getLibrary(), details)
+    })
+  )
+  ipcMain.handle('timeline:eraName', (_e, id: string, name: string | null) => saveLibrary(setEraName(getLibrary(), String(id), typeof name === 'string' ? name : null)))
   ipcMain.handle('recs:list', () => attempt(() => tmdb.recommendationsFor(getLibrary())))
   // Interested (adds it to Want to watch) or Not for me (hides it); either way it learns from the
   // title's creators, network, cast and keywords. Undo puts everything back as it was.

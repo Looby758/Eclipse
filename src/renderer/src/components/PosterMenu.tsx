@@ -1,10 +1,11 @@
-import { Check, CircleCheck, Hourglass, ListPlus, Plus, SquareArrowOutUpRight } from 'lucide-react'
+import { Check, CircleCheck, FlipHorizontal2, Hourglass, ListPlus, Plus, SquareArrowOutUpRight } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { customListsWith, listsOf } from '@core/lists'
 import { isWatchSoon } from '@core/watchsoon'
 import type { TitleRef } from '@core/types'
 import { useApp } from '../store/app'
+import { flipPoster } from './PosterFlip'
 
 /** When a click outside last closed the menu: that click only closes it, it doesn't open the poster under it. */
 let closedByClickAt = 0
@@ -94,6 +95,9 @@ export default function PosterMenu({ at, onClose }: { at: PosterMenuAt; onClose:
       </div>
       <button role="menuitem" onClick={() => run(async () => go({ name: 'title', type: t.type, id: t.id }))}>
         <SquareArrowOutUpRight size={15} /> Open
+      </button>
+      <button role="menuitem" onClick={() => run(async () => flipPoster(t))}>
+        <FlipHorizontal2 size={15} /> Turn it over
       </button>
       <button role="menuitem" onClick={() => run(async () => setLibrary(await window.api.setWatchSoon(t, !soon)))}>
         <Hourglass size={15} /> {soon ? 'Take off Watch soon' : 'Watch soon'}

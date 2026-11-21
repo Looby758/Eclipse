@@ -1,4 +1,4 @@
-import { ChartNoAxesColumn, Check, Hourglass, Library, LibraryBig, ListChecks, Moon, Search, Settings, Sparkles } from 'lucide-react'
+import { ChartNoAxesColumn, ChartNoAxesGantt, Check, Hourglass, Library, LibraryBig, ListChecks, Moon, Search, Settings, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { entriesWith, isTogether, localDate, nextOutEpisodeFor, nextSession, preferencesOf, withTogether } from '@core/library'
 import { sessionLabel } from '../lib/together'
@@ -24,6 +24,7 @@ const NAV: { view: View['name']; label: string; icon: typeof Moon }[] = [
   { view: 'soon', label: 'Soon', icon: Hourglass },
   { view: 'lists', label: 'Lists', icon: ListChecks },
   { view: 'shelf', label: 'Shelf', icon: LibraryBig },
+  { view: 'timeline', label: 'Timeline', icon: ChartNoAxesGantt },
   { view: 'stats', label: 'Stats', icon: ChartNoAxesColumn }
 ]
 
