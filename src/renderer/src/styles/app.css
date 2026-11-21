@@ -883,7 +883,9 @@ select:hover { border-color: var(--accent); }
 .stitle h1, .stitle h2, .stitle h3 { color: var(--st-ink); background: none; -webkit-text-fill-color: currentColor; }
 .stitle .st-drawer h2, .stitle .st-drawer h3 { color: var(--text); }
 .st-bg { position: fixed; inset: 0; overflow: hidden; pointer-events: none; }
-.st-bg img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 25%; animation: st-drift 40s ease-in-out infinite alternate, st-fade 0.8s ease both; }
+/* The picture pushes in slowly once when the page opens, then holds. Drifting for ever made every glass pill and card
+   on the page blur it again on every frame, which kept the graphics chip busy the whole time a title was open. */
+.st-bg img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 25%; animation: st-drift 16s cubic-bezier(0.25, 0.6, 0.3, 1) both, st-fade 0.8s ease both; }
 .st-bg::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 70% 80% at 0% 40%, rgba(5, 6, 16, 0.88) 10%, rgba(5, 6, 16, 0.4) 45%, rgba(5, 6, 16, 0) 75%), linear-gradient(0deg, rgba(5, 6, 16, 0.96) 0%, rgba(5, 6, 16, 0.72) 38%, rgba(5, 6, 16, 0) 62%), linear-gradient(180deg, rgba(5, 6, 16, 0.55), rgba(5, 6, 16, 0) 22%), linear-gradient(270deg, rgba(5, 6, 16, 0.5), rgba(5, 6, 16, 0) 30%); }
 @keyframes st-drift { from { transform: scale(1.04); } to { transform: scale(1.1) translate(-1%, -1%); } }
 @keyframes st-fade { from { opacity: 0; } }
@@ -1487,7 +1489,8 @@ select:hover { border-color: var(--accent); }
 
 /* …and on a show's page: scroll past the cast into the sky */
 .stitle { --sky: 0; }
-.st-bg img { filter: blur(calc(var(--sky) * 34px)) brightness(calc(1 - var(--sky) * 0.68)) saturate(calc(1 + var(--sky) * 0.2)); }
+/* Only while the sky is showing: a filter, even one that changes nothing, costs a pass over the whole picture every frame. */
+.st-bg.sky-on img { filter: blur(calc(var(--sky) * 34px)) brightness(calc(1 - var(--sky) * 0.68)) saturate(calc(1 + var(--sky) * 0.2)); }
 .st-sky { position: relative; min-height: 100vh; padding: 0 40px 40px; box-sizing: border-box; -webkit-app-region: no-drag; }
 .st-sky-head { position: sticky; top: 0; z-index: 4; display: flex; align-items: center; gap: 22px; padding: 22px 16px 26px; margin: 0 -40px 0; padding-left: 56px; background: linear-gradient(180deg, rgba(5, 6, 16, 0.85), rgba(5, 6, 16, 0)); opacity: calc((var(--sky) - 0.55) * 2.5); pointer-events: none; }
 [data-platform='win'] .st-sky-head { padding-top: 52px; }
