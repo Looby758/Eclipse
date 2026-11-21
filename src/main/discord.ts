@@ -30,6 +30,11 @@ let plainOnly = false
 /** When the current thing was first seen paused. */
 let pausedSince: { id: string; at: number } | null = null
 let changed: () => void = () => undefined
+/** Where the Discord app might be listening. Tests point this at their own stand-in, so they never touch a real running Discord. */
+let paths = (): string[] => ipcPaths(process.platform, process.env)
+export function useDiscordPaths(where: () => string[]): void {
+  paths = where
+}
 
 export const discordOn = (): boolean => !!loadSettings().discordOn
 const appId = (): string => (loadSettings().discordAppId ?? '').trim()
@@ -151,7 +156,7 @@ function ensure(): void {
   if (state === 'error' && Date.now() - lastTry < 5 * 60_000) return
   lastTry = Date.now()
   setState('connecting')
-  tryConnect(ipcPaths(process.platform, process.env))
+  tryConnect(paths())
 }
 
 /** What's playing changed (or was checked again): update the status, or clear it. */

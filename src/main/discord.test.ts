@@ -22,11 +22,14 @@ const until = async (check: () => boolean): Promise<void> => {
 /** A stand-in for the Discord app on its local connection. */
 describe('talking to Discord', () => {
   const dir = mkdtempSync(join(tmpdir(), 'discord-'))
+  // A name of our own, never Discord's real one, so a Discord app running on this computer is left alone.
+  // Windows uses a named pipe; elsewhere it's a socket file in the temp folder.
+  const name = `eclipse-test-discord-${process.pid}-${Date.now()}`
+  const where = process.platform === 'win32' ? `\\\\?\\pipe\\${name}` : join(dir, name)
   const got: { op: number; data: any }[] = []
   let server: Server
   let client: Socket | null = null
   beforeAll(async () => {
-    process.env.XDG_RUNTIME_DIR = dir
     server = createServer((s) => {
       client = s
       let buf = Buffer.alloc(0)
@@ -39,8 +42,6 @@ describe('talking to Discord', () => {
         }
       })
     })
-    // Windows talks to Discord over a named pipe, which ignores XDG_RUNTIME_DIR; elsewhere it's a socket file in that folder.
-    const where = process.platform === 'win32' ? '\\\\?\\pipe\\discord-ipc-0' : join(dir, 'discord-ipc-0')
     await new Promise<void>((res, rej) => server.once('error', rej).listen(where, res))
   })
   afterAll(() => {
@@ -50,6 +51,7 @@ describe('talking to Discord', () => {
 
   it('stays quiet until switched on with an ID, then sets and clears the status', async () => {
     const d = await import('./discord')
+    d.useDiscordPaths(() => [where])
     d.setupDiscord(() => undefined)
     d.updateDiscord(r, null)
     expect(d.discordStatus().state).toBe('off')
@@ -88,7 +90,7 @@ describe('talking to Discord', () => {
     server.close()
     client?.destroy()
     await new Promise((res) => setTimeout(res, 50))
-    rmSync(join(dir, 'discord-ipc-0'), { force: true })
+    if (process.platform !== 'win32') rmSync(where, { force: true })
     d.setDiscord({ on: true })
     d.updateDiscord(r, null)
     await until(() => d.discordStatus().state === 'not-running')
