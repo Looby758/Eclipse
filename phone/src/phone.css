@@ -780,6 +780,26 @@ button:disabled {
   font-size: 12px;
 }
 
+/* A title's page slides in a touch from the right, and the menu drops in, rather than both just appearing. */
+.page {
+  animation: page-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+}
+.menu {
+  animation: menu-in 160ms ease-out backwards;
+}
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation: none !important;

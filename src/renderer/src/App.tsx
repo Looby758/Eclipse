@@ -1,6 +1,6 @@
 import { ArrowLeft } from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { currentView, useApp } from './store/app'
+import { useEffect, useRef, useState } from 'react'
+import { currentView, useApp, type View } from './store/app'
 import PosterWall from './components/PosterWall'
 import Dock from './components/Dock'
 import Setup from './components/Setup'
@@ -52,6 +52,13 @@ export default function App(): React.JSX.Element {
   const welcoming = useWelcome((s) => s.step !== null)
   const { setStatus, setLibrary, back, go } = useApp.getState()
   useFinaleWatcher()
+  // Going from one page straight to another (not via Home): the glass stays and only its contents change (see .app.swap).
+  const lastView = useRef(view)
+  const swap = useRef(false)
+  if (lastView.current !== view) {
+    swap.current = onSheet(lastView.current, homeStyle) && onSheet(view, homeStyle)
+    lastView.current = view
+  }
   // Phase 51: the opening, while it plays ('play'), then while Home fades up ('reveal').
   const [opening, setOpening] = useState<'off' | 'play' | 'reveal'>('off')
 
@@ -104,7 +111,7 @@ export default function App(): React.JSX.Element {
   const openingClass = !playing ? '' : opening === 'play' ? 'opening-hide opening-reveal' : 'opening-reveal'
 
   return (
-    <div className={`app ${onHome ? 'on-home' : 'on-page'} ${spot ? 'spot' : ''} ${homeStyle === 'spotlight' ? 'frost' : ''} ${openingClass}`}>
+    <div className={`app ${onHome ? 'on-home' : 'on-page'} ${spot ? 'spot' : ''} ${swap.current && !onHome ? 'swap' : ''} ${homeStyle === 'spotlight' ? 'frost' : ''} ${view.name === 'title' && homeStyle === 'spotlight' ? 'st-open' : ''} ${openingClass}`}>
       {/* Spotlight's flat drifting rows stay behind every page, so leaving Home doesn't swap the wall. */}
       <PosterWall rows={homeStyle === 'spotlight'} alive={spot} />
       <div className="veil" aria-hidden />
@@ -178,3 +185,6 @@ export default function App(): React.JSX.Element {
     </div>
   )
 }
+
+/** Pages drawn on a sheet of glass: everything but Home, and title pages when they're full-window (Spotlight). */
+const onSheet = (v: View, homeStyle: string): boolean => v.name !== 'home' && !(v.name === 'title' && homeStyle === 'spotlight')
