@@ -11,6 +11,7 @@ import type { Recommendation } from '@core/recommend'
 import type { PhoneConflict } from '@core/phone'
 import type { PosterOption } from '@core/posters'
 import type { BoxSetCard, ComingSoon } from '@core/shelf'
+import type { Timeline } from '@core/timeline'
 import type { NowPlaying, Recognised, Suggestion, UnknownShow } from '@core/watching'
 import type { CollectionDetails, Credits, ListSource, PartEpisodes, PersonDetails, PersonResult, TitleRef, TmdbListDetails } from '@core/types'
 import type { Library, MediaType, PlannedTime, Preferences, Reaction, Provider, SearchResult, SeasonDetails, TitleDetails, TitleKey, TitleSnapshot, WatchProviders, WatchStatus } from '@core/types'
@@ -236,6 +237,12 @@ export interface EclipseApi {
   comingSoon(): Promise<Result<ComingSoon[]>>
   /** Phase 52: the back of a finished box set: your dates, hours, who with, and its credits. */
   boxSet(key: TitleKey): Promise<Result<BoxSetCard>>
+  /** Phase 61: your time on a title compared with your own history ("Breaking Bad three times over"). */
+  myTerms(key: TitleKey): Promise<Result<string[]>>
+  /** Phase 64: everything you've watched along a line of dates, with the eras of your watching. */
+  timeline(): Promise<Result<Timeline>>
+  /** Phase 64: renames an era on the timeline, or gives it back Eclipse's name with null. */
+  setEraName(id: string, name: string | null): Promise<Library>
 
   /** What's coming up from your library: watchlist films, new seasons (or every episode) of shows you follow. */
   calendarPreview(): Promise<Result<ReleaseEvent[]>>

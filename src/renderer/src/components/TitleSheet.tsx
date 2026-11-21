@@ -1,5 +1,5 @@
 import TrailerButton from './TrailerButton'
-import { ExternalLink, Image as ImageIcon, Popcorn, RefreshCw } from 'lucide-react'
+import { ChartNoAxesGantt, ExternalLink, Image as ImageIcon, Popcorn, RefreshCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { formatDate, formatRuntime, plural, stingerLine } from '@core/format'
 import { tmdbPageUrl } from '@core/tmdb'
@@ -10,6 +10,8 @@ import PosterPicker from './PosterPicker'
 import { FavouriteButton } from './ShelfSheet'
 import { CountdownButton } from './Countdowns'
 import JourneyRibbon from './JourneyRibbon'
+import MyTerms from './MyTerms'
+import { onTimeline } from '@core/timeline'
 import { journeyOf } from '@core/journey'
 import { useApp } from '../store/app'
 import Sheet from './Sheet'
@@ -37,6 +39,7 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
   const [glow, setGlow] = useState<Hsl>(DEFAULT_GLOW)
   const [focus, setFocus] = useState<EpisodeFocus | null>(null)
   const chosenPoster = useApp((s) => s.library.posters?.[`${type}:${id}`])
+  const library = useApp((s) => s.library)
   const [picking, setPicking] = useState(false)
 
   const load = async (refresh = false): Promise<void> => {
@@ -116,6 +119,12 @@ export default function TitleSheet({ type, id }: { type: MediaType; id: number }
           <TrailerButton className="btn glass fav-toggle" details={d} />
           <CountdownButton className="btn glass fav-toggle" details={d} />
           <FavouriteButton className="btn glass fav-toggle" title={{ key: d.key, type: d.type, id: d.id, name: d.name, year: d.year, posterPath: d.posterPath, date: d.date }} />
+          {onTimeline(library.entries[d.key]) && (
+            <button className="btn glass fav-toggle" onClick={() => useApp.getState().go({ name: 'timeline', focus: d.key })}>
+              <ChartNoAxesGantt size={16} /> On my timeline
+            </button>
+          )}
+          <MyTerms titleKey={d.key} />
           <div className="row" style={{ marginTop: 10 }}>
             <ContinueButton titleKey={d.key} />
           </div>

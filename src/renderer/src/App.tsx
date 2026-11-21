@@ -15,6 +15,7 @@ import ServicesSheet from './components/ServicesSheet'
 import RepairSheet from './components/RepairSheet'
 import YearSheet from './components/YearSheet'
 import StatsSheet from './components/StatsSheet'
+import TimelineSheet from './components/TimelineSheet'
 import LibrarySheet from './components/LibrarySheet'
 import SearchSheet from './components/SearchSheet'
 import TitleSheet from './components/TitleSheet'
@@ -34,7 +35,9 @@ import StartAsk from './components/StartAsk'
 import PhoneAsk from './components/PhoneAsk'
 import ZoomLayer from './components/ZoomLayer'
 import Finale from './components/Finale'
+import PosterFlip from './components/PosterFlip'
 import { useFinaleWatcher } from './lib/finale'
+import { usePosterLookWatcher } from './lib/posterLook'
 import Opening from './components/Opening'
 import { shouldPlayOpening } from './lib/opening'
 import { useHomeStyle } from './lib/homeStyle'
@@ -52,6 +55,7 @@ export default function App(): React.JSX.Element {
   const welcoming = useWelcome((s) => s.step !== null)
   const { setStatus, setLibrary, back, go } = useApp.getState()
   useFinaleWatcher()
+  usePosterLookWatcher()
   // Phase 51: the opening, while it plays ('play'), then while Home fades up ('reveal').
   const [opening, setOpening] = useState<'off' | 'play' | 'reveal'>('off')
 
@@ -157,6 +161,7 @@ export default function App(): React.JSX.Element {
           {view.name === 'services' && <ServicesSheet />}
           {view.name === 'repair' && <RepairSheet />}
           {view.name === 'stats' && <StatsSheet />}
+          {view.name === 'timeline' && <TimelineSheet key={view.focus ?? 'all'} focus={view.focus} />}
           {view.name === 'year' && <YearSheet key={view.year ?? 'now'} year={view.year} />}
           {view.name === 'list' && <ListSheet key={`${view.id}${view.map ? ':map' : ''}`} id={view.id} map={view.map} />}
           {view.name === 'title' &&
@@ -173,6 +178,7 @@ export default function App(): React.JSX.Element {
           <PhoneAsk />
           <ZoomLayer />
           <Finale />
+          <PosterFlip />
         </>
       )}
     </div>

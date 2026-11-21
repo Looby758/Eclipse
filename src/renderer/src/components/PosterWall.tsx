@@ -1,7 +1,10 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { imageUrl } from '@core/tmdb'
-import { posterFor } from '@core/posters'
-import { OWN_ENOUGH, WALL_COLUMNS, WALL_PER_COLUMN, wallGrid, wallPosters } from '../lib/wall'
+import { shownPoster } from '@core/posterLook'
+import { OWN_ENOUGH, WALL_COLUMNS, WALL_PER_COLUMN, rainbowLines, wallGrid, wallPosters, type PosterColour } from '../lib/wall'
+import { usePosterLook } from '../lib/posterLook'
+import { knownColour, posterColour } from '../lib/posterHue'
+import { FilledPoster } from './Poster'
 import type { MediaType, SearchResult, TitleRef as FullRef } from '@core/types'
 import PosterMenu, { justClosedMenu, type PosterMenuAt } from './PosterMenu'
 import { useApp } from '../store/app'
@@ -37,6 +40,8 @@ interface Tile {
   url: string | null
   path: string | null
   hue: number
+  /** Phase 63: how much of it is in colour, for a show you're part-way through. */
+  fill?: number | null
 }
 
 type TitleRef = { type: MediaType; id: number }
@@ -57,14 +62,17 @@ function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: b
   const [recTitles, setRecTitles] = useState<SearchResult[]>([])
   // Phase 50: on premiere night, Home's rows are all that show's posters.
   const premiere = usePremiereWall((s) => (rows && alive && s.posters?.length ? s : null))
+  const info = usePosterLook((s) => s.info)
+  const fillOn = usePosterLook((s) => s.fill)
+  const rainbow = usePosterLook((s) => s.rainbow)
 
   const own = useMemo(
     () =>
       Object.values(library.entries)
-        .filter((e) => posterFor(library, e.key, e.title.posterPath))
+        .filter((e) => shownPoster(library, e.key, e.title.posterPath, info[e.key]))
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-        .map((e) => posterFor(library, e.key, e.title.posterPath)!),
-    [library]
+        .map((e) => shownPoster(library, e.key, e.title.posterPath, info[e.key])!),
+    [library, info]
   )
   const needTrending = hasKey && new Set(own).size < OWN_ENOUGH
 
@@ -97,12 +105,43 @@ function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: b
   const titles = useMemo(() => {
     const map = new Map<string, FullRef>()
     for (const e of Object.values(library.entries)) {
-      const path = posterFor(library, e.key, e.title.posterPath)
+      const path = shownPoster(library, e.key, e.title.posterPath, info[e.key])
       if (path && !map.has(path)) map.set(path, { key: e.key, type: e.type, id: e.id, name: e.title.name, year: e.title.year, posterPath: e.title.posterPath })
     }
     for (const t of [...recTitles, ...trendingTitles]) if (t.posterPath && !map.has(t.posterPath)) map.set(t.posterPath, { key: t.key, type: t.type, id: t.id, name: t.name, year: t.year, posterPath: t.posterPath })
     return map
-  }, [library, recTitles, trendingTitles])
+  }, [library, recTitles, trendingTitles, info])
+  // Phase 63: how far through each part-watched show's poster is, by the poster shown on the wall.
+  const fills = useMemo(() => {
+    const out = new Map<string, number>()
+    if (!fillOn) return out
+    for (const [path, t] of titles) {
+      const f = info[t.key]?.fill
+      if (f != null) out.set(path, f)
+    }
+    return out
+  }, [titles, info, fillOn])
+
+  // Phase 62: the rainbow wall. Every poster's main colour, worked out once (and remembered), then the
+  // wall is laid out in bands of colour. Until the colours are known the wall stays as it was.
+  const pool = useMemo(() => [...new Set(wallPosters(own, trending, undefined, recs))], [own, trending, recs])
+  const [colours, setColours] = useState<Record<string, PosterColour | undefined>>({})
+  useEffect(() => {
+    if (!rainbow || premiere) return
+    let live = true
+    const known: Record<string, PosterColour | undefined> = {}
+    for (const p of pool) known[p] = knownColour(p)
+    setColours(known)
+    const missing = pool.filter((p) => !known[p])
+    if (!missing.length) return
+    Promise.all(missing.map((p) => posterColour(p).then((c) => [p, c ?? undefined] as const))).then((got) => {
+      if (live) setColours((c) => ({ ...c, ...Object.fromEntries(got) }))
+    })
+    return () => {
+      live = false
+    }
+  }, [rainbow, pool, !!premiere])
+  const rainbowReady = rainbow && !premiere && pool.length > 0 && pool.every((p) => p in colours)
   const [menu, setMenu] = useState<PosterMenuAt | null>(null)
   const closeMenu = useCallback(() => setMenu(null), [])
   useEffect(() => {
@@ -125,32 +164,37 @@ function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: b
 
   const columns = useMemo(() => {
     const posters = wallPosters(own, trending, undefined, recs)
+    const bands = rainbowReady ? rainbowLines(pool, colours, WALL_COLUMNS, WALL_PER_COLUMN) : null
     const cols: Tile[][] = []
     for (let c = 0; c < WALL_COLUMNS; c++) {
       const col: Tile[] = []
       for (let k = 0; k < WALL_PER_COLUMN; k++) {
-        const path = posters[c + k * WALL_COLUMNS]
-        col.push({ key: `${c}-${k}`, url: path ? imageUrl(path, 'w185') : null, path: path ?? null, hue: HUES[(c * 5 + k) % HUES.length] })
+        const path = bands ? bands[c]?.[k] : posters[c + k * WALL_COLUMNS]
+        col.push({ key: `${c}-${k}`, url: path ? imageUrl(path, 'w185') : null, path: path ?? null, hue: HUES[(c * 5 + k) % HUES.length], fill: path ? fills.get(path) : null })
       }
       cols.push([...col, ...col.map((t) => ({ ...t, key: `${t.key}b` }))])
     }
     return cols
-  }, [own, trending, recs])
+  }, [own, trending, recs, fills, rainbowReady, colours, pool])
 
   // Spotlight Home: flat rows drifting sideways, alternate rows the other way.
   const lines = useMemo(() => {
     const posters = premiere ? wallPosters(premiere.posters!, [], ROWS * PER_ROW) : wallPosters(own, trending, ROWS * PER_ROW, recs)
+    // Rainbow: each row is one band of colour, so the colours run from the top of the window to the bottom.
+    const bands = !premiere && rainbowReady ? rainbowLines(pool, colours, ROWS, PER_ROW) : null
     return Array.from({ length: ROWS }, (_, r) => {
       const row: Tile[] = Array.from({ length: PER_ROW }, (_, k) => {
-        const path = posters[r + k * ROWS]
-        return { key: `${r}-${k}`, url: path ? imageUrl(path, 'w185') : null, path: path ?? null, hue: HUES[(r * 5 + k) % HUES.length] }
+        const path = bands ? bands[r]?.[k] : posters[r + k * ROWS]
+        return { key: `${r}-${k}`, url: path ? imageUrl(path, 'w185') : null, path: path ?? null, hue: HUES[(r * 5 + k) % HUES.length], fill: path && !premiere ? fills.get(path) : null }
       })
       return [...row, ...row.map((t) => ({ ...t, key: `${t.key}b` }))]
     })
-  }, [own, trending, recs, premiere?.posters, ROWS, PER_ROW])
+  }, [own, trending, recs, premiere?.posters, ROWS, PER_ROW, fills, rainbowReady, colours, pool])
 
   const tile = (t: Tile): React.JSX.Element =>
-    t.url ? (
+    t.url && t.fill != null ? (
+      <FilledPoster key={t.key} className="wall-tile" url={t.url} name="" fill={t.fill} data-path={t.path ?? undefined} />
+    ) : t.url ? (
       <img key={t.key} className="wall-tile" src={t.url} alt="" decoding="async" draggable={false} data-path={t.path ?? undefined} />
     ) : (
       <div key={t.key} className="wall-tile" style={{ background: `linear-gradient(165deg, hsl(${t.hue} 85% 62%), hsl(272 65% 28%) 70%, hsl(250 50% 10%))` }} />

@@ -8,6 +8,7 @@ import {
 import { applyStill, savedStill } from "../lib/motion";
 import { setStarWhy, useStarWhy } from "../lib/starWhy";
 import { playSeasonChime, playTick, setSounds, useSounds } from "../lib/sounds";
+import { usePosterLook } from "../lib/posterLook";
 import { usePremiereMode, type PremiereMode } from "../lib/premiere";
 import { useApp } from "../store/app";
 import { useHomeStyle } from "../lib/homeStyle";
@@ -39,6 +40,9 @@ export default function SettingsView(): React.JSX.Element {
   const [still, setStill] = useState(savedStill);
   const starWhy = useStarWhy();
   const sounds = useSounds();
+  const posterFill = usePosterLook((s) => s.fill);
+  const rainbowWall = usePosterLook((s) => s.rainbow);
+  const posterLook = usePosterLook.getState();
   const premiere = usePremiereMode();
 
   return (
@@ -145,6 +149,57 @@ export default function SettingsView(): React.JSX.Element {
               onClick={() => (setStill(true), applyStill(true))}
             >
               Still
+            </button>
+          </div>
+          <h3 className="card-sub">Posters that fill in as you go</h3>
+          <p className="muted small">
+            A show you’re part-way through is in colour only as far as you’ve
+            got, with the rest in grey, on the poster wall, in Library and in
+            lists.
+          </p>
+          <div
+            className="segmented"
+            role="radiogroup"
+            aria-label="Posters that fill in as you go"
+          >
+            <button
+              role="radio"
+              aria-checked={posterFill}
+              className={posterFill ? "on" : ""}
+              onClick={() => posterLook.setFill(true)}
+            >
+              On
+            </button>
+            <button
+              role="radio"
+              aria-checked={!posterFill}
+              className={!posterFill ? "on" : ""}
+              onClick={() => posterLook.setFill(false)}
+            >
+              Off
+            </button>
+          </div>
+          <h3 className="card-sub">Rainbow wall</h3>
+          <p className="muted small">
+            Arranges the poster wall by colour, so it runs through the rainbow
+            from top to bottom.
+          </p>
+          <div className="segmented" role="radiogroup" aria-label="Rainbow wall">
+            <button
+              role="radio"
+              aria-checked={!rainbowWall}
+              className={!rainbowWall ? "on" : ""}
+              onClick={() => posterLook.setRainbow(false)}
+            >
+              Off
+            </button>
+            <button
+              role="radio"
+              aria-checked={rainbowWall}
+              className={rainbowWall ? "on" : ""}
+              onClick={() => posterLook.setRainbow(true)}
+            >
+              On
             </button>
           </div>
           <h3 className="card-sub">Sounds</h3>

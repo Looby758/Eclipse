@@ -49,3 +49,46 @@ export function wallGrid(width: number, height: number): { rows: number; perRow:
   const perRow = Math.max(14, Math.ceil((width + 2 * OVER_X) / (ROW_TILE_W + ROW_GAP)) + 1)
   return { rows, perRow }
 }
+
+// ---- Phase 62: the rainbow wall ----
+
+/** A poster's main colour: hue (0–360), how colourful and how light it is overall (0–100), and how strongly that hue stands out (c). */
+export interface PosterColour {
+  h: number
+  s: number
+  l: number
+  c: number
+}
+
+/** Below this, a poster counts as black, white or grey and goes with the greys. */
+export const GREY_BELOW = 20
+
+/**
+ * Posters in rainbow order: colourful ones by hue, from red round through orange, yellow, green,
+ * blue and purple, then the greys from light to dark. Posters whose colour isn't known yet go last.
+ */
+export function rainbowOrder(paths: string[], colours: Record<string, PosterColour | undefined>): string[] {
+  const unique = [...new Set(paths)]
+  // Start the circle at magenta-red (hue 340), so reds sit together instead of at both ends.
+  const turn = (h: number): number => (h - 340 + 360) % 360
+  const bright = unique.filter((p) => colours[p] && colours[p]!.c >= GREY_BELOW).sort((a, b) => turn(colours[a]!.h) - turn(colours[b]!.h) || colours[b]!.l - colours[a]!.l)
+  const grey = unique.filter((p) => colours[p] && colours[p]!.c < GREY_BELOW).sort((a, b) => colours[b]!.l - colours[a]!.l)
+  const unknown = unique.filter((p) => !colours[p])
+  return [...bright, ...grey, ...unknown]
+}
+
+/**
+ * The wall in bands of colour: posters in rainbow order, cut into `lines` runs (one per row, or per
+ * column on the tilted wall), each run repeated to fill its line. With fewer posters than lines,
+ * neighbouring lines share posters so the colours still flow.
+ */
+export function rainbowLines(paths: string[], colours: Record<string, PosterColour | undefined>, lines: number, perLine: number): string[][] {
+  const order = rainbowOrder(paths, colours)
+  if (!order.length || lines < 1) return []
+  return Array.from({ length: lines }, (_, r) => {
+    const from = Math.floor((r * order.length) / lines)
+    const to = Math.max(from + 1, Math.floor(((r + 1) * order.length) / lines))
+    const run = order.slice(from, Math.min(to, order.length))
+    return Array.from({ length: perLine }, (_, k) => run[k % run.length])
+  })
+}
