@@ -1500,7 +1500,7 @@ select:hover { border-color: var(--accent); }
 .st-sky { position: relative; min-height: 100vh; padding: 0 40px 40px; box-sizing: border-box; -webkit-app-region: no-drag; }
 /* Lines up beside the Back button rather than under it, and stays dark long enough that the sky's own heading
    scrolling up underneath doesn't show through the name. */
-.st-sky-head { position: sticky; top: 0; z-index: 4; display: flex; align-items: center; gap: 22px; padding: 33px 16px 34px 160px; margin: 0 -40px 0; background: linear-gradient(180deg, rgba(5, 6, 16, 0.94), rgba(5, 6, 16, 0.86) 62%, rgba(5, 6, 16, 0)); opacity: calc((var(--sky) - 0.55) * 2.5); pointer-events: none; }
+.st-sky-head { position: sticky; top: 0; z-index: 4; display: flex; align-items: center; gap: 22px; padding: 33px 16px 34px 160px; margin: 0 -40px 0; background: linear-gradient(180deg, rgba(5, 6, 16, 0.97), rgba(5, 6, 16, 0.94) 70%, rgba(5, 6, 16, 0)); opacity: calc((var(--sky) - 0.55) * 2.5); pointer-events: none; }
 [data-platform='mac'] .st-sky-head { padding-top: 29px; padding-left: 210px; }
 .st-sky-head.on { pointer-events: auto; }
 .st-sky-head img { max-height: 40px; max-width: 220px; object-fit: contain; }
