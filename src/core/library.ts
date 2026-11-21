@@ -416,6 +416,7 @@ export function normalizeLibrary(raw: unknown): Library {
   const rawDropped = raw && typeof raw === 'object' ? (raw as { dropped?: unknown }).dropped : undefined
   const rawLeft = raw && typeof raw === 'object' ? (raw as { repairLeft?: unknown }).repairLeft : undefined
   const rawCatch = raw && typeof raw === 'object' ? (raw as { catchUpDismissed?: unknown }).catchUpDismissed : undefined
+  const rawAnnounced = raw && typeof raw === 'object' ? (raw as { announcedSeen?: unknown }).announcedSeen : undefined
   const rawHidden = raw && typeof raw === 'object' ? (raw as { recsHidden?: unknown }).recsHidden : undefined
   const rawTaste = raw && typeof raw === 'object' ? (raw as { recsTaste?: unknown }).recsTaste : undefined
   const rawApplied = raw && typeof raw === 'object' ? (raw as { phoneApplied?: unknown }).phoneApplied : undefined
@@ -450,6 +451,10 @@ export function normalizeLibrary(raw: unknown): Library {
     if (Array.isArray(rawCatch)) {
       const no = [...new Set(rawCatch.filter((x): x is string => typeof x === 'string' && /^(movie|tv):\d+(@S\d+)?>(movie|tv):\d+(@S\d+)?$/.test(x)))]
       if (no.length) lib.catchUpDismissed = no.slice(-300)
+    }
+    if (Array.isArray(rawAnnounced)) {
+      const seen = [...new Set(rawAnnounced.filter((x): x is string => typeof x === 'string' && /^tv:\d+@S\d+$/.test(x)))]
+      if (seen.length) lib.announcedSeen = seen.slice(-500)
     }
     if (Array.isArray(rawLeft)) {
       const left = [...new Set(rawLeft.filter((x): x is string => typeof x === 'string' && /^(movie|tv):\d+@\d{4}-\d{2}-\d{2}$/.test(x)))]
