@@ -17,7 +17,8 @@ const SHRINK_MS = 950
 /** A click only counts as opening the page if the page opens this soon after it. */
 const CLICK_WINDOW_MS = 600
 
-type Origin = { rect: DOMRect; src: string; radius: string }
+/** `path` is set for a poster on the drifting wall, which will have moved on by the time you come back. */
+type Origin = { rect: DOMRect; src: string; radius: string; path: string | null }
 
 const isTitle = (v: View | undefined): boolean => v?.name === 'title'
 
@@ -39,6 +40,32 @@ function posterUnder(target: Element | null): HTMLImageElement | null {
 const portrait = (img: HTMLImageElement): boolean => {
   const r = img.getBoundingClientRect()
   return r.width > 20 && r.height > r.width * 1.2 && !!img.currentSrc
+}
+
+/**
+ * Where a wall poster will be when the shrinking copy lands on it. The rows keep drifting while a title page is open,
+ * so its old spot is usually empty by then. Each row holds its posters twice, so of the copies that will be in the
+ * window, the most visible one is picked, then the one nearest where it was opened from. None in sight gives null.
+ */
+function wallSpot(origin: Origin, inMs: number): DOMRect | null {
+  let best: DOMRect | null = null
+  let bestGap = Infinity
+  for (const tile of document.querySelectorAll<HTMLElement>(`.wall-tile[data-path="${CSS.escape(origin.path ?? '')}"]`)) {
+    const r = tile.getBoundingClientRect()
+    const row = tile.closest<HTMLElement>('.wall-row')
+    const drift = row?.getAnimations().find((a) => a.playState === 'running')
+    const ms = Number(drift?.effect?.getComputedTiming().duration) || 0
+    // A row slides half its width (one copy of its posters) per run, left or right.
+    const sign = drift instanceof CSSAnimation && drift.animationName === 'row-right' ? 1 : -1
+    const dx = row && drift && ms ? ((sign * row.offsetWidth) / 2 / ms) * inMs * drift.playbackRate : 0
+    const land = new DOMRect(r.left + dx, r.top, r.width, r.height)
+    // How much of it will be in the window: a copy fully in sight beats one cut off by the edge, then the nearer wins.
+    const seen = (Math.max(0, Math.min(land.right, window.innerWidth) - Math.max(land.left, 0)) * Math.max(0, Math.min(land.bottom, window.innerHeight) - Math.max(land.top, 0))) / (land.width * land.height || 1)
+    if (seen < 0.25) continue
+    const gap = Math.hypot(land.x - origin.rect.x, land.y - origin.rect.y) + (1 - seen) * 1e5
+    if (gap < bestGap) [best, bestGap] = [land, gap]
+  }
+  return best
 }
 
 const calm = (): boolean => document.documentElement.hasAttribute('data-still') || window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -147,7 +174,7 @@ export default function ZoomLayer(): React.JSX.Element {
         if (calm()) return fade()
         const rect = img.getBoundingClientRect()
         const radius = getComputedStyle(img).borderRadius || '12px'
-        origins.set(index, { rect, src: img.currentSrc, radius })
+        origins.set(index, { rect, src: img.currentSrc, radius, path: img.classList.contains('wall-tile') ? img.getAttribute('data-path') : null })
         document.documentElement.classList.add('zooming')
         ghost(img.currentSrc, rect, null, radius, GROW_MS, () => document.documentElement.classList.remove('zooming'))
         return
@@ -159,7 +186,10 @@ export default function ZoomLayer(): React.JSX.Element {
         for (const k of [...origins.keys()]) if (k >= s.history.length) origins.delete(k)
         if (!origin || !isTitle(prev.history[left])) return
         if (calm()) return fade()
-        ghost(origin.src, null, origin.rect, origin.radius, SHRINK_MS, () => undefined)
+        // A wall poster is aimed at where it has drifted to by the time the copy lands (90% of the way through).
+        const to = origin.path ? wallSpot(origin, SHRINK_MS * 0.9) : origin.rect
+        if (!to) return fade()
+        ghost(origin.src, null, to, origin.radius, SHRINK_MS, () => undefined)
       }
     })
     return () => {
