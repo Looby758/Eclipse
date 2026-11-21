@@ -74,7 +74,8 @@ function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: b
         .map((e) => shownPoster(library, e.key, e.title.posterPath, info[e.key])!),
     [library, info]
   )
-  const needTrending = hasKey && new Set(own).size < OWN_ENOUGH
+  // The rainbow wall wants as many different posters as it can get, so each band repeats as little as possible.
+  const needTrending = hasKey && (new Set(own).size < OWN_ENOUGH || rainbow)
 
   useEffect(() => {
     if (!needTrending || trending.length) return
@@ -124,7 +125,8 @@ function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: b
 
   // Phase 62: the rainbow wall. Every poster's main colour, worked out once (and remembered), then the
   // wall is laid out in bands of colour. Until the colours are known the wall stays as it was.
-  const pool = useMemo(() => [...new Set(wallPosters(own, trending, undefined, recs))], [own, trending, recs])
+  // Every poster you have (not just the wall's usual few dozen), plus recommendations and trending ones, so bands rarely repeat.
+  const pool = useMemo(() => [...new Set([...own, ...recs, ...trending])], [own, trending, recs])
   const [colours, setColours] = useState<Record<string, PosterColour | undefined>>({})
   useEffect(() => {
     if (!rainbow || premiere) return
@@ -164,7 +166,7 @@ function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: b
 
   const columns = useMemo(() => {
     const posters = wallPosters(own, trending, undefined, recs)
-    const bands = rainbowReady ? rainbowLines(pool, colours, WALL_COLUMNS, WALL_PER_COLUMN) : null
+    const bands = rainbowReady ? rainbowLines(pool, colours, WALL_COLUMNS, WALL_PER_COLUMN).lines : null
     const cols: Tile[][] = []
     for (let c = 0; c < WALL_COLUMNS; c++) {
       const col: Tile[] = []
@@ -181,7 +183,7 @@ function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: b
   const lines = useMemo(() => {
     const posters = premiere ? wallPosters(premiere.posters!, [], ROWS * PER_ROW) : wallPosters(own, trending, ROWS * PER_ROW, recs)
     // Rainbow: each row is one band of colour, so the colours run from the top of the window to the bottom.
-    const bands = !premiere && rainbowReady ? rainbowLines(pool, colours, ROWS, PER_ROW) : null
+    const bands = !premiere && rainbowReady ? rainbowLines(pool, colours, ROWS, PER_ROW).lines : null
     return Array.from({ length: ROWS }, (_, r) => {
       const row: Tile[] = Array.from({ length: PER_ROW }, (_, k) => {
         const path = bands ? bands[r]?.[k] : posters[r + k * ROWS]
@@ -190,6 +192,11 @@ function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: b
       return [...row, ...row.map((t) => ({ ...t, key: `${t.key}b` }))]
     })
   }, [own, trending, recs, premiere?.posters, ROWS, PER_ROW, fills, rainbowReady, colours, pool])
+
+  // Each band's colour, to tint it so the rainbow is easy to see.
+  const rowHues = useMemo(() => (!premiere && rainbowReady ? rainbowLines(pool, colours, ROWS, PER_ROW).hues : []), [rainbowReady, pool, colours, ROWS, PER_ROW, !!premiere])
+  const colHues = useMemo(() => (rainbowReady ? rainbowLines(pool, colours, WALL_COLUMNS, WALL_PER_COLUMN).hues : []), [rainbowReady, pool, colours])
+  const band = (hue: number | null | undefined): React.CSSProperties => (hue == null ? {} : ({ '--band-h': hue } as React.CSSProperties))
 
   const tile = (t: Tile): React.JSX.Element =>
     t.url && t.fill != null ? (
@@ -205,7 +212,7 @@ function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: b
       <div className="wall rows" ref={rowsRef} aria-hidden>
         <div className="wall-rows">
           {lines.map((row, r) => (
-            <div key={r} className={`wall-row ${r % 2 ? 'right' : 'left'}`} style={{ animationDuration: `calc(var(--row-speed) + ${r * 9}s)` }}>
+            <div key={r} className={`wall-row ${r % 2 ? 'right' : 'left'} ${rowHues[r] != null ? 'band' : ''}`} style={{ animationDuration: `calc(var(--row-speed) + ${r * 9}s)`, ...band(rowHues[r]) }}>
               {row.map(tile)}
             </div>
           ))}
@@ -220,7 +227,7 @@ function PosterWall({ rows = false, alive = false }: { rows?: boolean; alive?: b
     <div className="wall" aria-hidden>
       <div className="wall-tilt">
         {columns.map((col, c) => (
-          <div key={c} className={`wall-col ${c % 2 ? 'down' : 'up'}`} style={{ animationDuration: `calc(var(--wall-speed) + ${c * 6}s)` }}>
+          <div key={c} className={`wall-col ${c % 2 ? 'down' : 'up'} ${colHues[c] != null ? 'band' : ''}`} style={{ animationDuration: `calc(var(--wall-speed) + ${c * 6}s)`, ...band(colHues[c]) }}>
             {col.map(tile)}
           </div>
         ))}

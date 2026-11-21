@@ -79,16 +79,32 @@ export function rainbowOrder(paths: string[], colours: Record<string, PosterColo
 
 /**
  * The wall in bands of colour: posters in rainbow order, cut into `lines` runs (one per row, or per
- * column on the tilted wall), each run repeated to fill its line. With fewer posters than lines,
- * neighbouring lines share posters so the colours still flow.
+ * column on the tilted wall), each run repeated only as much as it needs to fill its line. `hue` is
+ * each band's colour (null for a band of greys), for tinting the band so the rainbow reads at a glance.
  */
-export function rainbowLines(paths: string[], colours: Record<string, PosterColour | undefined>, lines: number, perLine: number): string[][] {
+export function rainbowLines(paths: string[], colours: Record<string, PosterColour | undefined>, lines: number, perLine: number): { lines: string[][]; hues: (number | null)[] } {
   const order = rainbowOrder(paths, colours)
-  if (!order.length || lines < 1) return []
-  return Array.from({ length: lines }, (_, r) => {
+  if (!order.length || lines < 1) return { lines: [], hues: [] }
+  const runs = Array.from({ length: lines }, (_, r) => {
     const from = Math.floor((r * order.length) / lines)
     const to = Math.max(from + 1, Math.floor(((r + 1) * order.length) / lines))
-    const run = order.slice(from, Math.min(to, order.length))
-    return Array.from({ length: perLine }, (_, k) => run[k % run.length])
+    return order.slice(from, Math.min(to, order.length))
   })
+  return {
+    lines: runs.map((run) => Array.from({ length: perLine }, (_, k) => run[k % run.length])),
+    hues: runs.map((run) => bandHue(run, colours))
+  }
+}
+
+/** The average hue of a band's colourful posters (round the colour wheel), or null when it's mostly greys. */
+export function bandHue(run: string[], colours: Record<string, PosterColour | undefined>): number | null {
+  const bright = run.map((p) => colours[p]).filter((c): c is PosterColour => !!c && c.c >= GREY_BELOW)
+  if (bright.length * 2 < run.length) return null
+  let x = 0
+  let y = 0
+  for (const c of bright) {
+    x += Math.cos((c.h * Math.PI) / 180)
+    y += Math.sin((c.h * Math.PI) / 180)
+  }
+  return Math.round(((Math.atan2(y, x) * 180) / Math.PI + 360) % 360)
 }

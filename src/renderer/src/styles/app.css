@@ -1611,3 +1611,7 @@ select:hover { border-color: var(--accent); }
 .tl-item.soon img, .tl-item.soon .tl-noposter { width: 44px; height: 66px; border-radius: 6px; outline: 1px dashed var(--cyan); outline-offset: 2px; }
 .tl-item.soon:hover, .tl-item.soon:focus-visible { opacity: 1; }
 .tl-when { display: block; margin-top: 8px; font-size: 10px; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+
+/* Phase 62: each band of the rainbow wall is washed in its own colour, so the rainbow reads at a glance. */
+.wall-row.band, .wall-col.band { position: relative; }
+.wall-row.band::after, .wall-col.band::after { content: ''; position: absolute; inset: -6px 0; pointer-events: none; background: hsl(var(--band-h) 85% 55%); mix-blend-mode: color; opacity: 0.45; }

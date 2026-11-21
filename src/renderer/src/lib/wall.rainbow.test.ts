@@ -10,10 +10,14 @@ describe('the rainbow wall (phase 62)', () => {
   })
   it('cuts the order into bands and fills each line', () => {
     const colours = { a: c(5), b: c(60), c: c(120), d: c(240) }
-    expect(rainbowLines(['a', 'b', 'c', 'd'], colours, 2, 3)).toEqual([
+    expect(rainbowLines(['a', 'b', 'c', 'd'], colours, 2, 3).lines).toEqual([
       ['a', 'b', 'a'],
       ['c', 'd', 'c']
     ])
-    expect(rainbowLines(['a'], colours, 3, 2)).toEqual([['a', 'a'], ['a', 'a'], ['a', 'a']])
+    expect(rainbowLines(['a'], colours, 3, 2).lines).toEqual([['a', 'a'], ['a', 'a'], ['a', 'a']])
+  })
+  it('gives each band its colour, or none for greys', () => {
+    const colours = { a: c(350), b: c(10), g: c(0, 5), h: c(0, 5) }
+    expect(rainbowLines(['a', 'b', 'g', 'h'], colours, 2, 2).hues).toEqual([0, null])
   })
 })
