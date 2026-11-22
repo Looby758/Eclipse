@@ -39,6 +39,5 @@ chrome.storage.local.get('last', ({ last: l }) => {
     $('last').textContent = 'Nothing sent to Eclipse yet.'
     return
   }
-  const mins = Math.round((Date.now() - l.at) / 60000)
-  $('last').textContent = `Sent to Eclipse ${mins < 1 ? 'just now' : `${mins} min ago`}${l.ok ? '' : ' (Eclipse didn’t take it)'}.`
+  $('last').textContent = `Sent to Eclipse ${ago(l.at)}${l.ok ? '' : ' (Eclipse didn’t take it)'}.`
 })

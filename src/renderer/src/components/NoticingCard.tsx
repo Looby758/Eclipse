@@ -3,6 +3,7 @@ import { Eye, FolderOpen, RefreshCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { NoticingSettings } from '@shared/api'
 import { useNoticing } from '../lib/noticing'
+import { ago } from './HealthCard'
 
 function Switch({ on, set }: { on: boolean; set: (on: boolean) => void }): React.JSX.Element {
   return (
@@ -17,10 +18,6 @@ function Switch({ on, set }: { on: boolean; set: (on: boolean) => void }): React
   )
 }
 
-const ago = (at: number): string => {
-  const m = Math.round((Date.now() - at) / 60_000)
-  return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : `${Math.round(m / 60)} h ago`
-}
 const clock = (s: number | null | undefined): string => (s == null ? '' : `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`)
 
 /** Settings: Eclipse notices what you watch (Phases 27 to 30). Everything stays on this computer. */

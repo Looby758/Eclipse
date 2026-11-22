@@ -2,7 +2,7 @@ import { CircleAlert, CircleCheck, CircleDashed, Copy } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { JobState } from '@shared/api'
 
-/** "14 minutes ago" from a time in milliseconds. */
+/** "14 minutes ago" from a time in milliseconds. The extension's popup has a copy in extension/ago.js. */
 export function ago(at: number, now = Date.now()): string {
   const s = Math.max(0, Math.round((now - at) / 1000))
   if (s < 45) return 'just now'
@@ -10,7 +10,7 @@ export function ago(at: number, now = Date.now()): string {
   if (m < 60) return `${m} minute${m === 1 ? '' : 's'} ago`
   const h = Math.round(m / 60)
   if (h < 24) return `${h} hour${h === 1 ? '' : 's'} ago`
-  const d = Math.round(h / 24)
+  const d = Math.floor(h / 24)
   return `${d} day${d === 1 ? '' : 's'} ago`
 }
 
