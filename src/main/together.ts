@@ -1,4 +1,5 @@
 import { Notification } from 'electron'
+import { eclipseNotification } from './notify'
 import { sessionsStartingSoon } from '@core/library'
 import type { Library } from '@core/types'
 
@@ -14,7 +15,7 @@ export function startTogetherReminders(getLibrary: () => Library, show: () => vo
       if (sent.has(s.id)) continue
       sent.add(s.id)
       const time = `${String(s.at.getHours()).padStart(2, '0')}:${String(s.at.getMinutes()).padStart(2, '0')}`
-      const n = new Notification({ title: `${s.name} with ${s.who} at ${time}`, body: 'Open Eclipse to see the next episode and tick it when you’re done.' })
+      const n = eclipseNotification({ title: `${s.name} with ${s.who} at ${time}`, body: 'Open Eclipse to see the next episode and tick it when you’re done.' })
       n.on('click', show)
       n.show()
     }

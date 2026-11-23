@@ -37,6 +37,7 @@ import { browsers, streamingVisits } from './history'
 import { nowPlaying, startNowPlaying, stopNowPlaying } from './nowplaying'
 import { extensionLink, startExtensionLink, stopExtensionLink } from './extension'
 import { discordOn, setDiscord, updateDiscord } from './discord'
+import { eclipseNotification } from './notify'
 import type { DiscordStatus } from '@shared/api'
 
 /**
@@ -112,7 +113,7 @@ function addSuggestions(found: Suggestion[]): Suggestion[] {
 
 function notify(title: string, body: string, onClick?: () => void): void {
   if (!Notification.isSupported()) return
-  const n = new Notification({ title, body, silent: false })
+  const n = eclipseNotification({ title, body, silent: false })
   if (onClick) n.on('click', onClick)
   n.show()
 }

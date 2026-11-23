@@ -52,6 +52,10 @@ const BG = '#040309'
 const IS_MAC = process.platform === 'darwin'
 
 app.setPath('userData', join(app.getPath('appData'), 'Eclipse'))
+// Windows names notifications (and finds their icon) by the app ID. It has to match the appId in
+// electron-builder.yml, which the installer puts on the Start Menu shortcut; without it Windows
+// shows "electron.app.Eclipse" and no logo.
+if (process.platform === 'win32') app.setAppUserModelId('com.looby758.eclipse')
 
 let mainWindow: BrowserWindow | null = null
 
