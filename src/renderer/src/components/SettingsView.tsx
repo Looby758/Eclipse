@@ -23,6 +23,7 @@ import SequelImportCard from "./SequelImportCard";
 import ExportCard from "./ExportCard";
 import UpdatesCard from "./UpdatesCard";
 import RemoteCard from "./RemoteCard";
+import ClaudeDesktopCard from "./ClaudeDesktopCard";
 import HistoryCard from "./HistoryCard";
 import TrayCard from "./TrayCard";
 import NoticingCard from "./NoticingCard";
@@ -247,6 +248,8 @@ export default function SettingsView(): React.JSX.Element {
         <DiscordCard />
 
         <RemoteCard />
+
+        <ClaudeDesktopCard />
 
         <TrayCard />
 

@@ -1,5 +1,6 @@
 import { ArrowLeft } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { watchClaudeShow } from './lib/claudeShow'
 import { currentView, useApp, type View } from './store/app'
 import PosterWall from './components/PosterWall'
 import Dock from './components/Dock'
@@ -82,6 +83,8 @@ export default function App(): React.JSX.Element {
     const stopMilestones = watchMilestones()
     // Phase 54: a click for a tick and a chime for a finished season, when sounds are on.
     const stopSounds = watchSounds()
+    // Claude Desktop asking to show a page or a title (open_in_eclipse).
+    const stopClaude = watchClaudeShow()
     // Mouse back button, Alt+Left and Escape go back, like a browser.
     const onMouse = (e: MouseEvent): void => {
       if (e.button === 3) back()
@@ -103,6 +106,7 @@ export default function App(): React.JSX.Element {
       stop()
       stopMilestones()
       stopSounds()
+      stopClaude()
       window.removeEventListener('mouseup', onMouse)
       window.removeEventListener('keydown', onKey)
     }

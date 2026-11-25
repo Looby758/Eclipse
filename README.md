@@ -57,6 +57,26 @@ Each computer needs the key pasted once.
 6. **Filters:** in Library or Search, pick **On my services**, **Rent or buy only** or **Not streaming anywhere**. The first time it checks every title, which takes a few seconds.
 7. **Home:** the suggestion shows the next episode and a button to tick it.
 
+## Claude Desktop: ask Claude to use Eclipse
+
+Like Orbit, Eclipse can be used from the [Claude Desktop app](https://claude.ai/download): “tick the next episode of Severance”, “add Dune (2021) to my watchlist”, “what did I watch last week?”, “what fits before bed tonight?”, “rate Breaking Bad 10 and note it was from Sam”, “make a list called Cosy with …”. It uses your normal Claude plan, so there's no API key.
+
+**Setting it up (once on each computer):**
+
+1. Install Claude Desktop and sign in.
+2. In Eclipse, open Settings → *Claude Desktop* and press **On**.
+3. Press **Connect to Claude Desktop**. Eclipse adds itself to Claude Desktop's settings file (`%APPDATA%\Claude\claude_desktop_config.json` on Windows, `~/Library/Application Support/Claude/claude_desktop_config.json` on a Mac), keeping anything else there, like Orbit. The old file is copied to `claude_desktop_config.json.before-eclipse` first.
+4. Quit Claude Desktop completely (right-click its tray or menu bar icon → Quit) and open it again. *eclipse* then shows in its list of connectors.
+5. Ask away. Eclipse has to be open, but the tray is enough.
+
+If Eclipse can't write the file, it shows the text to paste: in Claude Desktop open *Settings → Developer → Edit Config* and add the `eclipse` part inside `mcpServers`.
+
+**What Claude can use** (each part can be switched off in Settings): your library and stats; ticking and changing things; search and recommendations; your evenings; and app settings. Every change shows the Undo bar in Eclipse, and you can ask Claude to undo its last change. Claude asks before removing anything you didn't ask it to.
+
+**Safety:** off until you switch it on. Only this computer can reach it (it listens on 127.0.0.1, never on the Wi-Fi), and every request needs a secret code that's stored encrypted in `settings.json`, like the TMDB key. Claude Desktop keeps a copy in its own settings file. **New secret code** makes a new one, so the old one stops working. Your TMDB key is never shared.
+
+**How it works:** Claude Desktop starts its connectors as a program, so Eclipse gives it a tiny bridge script (`claude-desktop-bridge.cjs` in Eclipse's app folder) that runs with Eclipse's own program acting as Node, so nothing needs installing, and passes messages to Eclipse's MCP server ([src/main/claudeDesktop.ts](src/main/claudeDesktop.ts), tools in [src/main/claudeTools.ts](src/main/claudeTools.ts)). It's the same design as Orbit's.
+
 ## Phase 45: Eclipse on your phone
 
 A small page you save to your iPhone home screen that reads your library from Google Drive, anywhere. One-time setup (Google Cloud, GitHub Pages and the phone) is in [phone/README.md](phone/README.md). Changes from the phone are added to your library the next time Eclipse opens on your computer; if something clashes, Eclipse asks which to keep.

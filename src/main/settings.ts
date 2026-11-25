@@ -40,6 +40,11 @@ export interface Settings {
   discordAppId?: string
   /** Text size (the window's zoom) on this computer, 1 being normal. */
   zoom?: number
+  /** The Claude Desktop connection (see claudeDesktop.ts): on, its secret code (encrypted), its port and which parts Claude can use. */
+  claudeDesktop?: boolean
+  claudeDesktopToken?: string
+  claudeDesktopPort?: number
+  claudeDesktopAreas?: Record<string, boolean>
 }
 
 const defaults: Settings = { dataFolder: null }
