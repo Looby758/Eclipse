@@ -1,6 +1,6 @@
 import { ArrowLeft } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { watchClaudeShow } from './lib/claudeShow'
+import { watchClaudeLooks, watchClaudeShow } from './lib/claudeShow'
 import { currentView, useApp, type View } from './store/app'
 import PosterWall from './components/PosterWall'
 import Dock from './components/Dock'
@@ -85,6 +85,7 @@ export default function App(): React.JSX.Element {
     const stopSounds = watchSounds()
     // Claude Desktop asking to show a page or a title (open_in_eclipse).
     const stopClaude = watchClaudeShow()
+    const stopLooks = watchClaudeLooks()
     // Mouse back button, Alt+Left and Escape go back, like a browser.
     const onMouse = (e: MouseEvent): void => {
       if (e.button === 3) back()
@@ -107,6 +108,7 @@ export default function App(): React.JSX.Element {
       stopMilestones()
       stopSounds()
       stopClaude()
+      stopLooks()
       window.removeEventListener('mouseup', onMouse)
       window.removeEventListener('keydown', onKey)
     }

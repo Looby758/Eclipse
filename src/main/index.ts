@@ -185,6 +185,8 @@ function healthNow(): ReturnType<typeof healthStatus> {
 
 /** The last change Claude made, so "undo that" can put it back. */
 let claudeUndo: number | null = null
+/** Looks Claude changed (Settings → Appearance) not yet applied by a window. */
+let claudeLooks: { setting: string; value: string }[] = []
 /** A page Claude asked to show before the window was ready to hear it. */
 let claudeShowPending: ClaudeShow | null = null
 
@@ -205,6 +207,7 @@ const claudeApp: AppControls = {
     const login = loginStatus()
     return [
       `tray: ${trayOn()}`,
+      `phone_remote: ${remoteStatus().on}`,
       `discord_status: ${d.on}${d.appId ? '' : ' (not set up yet: needs a Discord application in Settings)'}`,
       `notice_browser_history: ${n.history}`,
       `notice_whats_playing: ${n.playing}`,
@@ -221,6 +224,10 @@ const claudeApp: AppControls = {
     }
     if (typeof value !== 'boolean') throw new Error(`${setting} takes true or false.`)
     if (setting === 'tray') setTray(value)
+    else if (setting === 'phone_remote') {
+      void setRemote(value, sendRemote).then(sendRemote)
+      return `The phone remote is ${value ? 'on: open Settings → Your phone as a remote in Eclipse for the QR code to scan' : 'off'}.`
+    }
     else if (setting === 'discord_status') {
       if (value && !discordStatus().appId) throw new Error('The Discord status needs setting up in Eclipse first (Settings → Discord).')
       changeDiscord({ on: value })
@@ -276,10 +283,51 @@ function claudeDeps(): Parameters<typeof setupClaudeDesktop>[0] {
       recommendations: (lib) => tmdb.recommendationsFor(lib),
       traitsOf: tmdb.traitsOf,
       calendar: (lib) => tmdb.calendarEvents(lib),
-      weekBudget: (lib) => tmdb.weekBudget(lib)
+      weekBudget: (lib) => tmdb.weekBudget(lib),
+      trending: () => data(tmdb.trending()),
+      yearReview: async (lib, year) => {
+        const { details, credits, lists } = await tmdb.yearData(lib, keysWatchedIn(lib, year))
+        return yearInReview(getLibrary(), year, details, credits, lists, localDate(new Date()))
+      },
+      catchUp: (lib) => tmdb.catchUpList(lib),
+      universe: (type, id, lib) => tmdb.universeFor(type, id, lib),
+      knownFrom: (type, id, lib) => tmdb.knownFromFor(type, id, lib),
+      openList: (id, lib) => tmdb.openList(id, lib),
+      collection: (id) => data(tmdb.collection(id))
     },
     show: showForClaude,
-    app: claudeApp
+    app: claudeApp,
+    more: {
+      suggestions: () => noticingStatus().suggestions,
+      acceptSuggestion: (id, who) => {
+        acceptSuggestion(id, who)
+        broadcastLibrary()
+        mainWindow?.webContents.send('noticing:changed')
+      },
+      dismissSuggestion: (id) => {
+        dismissSuggestion(id)
+        mainWindow?.webContents.send('noticing:changed')
+      },
+      backups: () => listBackups(dataFolderNow()),
+      restoreBackup: (day) => {
+        const restored = backupFor(dataFolderNow(), day)
+        backupLibrary('before-restore')
+        const before = getLibrary()
+        const after = saveLibrary(restored)
+        const offer = remember(before, after)
+        if (offer) {
+          claudeUndo = offer.id
+          mainWindow?.webContents.send('undo:offer', offer)
+        }
+        broadcastLibrary()
+      },
+      health: () => healthNow(),
+      appearance: (setting, value) => {
+        claudeLooks.push({ setting, value })
+        // Sent now if the window's open; a window opened later picks it up (claude:takeLooks).
+        mainWindow?.webContents.send('claude:appearance', { setting, value })
+      }
+    }
   })
 }
 
@@ -290,6 +338,12 @@ function setupIpc(): void {
     return what
   })
   ipcMain.on('claude:shown', () => (claudeShowPending = null))
+  ipcMain.handle('claude:takeLooks', () => {
+    const looks = claudeLooks
+    claudeLooks = []
+    return looks
+  })
+  ipcMain.on('claude:lookApplied', () => (claudeLooks = []))
   ipcMain.handle('app:status', () => status())
   ipcMain.handle('app:openExternal', (_e, url: string) => {
     // Only web links: nothing else is opened from the window.

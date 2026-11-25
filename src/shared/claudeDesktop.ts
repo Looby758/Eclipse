@@ -14,19 +14,19 @@ export const CLAUDE_AREAS: readonly { id: ClaudeArea; label: string; what: strin
   {
     id: 'library',
     label: 'Your library and stats',
-    what: 'Read what you’re watching, your watchlist, Watch soon, lists, what’s up next, what you watched when, your stats and your release calendar.',
+    what: 'Read what you’re watching (alone and with others), your watchlist, Watch soon and its plan, lists, what’s up next, what you watched when, stats, milestones, your year in review, timeline eras, catch-ups, “Did you watch these?” and your release calendar.',
     onAtStart: true
   },
   {
     id: 'tracking',
     label: 'Ticking and changing things',
-    what: 'Tick episodes and films, change statuses, ratings, notes, reactions and dates, rewatches, Watch soon, countdowns, favourites and your own lists. Every change can be undone with the Undo bar or Ctrl+Z.',
+    what: 'Tick episodes and films (yours or with someone), watch together and set times, change statuses, ratings, notes, reactions, dates and moments, rewatches, clear out the watchlist, Watch soon, countdowns, favourites, lists and their order, era names, and answer catch-ups and “Did you watch these?”. Every change can be undone.',
     onAtStart: true
   },
   {
     id: 'discover',
     label: 'Search and recommendations',
-    what: 'Search TMDB for films, shows and people, see where to watch, your recommendations, and answer them (Interested or Not for me).',
+    what: 'Search TMDB for films, shows and people, what’s trending, where to watch, the same universe and faces you know, your recommendations, and answer them (Interested or Not for me).',
     onAtStart: true
   },
   {
@@ -38,7 +38,7 @@ export const CLAUDE_AREAS: readonly { id: ClaudeArea; label: string; what: strin
   {
     id: 'settings',
     label: 'App settings',
-    what: 'Switch the tray, Discord status, noticing what you watch and starting with the computer on or off, and change the text size.',
+    what: 'Change how Eclipse looks (theme, Home style, sounds and more), switch the tray, phone remote, Discord status, noticing what you watch and starting with the computer, text size, see if everything’s working, and list or restore backups (Claude asks first).',
     onAtStart: true
   }
 ]

@@ -146,6 +146,13 @@ const api: EclipseApi = {
   },
   takeClaudeShow: () => ipcRenderer.invoke('claude:takeShow'),
   claudeShown: () => ipcRenderer.send('claude:shown'),
+  onClaudeAppearance: (callback) => {
+    const handler = (_e: unknown, look: Parameters<typeof callback>[0]): void => callback(look)
+    ipcRenderer.on('claude:appearance', handler)
+    return () => ipcRenderer.removeListener('claude:appearance', handler)
+  },
+  takeClaudeLooks: () => ipcRenderer.invoke('claude:takeLooks'),
+  claudeLookApplied: () => ipcRenderer.send('claude:lookApplied'),
   onServicesChanged: (callback) => {
     const handler = (_e: unknown, h: Parameters<typeof callback>[0]): void => callback(h)
     ipcRenderer.on('services:changed', handler)

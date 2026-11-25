@@ -7,7 +7,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { BRIDGE_SCRIPT, cleanAreas, type ClaudeArea, type ClaudeShow } from '@shared/claudeDesktop'
-import { setStatus, setEpisodes } from '@core/library'
+import { setStatus, setEpisodes, startWatchWith, tickWith } from '@core/library'
 import type { Library, SearchResult, TitleDetails } from '@core/types'
 
 /**
@@ -69,6 +69,7 @@ let library: Library
 let shown: ClaudeShow[] = []
 let areas: Record<ClaudeArea, boolean> = cleanAreas({})
 let undo: Library | null = null
+let looks: string[] = []
 
 function startLibrary(): Library {
   const item = (d: TitleDetails) => ({ key: d.key, type: d.type, id: d.id, title: { name: d.name, year: d.year, posterPath: null } })
@@ -76,6 +77,9 @@ function startLibrary(): Library {
   l = setStatus(l, item(DETAILS['tv:95396']), 'watching', NOW)
   l = setEpisodes(l, item(DETAILS['tv:95396']), ['S1E1', 'S1E2'], true, NOW)
   l = setStatus(l, item(DETAILS['tv:1396']), 'watched', NOW)
+  // Watching Breaking Bad again with Jack, up to S1E2, no time set (like the Walking Dead card).
+  l = startWatchWith(l, item(DETAILS['tv:1396']), 'Jack', NOW)
+  l = tickWith(l, 'tv:1396', 0, ['S1E1', 'S1E2'], true, NOW)
   return l
 }
 
@@ -119,6 +123,15 @@ const deps = (): Deps => ({
   },
   show: (what) => void shown.push(what),
   app: { status: () => 'tray: false', set: (s, v) => `${s} is now ${v}` },
+  more: {
+    suggestions: () => [],
+    acceptSuggestion: () => undefined,
+    dismissSuggestion: () => undefined,
+    backups: async () => [{ day: '2026-11-24', titles: 3, episodes: 2, watched: 1 }],
+    restoreBackup: () => undefined,
+    health: () => [{ label: 'Saving', ok: true, detail: 'Saved', at: null }],
+    appearance: (setting, value) => void looks.push(`${setting}=${value}`)
+  },
   now: () => NOW
 })
 
@@ -135,6 +148,7 @@ beforeEach(() => {
   library = startLibrary()
   shown = []
   undo = null
+  looks = []
   areas = cleanAreas({})
 })
 
@@ -280,6 +294,71 @@ describe('tools', () => {
     const r = await call('react_to_episode', { title: 'Severance', season: 1, episode: 5, reaction: 'fire' })
     expect(r.isError).toBe(true)
     expect(r.text).toContain('isn’t ticked yet')
+  })
+})
+
+describe('watching together', () => {
+  it('shows in the overview and its own list', async () => {
+    const o = await call('get_overview')
+    expect(o.text).toContain('Watching together')
+    expect(o.text).toMatch(/With Jack: Breaking Bad \(2008\) \[tv:1396\], next S01E03, no time set/)
+    const t = await call('get_watching_together')
+    expect(t.text).toContain('With Jack')
+    expect(t.text).toContain('People they’ve watched with: Jack')
+  })
+
+  it('ticks the next one together without touching the user’s own progress', async () => {
+    const r = await call('tick_next_episode', { title: 'Breaking Bad', with: 'jack' })
+    expect(r.text).toContain('Ticked S01E03 of Breaking Bad (2008) [tv:1396] with Jack. Next together: S01E04.')
+    expect(Object.keys(library.entries['tv:1396'].rewatches![0].episodes!)).toEqual(['S1E1', 'S1E2', 'S1E3'])
+    expect(library.entries['tv:1396'].episodes).toBeUndefined()
+    const m = await call('mark_episodes', { title: 'Breaking Bad', season: 1, episode: 4, with: 'Jack' })
+    expect(m.text).toContain('on the watch with Jack')
+    expect(Object.keys(library.entries['tv:1396'].rewatches![0].episodes!)).toHaveLength(4)
+  })
+
+  it('sets a time, starts and ends watches together', async () => {
+    await call('plan_watching_with', { title: 'Breaking Bad', with: 'Jack', at: '2026-11-28T20:30', weekly: true })
+    expect(library.entries['tv:1396'].rewatches![0].planned).toEqual({ at: '2026-11-28T20:30', weekly: true })
+    expect((await call('get_watching_together')).text).toContain('every week, next 2026-11-28 20:30')
+    await call('start_watching_with', { title: 'Severance', with: 'Sam' })
+    expect(library.entries['tv:95396'].rewatches![0].with).toBe('Sam')
+    const wrong = await call('tick_next_episode', { title: 'Severance', with: 'Jack' })
+    expect(wrong.isError).toBe(true)
+    expect(wrong.text).toContain('It’s being watched with Sam')
+    await call('end_watching_with', { title: 'Breaking Bad', with: 'Jack', action: 'finish' })
+    expect(library.entries['tv:1396'].rewatches![0].finishedOn).toBe('2026-11-25')
+  })
+})
+
+describe('everything else', () => {
+  it('clears out and puts back', async () => {
+    await call('set_status', { title: 'Inception', status: 'want' })
+    await call('drop_from_watchlist', { title: 'Inception' })
+    expect(library.entries['movie:27205']).toBeUndefined()
+    expect((await call('get_dropped')).text).toContain('Inception')
+    await call('restore_dropped', { title: 'inception' })
+    expect(library.entries['movie:27205'].status).toBe('want')
+  })
+
+  it('reorders Watch soon', async () => {
+    await call('set_watch_soon', { title: 'Severance', on: true })
+    await call('set_watch_soon', { title: 'Breaking Bad', on: true })
+    await call('reorder', { where: 'watch_soon', title: 'Breaking Bad', position: 1 })
+    expect(library.watchSoon?.map((r) => r.key)).toEqual(['tv:1396', 'tv:95396'])
+  })
+
+  it('changes looks, and reads backups and health', async () => {
+    expect((await call('set_appearance', { setting: 'theme', value: 'light' })).text).toBe('theme is now light.')
+    expect((await call('set_appearance', { setting: 'theme', value: 'pink' })).isError).toBe(true)
+    expect(looks).toEqual(['theme=light'])
+    expect((await call('get_backups')).text).toContain('2026-11-24: 3 titles')
+    expect((await call('get_health')).text).toContain('ok Saving')
+  })
+
+  it('marks something seen before Eclipse', async () => {
+    await call('mark_seen_before', { title: 'Inception' })
+    expect(library.entries['movie:27205']).toMatchObject({ status: 'watched', seenBefore: true })
   })
 })
 

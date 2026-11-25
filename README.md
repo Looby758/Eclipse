@@ -59,7 +59,7 @@ Each computer needs the key pasted once.
 
 ## Claude Desktop: ask Claude to use Eclipse
 
-Like Orbit, Eclipse can be used from the [Claude Desktop app](https://claude.ai/download): “tick the next episode of Severance”, “add Dune (2021) to my watchlist”, “what did I watch last week?”, “what fits before bed tonight?”, “rate Breaking Bad 10 and note it was from Sam”, “make a list called Cosy with …”. It uses your normal Claude plan, so there's no API key.
+Like Orbit, Eclipse can be used from the [Claude Desktop app](https://claude.ai/download): “tick the next episode of Severance”, “add Dune (2021) to my watchlist”, “what did I watch last week?”, “what fits before bed tonight?”, “we watched the next Walking Dead with Jack”, “set Walking Dead with Jack for Saturday at 8, every week”, “rate Breaking Bad 10 and note it was from Sam”, “make a list called Cosy with …”, “switch to the light theme”. Anything you can do in Eclipse, you can ask Claude to do. It uses your normal Claude plan, so there's no API key.
 
 **Setting it up (once on each computer):**
 
@@ -71,7 +71,7 @@ Like Orbit, Eclipse can be used from the [Claude Desktop app](https://claude.ai/
 
 If Eclipse can't write the file, it shows the text to paste: in Claude Desktop open *Settings → Developer → Edit Config* and add the `eclipse` part inside `mcpServers`.
 
-**What Claude can use** (each part can be switched off in Settings): your library and stats; ticking and changing things; search and recommendations; your evenings; and app settings. Every change shows the Undo bar in Eclipse, and you can ask Claude to undo its last change. Claude asks before removing anything you didn't ask it to.
+**What Claude can use** (62 tools; each part can be switched off in Settings): your library and stats (including watching together, milestones, year in review, timeline and catch-ups); ticking and changing things (yours or with someone); search and recommendations; your evenings; and app settings and looks. Only choosing files (Sequel import, export) and picking posters stay in the app. Every change shows the Undo bar in Eclipse, and you can ask Claude to undo its last change. Claude asks before removing anything you didn't ask it to.
 
 **Safety:** off until you switch it on. Only this computer can reach it (it listens on 127.0.0.1, never on the Wi-Fi), and every request needs a secret code that's stored encrypted in `settings.json`, like the TMDB key. Claude Desktop keeps a copy in its own settings file. **New secret code** makes a new one, so the old one stops working. Your TMDB key is never shared.
 

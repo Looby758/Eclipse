@@ -369,6 +369,10 @@ export interface EclipseApi {
   onClaudeShow(callback: (what: ClaudeShow) => void): () => void
   takeClaudeShow(): Promise<ClaudeShow | null>
   claudeShown(): void
+  /** Looks Claude changed (set_appearance): now, and any changed while no window was open. */
+  onClaudeAppearance(callback: (look: { setting: string; value: string }) => void): () => void
+  takeClaudeLooks(): Promise<{ setting: string; value: string }[]>
+  claudeLookApplied(): void
   setPreferences(patch: Partial<Preferences>): Promise<Library>
   /** Called when library.json changes on disk (e.g. Google Drive synced it from your other computer). */
   onLibraryChanged(callback: (library: Library) => void): () => void

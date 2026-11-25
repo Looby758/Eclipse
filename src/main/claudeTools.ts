@@ -36,6 +36,18 @@ import {
   settleSeenShows,
   showProgress,
   startRewatch,
+  watchesWith,
+  tickWith,
+  startWatchWith,
+  planWatchWith,
+  endWatchWith,
+  nextSession,
+  markSeenBefore,
+  snoozeTitle,
+  dropTitle,
+  restoreDropped,
+  removeRewatch,
+  companions,
   type LibraryItem
 } from '@core/library'
 import { matchesQuery, sortEntries, type LibrarySort } from '@core/find'
@@ -44,13 +56,24 @@ import { remainingEpisodes, setWatchSoon, watchSoonOf } from '@core/watchsoon'
 import { setReaction } from '@core/reactions'
 import { setFavourite } from '@core/favourites'
 import { setCountdown } from '@core/countdowns'
-import { createList, findList, listsOf, refOf, removeList, renameList, setInList } from '@core/lists'
+import { createList, findList, followList, listsOf, moveInList, refOf, removeList, renameList, setInList } from '@core/lists'
 import { answerRecommendation, whyText, type Recommendation } from '@core/recommend'
 import { allTimeStats, watchEvents } from '@core/stats'
 import { milestoneKeys } from '@core/milestones'
 import { formatHours } from '@core/time'
 import type { ReleaseEvent } from '@core/calendar'
 import type { WeekSoFar } from '@core/week'
+import type { YearReview } from '@core/year'
+import type { CatchUp } from '@core/catchup'
+import { dismissCatchUp } from '@core/catchup'
+import type { UniverseItem } from '@core/universe'
+import type { KnownFrom } from '@core/knownfrom'
+import type { Suggestion } from '@core/watching'
+import { editMoment, formatAt } from '@core/watching'
+import { milestoneBoard } from '@core/milestones'
+import { setEraName, timelineOf } from '@core/timeline'
+import { moveWatchSoon, planEvenings, soonItem } from '@core/watchsoon'
+import { moveFavourite } from '@core/favourites'
 import {
   REACTIONS,
   REACTION_LIST,
@@ -58,6 +81,7 @@ import {
   episodeKey,
   parseTitleKey,
   type Credits,
+  type CollectionDetails,
   type Library,
   type LibraryEntry,
   type MediaType,
@@ -99,6 +123,14 @@ export interface TmdbDeps {
   traitsOf(key: string): Promise<Trait[]>
   calendar(library: Library): Promise<ReleaseEvent[]>
   weekBudget(library: Library): Promise<WeekSoFar | null>
+  trending?(): Promise<SearchResult[]>
+  yearReview?(library: Library, year: number): Promise<YearReview>
+  catchUp?(library: Library): Promise<CatchUp[]>
+  universe?(type: MediaType, id: number, library: Library): Promise<{ name: string; items: UniverseItem[] }>
+  knownFrom?(type: MediaType, id: number, library: Library): Promise<KnownFrom[]>
+  /** A followed list's titles (people, collections, guides and TMDB lists). */
+  openList?(id: string, library: Library): Promise<{ name: string; items: TitleRef[] }>
+  collection?(id: number): Promise<CollectionDetails>
 }
 
 /** App settings Claude can switch (this computer only). */
@@ -108,7 +140,7 @@ export interface AppControls {
   set(setting: AppSetting, value: boolean | number): string
 }
 
-export const APP_SETTINGS = ['tray', 'discord_status', 'notice_browser_history', 'notice_whats_playing', 'bedtime_guard', 'start_with_computer', 'text_size'] as const
+export const APP_SETTINGS = ['tray', 'phone_remote', 'discord_status', 'notice_browser_history', 'notice_whats_playing', 'bedtime_guard', 'start_with_computer', 'text_size'] as const
 export type AppSetting = (typeof APP_SETTINGS)[number]
 
 export interface ToolDeps {
@@ -122,7 +154,37 @@ export interface ToolDeps {
   /** Brings Eclipse's window up on a page, or a film or show's page. */
   show(what: ClaudeShow): void
   app?: AppControls
+  /** Things only the main process or the window has: noticing, backups, health, appearance. */
+  more?: MoreDeps
   now?: () => Date
+}
+
+/** Looks that live in the window (this computer only). */
+export const APPEARANCE = {
+  theme: ['system', 'dark', 'light'],
+  home_style: ['spotlight', 'classic'],
+  keep_wall_still: ['on', 'off'],
+  posters_fill_in: ['on', 'off'],
+  sounds: ['on', 'off'],
+  star_map_why: ['on', 'off'],
+  premiere_night: ['home', 'countdown', 'off'],
+  heatmap: ['tmdb', 'mine'],
+  finale_music: ['on', 'off']
+} as const
+export type AppearanceSetting = keyof typeof APPEARANCE
+
+export interface MoreDeps {
+  /** "Did you watch these?": episodes noticed from the browser or the player. */
+  suggestions(): Suggestion[]
+  acceptSuggestion(id: string, who: string | null | undefined): void
+  dismissSuggestion(id: string): void
+  backups(): Promise<{ day: string; titles: number; episodes: number; watched: number }[]>
+  /** Restores a day's backup (the current library is copied aside first). */
+  restoreBackup(day: string): void
+  /** "Is everything working?" */
+  health(): { label: string; ok: boolean; detail: string; at: number | null }[]
+  /** Changes a look in the window (this computer). */
+  appearance(setting: AppearanceSetting, value: string): void
 }
 
 const text = (t: string): CallToolResult => ({ content: [{ type: 'text', text: t }] })
@@ -212,6 +274,61 @@ async function findShow(d: ToolDeps, want: string, search = true): Promise<Found
   return { ...f, details: await d.tmdb.details('tv', f.item.id) }
 }
 
+// ---------- Watching with someone ----------
+
+const withArg = z.string().min(1).max(60).optional().describe('Someone the user watches this show with, like "Jack": works on that watch together instead of their own progress')
+
+type WithWatch = ReturnType<typeof watchesWith>[number]
+
+/** The watch together with `who` on a show (any case). */
+function findWatchWith(lib: Library, key: string, who: string): WithWatch {
+  const all = watchesWith(lib.entries[key])
+  const w = who.trim().toLowerCase()
+  const found = all.find((x) => x.watch.with.toLowerCase() === w) ?? (all.filter((x) => x.watch.with.toLowerCase().startsWith(w)).length === 1 ? all.find((x) => x.watch.with.toLowerCase().startsWith(w)) : undefined)
+  if (found) return found
+  const name = lib.entries[key]?.title.name ?? key
+  throw new Error(all.length ? `${name} isn’t being watched with “${who}”. It’s being watched with ${all.map((x) => x.watch.with).join(', ')}.` : `${name} isn’t being watched with anyone. start_watching_with starts one.`)
+}
+
+/** A watch together seen as an entry of its own (its ticks), for working out what's next. */
+const withEntry = (e: LibraryEntry | undefined, watch: WithWatch['watch']): LibraryEntry | undefined => (e ? { ...e, status: 'watching', episodes: watch.episodes ?? {} } : undefined)
+
+function nextWith(lib: Library, key: string, index: number, det: TitleDetails, day: string): { season: number; episode: number } | undefined {
+  const e = lib.entries[key]
+  const w = e?.rewatches?.[index]
+  return w ? remainingEpisodes(det, withEntry(e, w as WithWatch['watch']), day)[0] : undefined
+}
+
+/** "Also watching with Jack": so Claude knows to ask which, when it matters. */
+function togetherNote(lib: Library, key: string): string {
+  const all = watchesWith(lib.entries[key])
+  return all.length ? `(Also watching it with ${all.map((x) => x.watch.with).join(', ')}: those ticks are separate; pass with to tick on one.)` : ''
+}
+
+const plannedText = (watch: WithWatch['watch'], now: Date): string => {
+  if (!watch.planned) return 'no time set'
+  const at = nextSession(watch, now)
+  const when = at ? `${localDate(at)} ${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}` : `${watch.planned.at.replace('T', ' ')} (past)`
+  return `${watch.planned.weekly ? 'every week, next ' : ''}${when}`
+}
+
+/** Every watch together, as lines for Claude. */
+async function togetherLines(d: ToolDeps, lib: Library): Promise<string[]> {
+  const shows = Object.values(lib.entries).filter((e) => watchesWith(e).length)
+  if (!shows.length) return []
+  const details = d.tmdb.hasKey() ? await d.tmdb.detailsMany(shows.filter((e) => e.type === 'tv').map((e) => e.key)) : {}
+  const out: string[] = []
+  for (const e of shows) {
+    for (const { watch } of watchesWith(e)) {
+      const det = details[e.key]
+      const next = det ? remainingEpisodes(det, withEntry(e, watch), today(d))[0] : undefined
+      const ticked = Object.keys(watch.episodes ?? {}).length
+      out.push(`- With ${watch.with}: ${entryLabel(e)}, ${next ? `next ${episodeLabel(next.season, next.episode)}` : det ? 'nothing more out yet' : `${ticked} episodes ticked`}, ${plannedText(watch, nowOf(d))}, started ${watch.startedOn}`)
+    }
+  }
+  return out
+}
+
 const statusOf = (lib: Library, key: string): string => {
   const e = activeEntry(lib.entries[key])
   return e ? STATUS_LABELS[e.status] : 'not in library'
@@ -226,7 +343,7 @@ function libraryTools(server: McpServer, d: ToolDeps): void {
     {
       title: 'What’s going on in Eclipse',
       description:
-        'A summary of the user’s Eclipse: how many titles are in each list, the shows they’re watching with the next episode of each (Up next), Watch soon, countdowns, and how much time is left tonight before bed. A good first call for “what should I watch?” or “where am I up to?”.',
+        'A summary of the user’s Eclipse: how many titles are in each list, the shows they’re watching with the next episode of each (Up next), shows they’re watching together with someone (and when), Watch soon, countdowns, and how much time is left tonight before bed. A good first call for “what should I watch?” or “where am I up to?”.',
       inputSchema: {}
     },
     async () => {
@@ -246,6 +363,8 @@ function libraryTools(server: McpServer, d: ToolDeps): void {
       out.push('', 'Watch soon (the user’s own order):')
       if (!s.soon.length) out.push('- nothing')
       for (const w of s.soon) out.push(`- ${titleLabel({ key: w.key, name: w.name, year: lib.entries[w.key]?.title.year ?? null })}${w.done ? ' (done)' : w.film ? ` film, ${hoursText(w.minutes)}` : `, ${w.episodes} episodes, ${hoursText(w.minutes)}`}`)
+      const together = await togetherLines(d, lib)
+      if (together.length) out.push('', 'Watching together (separate from the user’s own progress):', ...together)
       const countdowns = lib.countdowns ?? []
       if (countdowns.length) out.push('', `Countdowns: ${countdowns.map((r) => titleLabel(r)).join(', ')}`)
       return out.join('\n')
@@ -430,10 +549,10 @@ function libraryTools(server: McpServer, d: ToolDeps): void {
     'get_lists',
     {
       title: 'Lists',
-      description: 'The user’s lists (their own lists, and the people, collections and guides they follow). Give a list’s name to see what’s on one of their own lists.',
+      description: 'The user’s lists (their own lists, and the people, collections, watch-order guides and TMDB lists they follow). Give a list’s name to see what’s on it, with the user’s status for each.',
       inputSchema: { list: z.string().optional().describe('A list’s name or id, to see its titles') }
     },
-    ({ list }: { list?: string }) => {
+    async ({ list }: { list?: string }) => {
       const lib = d.library()
       const all = listsOf(lib)
       if (!list) {
@@ -441,7 +560,11 @@ function libraryTools(server: McpServer, d: ToolDeps): void {
         return all.map((l) => `- ${l.name} [${l.id}]${l.source.kind === 'custom' ? `, own list, ${l.items?.length ?? 0} titles` : `, following (${l.source.kind})`}`).join('\n')
       }
       const l = pickList(lib, list, false)
-      if (l.source.kind !== 'custom') return `${l.name} is a list Eclipse fills from TMDB or its guides. Open it in Eclipse to see it (open_in_eclipse with page lists).`
+      if (l.source.kind !== 'custom') {
+        if (!d.tmdb.openList || !d.tmdb.hasKey()) return `${l.name} is a list Eclipse fills from TMDB or its guides. Open it in Eclipse to see it.`
+        const v = await d.tmdb.openList(l.id, lib)
+        return [`${v.name}:`, ...v.items.map((r, i) => `${i + 1}. ${titleLabel(r)}${r.season ? ` season ${r.season}` : ''}${r.role ? ` as ${r.role}` : ''}: ${statusOf(lib, r.key)}`)].join('\n')
+      }
       if (!l.items?.length) return `${l.name} is empty.`
       return [`${l.name}:`, ...l.items.map((r, i) => `${i + 1}. ${titleLabel(r)}: ${statusOf(lib, r.key)}`)].join('\n')
     }
@@ -517,7 +640,7 @@ function trackingTools(server: McpServer, d: ToolDeps): void {
     {
       title: 'Tick episodes',
       description:
-        'Ticks (or unticks) episodes of a show as watched today. One episode (season + episode), a run (episode to to_episode), a whole season (season only), everything up to an episode (up_to: true, like Eclipse’s “Watched up to here”), or the whole show (all: true). before_eclipse ticks them with no date (watched long ago). A show not in the library is added as Watching. While the user is rewatching, ticks go on the rewatch.',
+        'Ticks (or unticks) episodes of a show as watched today. One episode (season + episode), a run (episode to to_episode), a whole season (season only), everything up to an episode (up_to: true, like Eclipse’s “Watched up to here”), or the whole show (all: true). before_eclipse ticks them with no date (watched long ago). with ticks them on a watch with someone (“with Jack”) instead of the user’s own progress. A show not in the library is added as Watching. While the user is rewatching, their own ticks go on the rewatch.',
       inputSchema: {
         title: titleArg,
         season: z.number().int().min(0).optional(),
@@ -526,14 +649,22 @@ function trackingTools(server: McpServer, d: ToolDeps): void {
         up_to: z.boolean().optional().describe('Tick every episode from the start of the show up to this one'),
         all: z.boolean().optional().describe('Every episode of every season'),
         watched: z.boolean().optional().describe('false unticks them (default true)'),
-        before_eclipse: z.boolean().optional().describe('Seen long ago: tick with no date')
+        before_eclipse: z.boolean().optional().describe('Seen long ago: tick with no date'),
+        with: withArg
       },
       write: true
     },
-    async (a: { title: string; season?: number; episode?: number; to_episode?: number; up_to?: boolean; all?: boolean; watched?: boolean; before_eclipse?: boolean }) => {
+    async (a: { title: string; season?: number; episode?: number; to_episode?: number; up_to?: boolean; all?: boolean; watched?: boolean; before_eclipse?: boolean; with?: string }) => {
       const f = await findShow(d, a.title)
       const keys = episodesFor(f.details.seasons, { season: a.season, episode: a.episode, toEpisode: a.to_episode, upTo: a.up_to, all: a.all })
       const watched = a.watched !== false
+      const label = titleLabel({ key: f.item.key, name: f.item.title.name, year: f.item.title.year })
+      if (a.with) {
+        const w = findWatchWith(d.library(), f.item.key, a.with)
+        const after = d.change((lib) => tickWith(lib, f.item.key, w.index, keys, watched, nowOf(d)))
+        const next = nextWith(after, f.item.key, w.index, f.details, today(d))
+        return `${watched ? 'Ticked' : 'Unticked'} ${episodesText(keys)} of ${label} on the watch with ${w.watch.with}. ${next ? `Next together: ${episodeLabel(next.season, next.episode)}.` : 'That’s everything that’s out.'}`
+      }
       const undated = watched && !!a.before_eclipse
       const after = d.change((lib) => {
         const next = setEpisodes(lib, f.item, keys, watched, nowOf(d), undated)
@@ -543,11 +674,11 @@ function trackingTools(server: McpServer, d: ToolDeps): void {
       const e = activeEntry(after.entries[f.item.key])
       const p = showProgress(e, f.details.seasons)
       const next = e && e.status !== 'watched' ? remainingEpisodes(f.details, e, today(d))[0] : undefined
-      const label = titleLabel({ key: f.item.key, name: f.item.title.name, year: f.item.title.year })
       return [
         `${watched ? 'Ticked' : 'Unticked'} ${episodesText(keys)} of ${label}${undated ? ' (no date)' : ''}.`,
         `Now ${p.watched} of ${p.total} episodes, status ${e ? STATUS_LABELS[e.status] : 'not in library'}${currentRewatch(after.entries[f.item.key]) ? ' (rewatch)' : ''}.`,
-        next ? `Next: ${episodeLabel(next.season, next.episode)}.` : e?.status === 'watching' ? 'That’s everything that’s out. If the show has ended, it could be marked Watched (set_status).' : ''
+        next ? `Next: ${episodeLabel(next.season, next.episode)}.` : e?.status === 'watching' ? 'That’s everything that’s out. If the show has ended, it could be marked Watched (set_status).' : '',
+        togetherNote(after, f.item.key)
       ]
         .filter(Boolean)
         .join(' ')
@@ -559,20 +690,32 @@ function trackingTools(server: McpServer, d: ToolDeps): void {
     'tick_next_episode',
     {
       title: 'Tick the next episode',
-      description: 'Ticks the next episode of a show the user is watching (what they’d press on Home), and says what’s next after it.',
-      inputSchema: { title: titleArg, count: z.number().int().min(1).max(50).optional().describe('Tick this many in a row (default 1)') },
+      description:
+        'Ticks the next episode of a show (what they’d press on Home), and says what’s next after it. with ticks the next episode of a watch with someone (“we watched the next Walking Dead with Jack”) instead of the user’s own progress.',
+      inputSchema: { title: titleArg, count: z.number().int().min(1).max(50).optional().describe('Tick this many in a row (default 1)'), with: withArg },
       write: true
     },
-    async ({ title, count }: { title: string; count?: number }) => {
+    async ({ title, count, with: who }: { title: string; count?: number; with?: string }) => {
       const f = await findShow(d, title)
-      const e = activeEntry(d.library().entries[f.item.key])
+      const lib = d.library()
+      const label = titleLabel({ key: f.item.key, name: f.item.title.name, year: f.item.title.year })
+      if (who) {
+        const w = findWatchWith(lib, f.item.key, who)
+        const rest = remainingEpisodes(f.details, withEntry(lib.entries[f.item.key], w.watch), today(d))
+        if (!rest.length) return `The watch with ${w.watch.with} has nothing left that’s out.`
+        const keys = rest.slice(0, count ?? 1).map((x) => episodeKey(x.season, x.episode))
+        d.change((l) => tickWith(l, f.item.key, w.index, keys, true, nowOf(d)))
+        const after = rest[keys.length]
+        return `Ticked ${episodesText(keys)} of ${label} with ${w.watch.with}. ${after ? `Next together: ${episodeLabel(after.season, after.episode)}.` : 'That was the last one out.'}`
+      }
+      const e = activeEntry(lib.entries[f.item.key])
       const rest = remainingEpisodes(f.details, e, today(d))
-      if (!rest.length) return `${f.item.title.name} has nothing left that’s out.`
+      if (!rest.length) return `${f.item.title.name} has nothing left that’s out on the user’s own progress.${togetherNote(lib, f.item.key) ? ` ${togetherNote(lib, f.item.key)}` : ''}`
       const eps = rest.slice(0, count ?? 1)
       const keys = eps.map((x) => episodeKey(x.season, x.episode))
-      d.change((lib) => setEpisodes(lib, f.item, keys, true, nowOf(d)))
+      const afterLib = d.change((l) => setEpisodes(l, f.item, keys, true, nowOf(d)))
       const after = rest[eps.length]
-      return `Ticked ${episodesText(keys)} of ${titleLabel({ key: f.item.key, name: f.item.title.name, year: f.item.title.year })}. ${after ? `Next: ${episodeLabel(after.season, after.episode)}.` : 'That was the last one out.'}`
+      return [`Ticked ${episodesText(keys)} of ${label} (the user’s own progress).`, after ? `Next: ${episodeLabel(after.season, after.episode)}.` : 'That was the last one out.', togetherNote(afterLib, f.item.key)].filter(Boolean).join(' ')
     }
   )
 
@@ -1023,6 +1166,443 @@ function settingsTools(server: McpServer, d: ToolDeps): void {
   )
 }
 
+
+// ---------- More of what the user can do (round 2) ----------
+
+function togetherTools(server: McpServer, d: ToolDeps): void {
+  tool(
+    server,
+    'start_watching_with',
+    {
+      title: 'Start watching a show with someone',
+      description: 'Starts watching a show with someone (“I’m starting The Bear with Jack”). Its ticks are kept apart from the user’s own progress, and several can run at once.',
+      inputSchema: { title: titleArg, with: z.string().min(1).max(60).describe('Who with, like "Jack"') },
+      write: true
+    },
+    async ({ title, with: who }: { title: string; with: string }) => {
+      const f = await findTitle(d, title, { type: 'tv' })
+      if (f.item.type !== 'tv') throw new Error(`${f.item.title.name} is a film: watching together is for shows.`)
+      if (watchesWith(d.library().entries[f.item.key]).some((x) => x.watch.with.toLowerCase() === who.trim().toLowerCase())) return `Already watching ${f.item.title.name} with ${who}.`
+      d.change((lib) => startWatchWith(lib, f.item, who, nowOf(d)))
+      return `Started watching ${titleLabel({ key: f.item.key, name: f.item.title.name, year: f.item.title.year })} with ${who.trim()}. Tick episodes on it with mark_episodes or tick_next_episode and with: "${who.trim()}".`
+    }
+  )
+
+  tool(
+    server,
+    'plan_watching_with',
+    {
+      title: 'Set a time to watch together',
+      description: 'Sets (or clears) the next time the user has arranged to watch a show with someone, optionally every week. Home shows it around that time and a reminder pops up 15 minutes before.',
+      inputSchema: {
+        title: titleArg,
+        with: z.string().min(1).max(60),
+        at: z.string().regex(/^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d$/, 'Local time like 2026-11-28T20:30').nullable().describe('Local date and time like 2026-11-28T20:30, or null to clear'),
+        weekly: z.boolean().optional().describe('The same time every week')
+      },
+      write: true
+    },
+    async ({ title, with: who, at, weekly }: { title: string; with: string; at: string | null; weekly?: boolean }) => {
+      const f = await findTitle(d, title, { type: 'tv', search: false })
+      const w = findWatchWith(d.library(), f.item.key, who)
+      d.change((lib) => planWatchWith(lib, f.item.key, w.index, at ? { at, ...(weekly ? { weekly: true } : {}) } : null, nowOf(d)))
+      return at ? `${f.item.title.name} with ${w.watch.with}: ${weekly ? 'every week from' : 'set for'} ${at.replace('T', ' ')}.` : `Cleared the time for ${f.item.title.name} with ${w.watch.with}.`
+    }
+  )
+
+  tool(
+    server,
+    'end_watching_with',
+    {
+      title: 'Finish or stop watching together',
+      description: 'Ends a watch together: finish keeps it (it counts in stats), cancel throws it away. Check with the user before cancelling.',
+      inputSchema: { title: titleArg, with: z.string().min(1).max(60), action: z.enum(['finish', 'cancel']) },
+      write: true
+    },
+    async ({ title, with: who, action }: { title: string; with: string; action: 'finish' | 'cancel' }) => {
+      const f = await findTitle(d, title, { type: 'tv', search: false })
+      const w = findWatchWith(d.library(), f.item.key, who)
+      d.change((lib) => endWatchWith(lib, f.item.key, w.index, action === 'finish', nowOf(d)))
+      return action === 'finish' ? `Finished watching ${f.item.title.name} with ${w.watch.with}.` : `Stopped watching ${f.item.title.name} with ${w.watch.with} (its ticks are gone).`
+    }
+  )
+}
+
+function libraryMoreTools(server: McpServer, d: ToolDeps): void {
+  tool(
+    server,
+    'get_watching_together',
+    {
+      title: 'Watching together',
+      description: 'Every show the user is watching with someone: who with, the next episode together, and the time arranged (if any). Also everyone they’ve watched things with.',
+      inputSchema: {}
+    },
+    async () => {
+      const lib = d.library()
+      const lines = await togetherLines(d, lib)
+      const people = companions(lib)
+      return [lines.length ? 'Watching together now:' : 'Not watching anything with anyone right now.', ...lines, people.length ? `People they’ve watched with: ${people.join(', ')}` : ''].filter(Boolean).join('\n')
+    }
+  )
+
+  tool(
+    server,
+    'get_watch_soon_plan',
+    {
+      title: 'When Watch soon gets done',
+      description: 'Plans Watch soon over the user’s watching evenings, in their order: what goes on which night, and the evening they’d finish everything.',
+      inputSchema: { nights: z.number().int().min(1).max(60).optional().describe('How many nights to show (default 14)') }
+    },
+    async ({ nights }: { nights?: number }) => {
+      const lib = d.library()
+      const refs = watchSoonOf(lib)
+      if (!refs.length) return 'Watch soon is empty.'
+      const details = d.tmdb.hasKey() ? await d.tmdb.detailsMany(refs.map((r) => r.key)) : {}
+      const items = refs.map((r) => soonItem(r, details[r.key], activeEntry(lib.entries[r.key]), today(d)))
+      const plan = planEvenings(items, nowOf(d), preferencesOf(lib))
+      const out = [`${hoursText(plan.totalMinutes)} in all.${plan.finish ? ` Done by the evening of ${plan.finish}.` : ' It can’t be planned: no watching nights are set.'}`]
+      for (const n of plan.nights.slice(0, nights ?? 14)) out.push(`- ${n.day}${n.tonight ? ' (tonight)' : ''}: ${n.slots.map((x) => `${x.name}${x.film ? '' : ` ${episodesText(x.episodes.map((e) => episodeKey(e.season, e.episode)))}`}`).join('; ')}`)
+      return out.join('\n')
+    }
+  )
+
+  tool(
+    server,
+    'get_milestones',
+    { title: 'Milestones', description: 'The user’s milestones: episodes, hours, films and so on, each with what they’ve reached and the next step.', inputSchema: {} },
+    async () => {
+      const lib = d.library()
+      const details = d.tmdb.hasKey() ? await d.tmdb.detailsMany(milestoneKeys(lib)) : {}
+      const board = milestoneBoard(lib, details)
+      if (!board.length) return 'No milestones yet.'
+      return board.map((t) => `- ${t.title}: ${t.label}; next at ${t.next.toLocaleString('en-GB')}${t.notes[0] ? ` (latest: ${t.notes[0]})` : ''}`).join('\n')
+    }
+  )
+
+  tool(
+    server,
+    'get_year_review',
+    { title: 'Year in review', description: 'A year of the user’s watching: time, films, episodes, shows finished, busiest month, binge, streak, top titles, favourite director and actor, lists finished.', inputSchema: { year: z.number().int().min(1950).max(2100).optional().describe('Default this year') } },
+    async ({ year }: { year?: number }) => {
+      needKey(d)
+      if (!d.tmdb.yearReview) throw new Error('The year in review isn’t available here.')
+      const y = year ?? nowOf(d).getFullYear()
+      const r = await d.tmdb.yearReview(d.library(), y)
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+      return [
+        `${y}: ${formatHours(r.minutes)} watched, ${r.episodes} episodes of ${r.shows} shows, ${r.films} films, ${r.showsFinished} shows finished, ${r.days} days with something on.`,
+        r.busiestMonth !== null ? `Busiest month: ${months[r.busiestMonth]}.` : '',
+        r.binge ? `Biggest binge: ${r.binge.episodes} episodes of ${r.binge.name} on ${r.binge.day}.` : '',
+        r.streak ? `Longest streak: ${r.streak.days} days (${r.streak.from} to ${r.streak.to}).` : '',
+        `Top: ${r.topTitles.slice(0, 10).map((t) => `${t.name} (${formatHours(t.minutes)})`).join(', ') || 'nothing yet'}`,
+        r.director ? `Director of the year: ${r.director.person.name} (${r.director.titles.join(', ')})` : '',
+        r.actor ? `Actor of the year: ${r.actor.person.name} (${r.actor.titles.join(', ')})` : '',
+        r.listsFinished.length ? `Lists finished: ${r.listsFinished.join(', ')}` : '',
+        `By month: ${r.months.map((m, i) => `${months[i]} ${formatHours(m)}`).join(', ')}`
+      ]
+        .filter(Boolean)
+        .join('\n')
+    }
+  )
+
+  tool(
+    server,
+    'get_timeline',
+    { title: 'Eras of watching', description: 'The eras on the user’s timeline (“The Walking Dead winter, 2021–22”): each with its id, months and name. name_era renames one.', inputSchema: {} },
+    async () => {
+      const lib = d.library()
+      const details = d.tmdb.hasKey() ? await d.tmdb.detailsMany(milestoneKeys(lib)) : {}
+      const t = timelineOf(lib, details)
+      if (!t.eras.length) return 'No eras yet: they come from dated watching.'
+      return [`From ${t.first} to ${t.last}.`, ...t.eras.map((e) => `- ${e.name || e.auto} [${e.id}]: ${e.from} to ${e.to}${e.name ? ` (named by the user; Eclipse called it ${e.auto})` : ''}`)].join('\n')
+    }
+  )
+
+  tool(
+    server,
+    'get_catch_up',
+    { title: 'Catch up before the sequel', description: 'Sequels and new seasons coming soon of things the user has seen, with what to rewatch first and which nights it fits.', inputSchema: {} },
+    async () => {
+      needKey(d)
+      if (!d.tmdb.catchUp) throw new Error('Catch up isn’t available here.')
+      const list = await d.tmdb.catchUp(d.library())
+      if (!list.length) return 'Nothing to catch up on before a sequel right now.'
+      return list
+        .map((c) => `- ${c.upcoming.name} is out ${c.upcoming.date}${c.upcoming.cinema ? ' in cinemas' : ''}: rewatch ${c.rewatch.name}${c.rewatch.season ? ` season ${c.rewatch.season}` : ''}${c.fromEpisode && c.fromEpisode > 1 ? ` from episode ${c.fromEpisode}` : ''} (${hoursText(c.rewatch.minutes)}) on ${c.nights.join(', ')} [id ${c.id}]`)
+        .join('\n')
+    }
+  )
+
+  tool(
+    server,
+    'get_related',
+    { title: 'The same universe, and faces you know', description: 'For a film or show: the other titles in its universe or series (with the user’s progress), and cast the user knows from other things they’ve watched.', inputSchema: { title: titleArg, type: typeArg } },
+    async ({ title, type }: { title: string; type?: MediaType }) => {
+      needKey(d)
+      const f = await findTitle(d, title, { type })
+      const lib = d.library()
+      const out: string[] = []
+      if (d.tmdb.universe) {
+        const u = await d.tmdb.universe(f.item.type, f.item.id, lib).catch(() => null)
+        if (u?.items.length) out.push(`${u.name}:`, ...u.items.map((i) => `- ${titleLabel(i)}${i.current ? ' (this one)' : ''}: ${i.line}`))
+      }
+      if (d.tmdb.knownFrom) {
+        const k = await d.tmdb.knownFrom(f.item.type, f.item.id, lib).catch(() => [])
+        if (k.length) out.push('Cast the user knows:', ...k.map((x) => `- ${x.person.name}${x.person.role ? ` (${x.person.role})` : ''}, also in ${x.titles.map((t) => t.name).join(', ')}`))
+      }
+      return out.length ? out.join('\n') : `Nothing related to ${f.item.title.name} that the user has seen.`
+    }
+  )
+
+  tool(
+    server,
+    'get_did_you_watch',
+    { title: 'Did you watch these?', description: 'Episodes Eclipse noticed the user may have watched (from browser history or what was playing), waiting to be ticked or dismissed with answer_did_you_watch.', inputSchema: {} },
+    () => {
+      const list = d.more?.suggestions() ?? []
+      if (!list.length) return 'Nothing waiting.'
+      return list.map((x) => `- [${x.id}] ${x.name} ${episodeLabel(x.season, x.episode)} on ${x.day}${x.service ? ` (${x.service})` : ''}${x.sure ? '' : ' (guessed as the next one)'}${x.targets?.some((t) => t.with) ? `, could go on the watch with ${x.targets.filter((t) => t.with).map((t) => t.with).join(', ')}` : ''}`).join('\n')
+    }
+  )
+
+  tool(
+    server,
+    'get_dropped',
+    { title: 'Recently dropped', description: 'Titles recently cleared out of the watchlist (the last 30), which can be put back with restore_dropped.', inputSchema: {} },
+    () => {
+      const list = d.library().dropped ?? []
+      return list.length ? list.map((x) => `- ${entryLabel(x.entry)}, dropped ${x.droppedAt.slice(0, 10)}`).join('\n') : 'Nothing dropped.'
+    }
+  )
+
+  tool(
+    server,
+    'get_moments',
+    { title: 'Saved moments', description: 'The moments the user bookmarked while watching a title, numbered, with their notes. edit_moment changes a note.', inputSchema: { title: titleArg } },
+    async ({ title }: { title: string }) => {
+      const f = await findTitle(d, title, { search: false })
+      const m = f.entry?.moments ?? []
+      if (!m.length) return `No saved moments for ${f.item.title.name}.`
+      return m.map((x, i) => `${i + 1}. ${x.episode ? `${x.episode} ` : ''}at ${formatAt(x.at)}${x.note ? `: “${x.note}”` : ''} (saved ${x.savedAt.slice(0, 10)})`).join('\n')
+    }
+  )
+}
+
+function trackingMoreTools(server: McpServer, d: ToolDeps): void {
+  tool(
+    server,
+    'mark_seen_before',
+    { title: 'Seen before', description: 'Marks a film or show as watched long ago, before the user used Eclipse (Watched, with no date). For a show, ticks nothing: use mark_episodes with all and before_eclipse to tick every episode too.', inputSchema: { title: titleArg, type: typeArg }, write: true },
+    async ({ title, type }: { title: string; type?: MediaType }) => {
+      const f = await findTitle(d, title, { type })
+      d.change((lib) => markSeenBefore(lib, f.item, nowOf(d)))
+      return `Marked ${titleLabel({ key: f.item.key, name: f.item.title.name, year: f.item.title.year })} as seen before Eclipse.`
+    }
+  )
+
+  tool(
+    server,
+    'drop_from_watchlist',
+    { title: 'Clear out', description: 'Takes a title off the library while clearing out the watchlist, keeping it in Recently dropped so it can be put back (restore_dropped). Gentler than set_status remove.', inputSchema: { title: titleArg }, write: true },
+    async ({ title }: { title: string }) => {
+      const f = await findTitle(d, title, { search: false })
+      if (!f.entry) throw new Error(`${f.item.title.name} isn’t in the library.`)
+      d.change((lib) => dropTitle(lib, f.item.key, nowOf(d)))
+      return `Dropped ${entryLabel(f.entry!)}. It can come back with restore_dropped.`
+    }
+  )
+
+  tool(
+    server,
+    'restore_dropped',
+    { title: 'Put back a dropped title', description: 'Puts a title from Recently dropped back as it was (and back on Watch soon if it was there).', inputSchema: { title: z.string().min(1) }, write: true },
+    ({ title }: { title: string }) => {
+      const list = d.library().dropped ?? []
+      const key = keyOf(title)
+      const hits = key ? list.filter((x) => x.entry.key === key) : list.filter((x) => findInLibrary({ version: 1, entries: { [x.entry.key]: x.entry } }, title).length)
+      if (hits.length !== 1) throw new Error(hits.length ? `More than one matches: ${hits.map((x) => entryLabel(x.entry)).join(', ')}.` : `Nothing called “${title}” was dropped recently.`)
+      d.change((lib) => restoreDropped(lib, hits[0].entry.key))
+      return `Put ${entryLabel(hits[0].entry)} back.`
+    }
+  )
+
+  tool(
+    server,
+    'snooze_title',
+    { title: 'Stop nudging about it', description: 'Stops Eclipse nudging about a title (“keep going or stop?”, “season 4 is out”) until a day, or null to stop snoozing.', inputSchema: { title: titleArg, until: day.nullable() }, write: true },
+    async ({ title, until }: { title: string; until: string | null }) => {
+      const f = await findTitle(d, title, { search: false })
+      d.change((lib) => snoozeTitle(lib, f.item.key, until, nowOf(d)))
+      return until ? `No nudges about ${f.item.title.name} until ${until}.` : `Nudges about ${f.item.title.name} are back on.`
+    }
+  )
+
+  tool(
+    server,
+    'edit_moment',
+    { title: 'Change a saved moment', description: 'Changes the note on a saved moment (numbered as get_moments lists them), or deletes the moment with delete: true.', inputSchema: { title: titleArg, number: z.number().int().min(1), note: z.string().max(300).optional(), delete: z.boolean().optional() }, write: true },
+    async ({ title, number, note, delete: del }: { title: string; number: number; note?: string; delete?: boolean }) => {
+      const f = await findTitle(d, title, { search: false })
+      if (!f.entry?.moments?.[number - 1]) throw new Error(`${f.item.title.name} has no moment ${number}.`)
+      d.change((lib) => editMoment(lib, f.item.key, number - 1, del ? null : (note ?? '')))
+      return del ? `Deleted moment ${number}.` : `Moment ${number}: “${note ?? ''}”.`
+    }
+  )
+
+  tool(
+    server,
+    'delete_rewatch',
+    { title: 'Delete a past rewatch', description: 'Deletes one of a title’s finished rewatches (numbered from 1, oldest first, as get_title lists them). Check with the user first.', inputSchema: { title: titleArg, number: z.number().int().min(1) }, write: true },
+    async ({ title, number }: { title: string; number: number }) => {
+      const f = await findTitle(d, title, { search: false })
+      if (!f.entry?.rewatches?.[number - 1]) throw new Error(`${f.item.title.name} has no rewatch ${number}.`)
+      d.change((lib) => removeRewatch(lib, f.item.key, number - 1, nowOf(d)))
+      return `Deleted rewatch ${number} of ${f.item.title.name}.`
+    }
+  )
+
+  tool(
+    server,
+    'reorder',
+    {
+      title: 'Move something up or down',
+      description: 'Moves a title to a new position (1 is the top) in Watch soon, the favourites wall, or one of the user’s own lists.',
+      inputSchema: { where: z.enum(['watch_soon', 'favourites', 'list']), list: z.string().optional().describe('The list’s name, when where is list'), title: titleArg, position: z.number().int().min(1) },
+      write: true
+    },
+    async ({ where, list, title, position }: { where: 'watch_soon' | 'favourites' | 'list'; list?: string; title: string; position: number }) => {
+      const lib = d.library()
+      const f = await findTitle(d, title, { search: false }).catch(() => findTitle(d, title))
+      const l = where === 'list' ? pickList(lib, list ?? '') : null
+      const items = where === 'watch_soon' ? watchSoonOf(lib) : where === 'favourites' ? (lib.favourites ?? []) : (l!.items ?? [])
+      const from = items.findIndex((r) => r.key === f.item.key)
+      if (from < 0) throw new Error(`${f.item.title.name} isn’t on it.`)
+      const to = Math.min(position, items.length) - 1
+      d.change((x) => (where === 'watch_soon' ? moveWatchSoon(x, from, to) : where === 'favourites' ? moveFavourite(x, from, to) : moveInList(x, l!.id, from, to)))
+      return `Moved ${f.item.title.name} to number ${to + 1}.`
+    }
+  )
+
+  tool(
+    server,
+    'name_era',
+    { title: 'Name an era', description: 'Gives an era on the timeline the user’s own name (ids from get_timeline), or null to go back to Eclipse’s name.', inputSchema: { era: z.string().min(1), name: z.string().max(80).nullable() }, write: true },
+    ({ era, name }: { era: string; name: string | null }) => {
+      d.change((lib) => setEraName(lib, era, name))
+      return name ? `Named it “${name}”.` : 'Back to Eclipse’s name.'
+    }
+  )
+
+  tool(
+    server,
+    'dismiss_catch_up',
+    { title: 'Not now (catch up)', description: 'Says “Not now” to a catch-up suggestion (ids from get_catch_up), so it stops showing.', inputSchema: { id: z.string().min(1) }, write: true },
+    ({ id }: { id: string }) => {
+      d.change((lib) => dismissCatchUp(lib, id))
+      return 'Done: it won’t show again.'
+    }
+  )
+
+  tool(
+    server,
+    'answer_did_you_watch',
+    {
+      title: 'Answer “Did you watch these?”',
+      description: 'Ticks a noticed episode (on the day it was watched, on the user’s own progress or a watch together with `with`), or says “Not this” to it. Ids from get_did_you_watch.',
+      inputSchema: { id: z.string().min(1), answer: z.enum(['tick', 'not_this']), with: z.string().max(60).optional() },
+      write: true
+    },
+    ({ id, answer, with: who }: { id: string; answer: 'tick' | 'not_this'; with?: string }) => {
+      if (!d.more) throw new Error('Not available here.')
+      const s = d.more.suggestions().find((x) => x.id === id)
+      if (!s) throw new Error('That one isn’t waiting any more.')
+      if (answer === 'not_this') {
+        d.more.dismissSuggestion(id)
+        return `Dismissed ${s.name} ${episodeLabel(s.season, s.episode)}.`
+      }
+      d.more.acceptSuggestion(id, who ?? null)
+      return `Ticked ${s.name} ${episodeLabel(s.season, s.episode)} on ${s.day}${who ? ` with ${who}` : ''}.`
+    }
+  )
+
+  tool(
+    server,
+    'follow_list',
+    {
+      title: 'Follow a person or a film series',
+      description: 'Adds a list the user follows: everything an actor has been in or a director made (person), or a film series (collection, from one of its films).',
+      inputSchema: { kind: z.enum(['actor', 'director', 'collection']), name: z.string().min(1).describe('The person’s name, or for a collection one of its films') },
+      write: true
+    },
+    async ({ kind, name }: { kind: 'actor' | 'director' | 'collection'; name: string }) => {
+      needKey(d)
+      if (kind === 'collection') {
+        const f = await findTitle(d, name, { type: 'movie' })
+        const det = await d.tmdb.details('movie', f.item.id)
+        if (!det.collection) throw new Error(`${det.name} isn’t part of a film series on TMDB.`)
+        const c = d.tmdb.collection ? await d.tmdb.collection(det.collection.id) : null
+        d.change((lib) => followList(lib, { name: det.collection!.name, source: { kind: 'collection', collectionId: det.collection!.id }, imagePath: c?.posterPath ?? null }, nowOf(d)))
+        return `Following ${det.collection.name}.`
+      }
+      const people = await d.tmdb.searchPeople(name)
+      if (!people.length) throw new Error(`Nobody called “${name}” was found.`)
+      const p = people[0]
+      d.change((lib) => followList(lib, { name: p.name, source: { kind: 'person', personId: p.id, role: kind }, imagePath: p.profilePath }, nowOf(d)))
+      return `Following ${p.name} (${kind === 'actor' ? 'everything they’ve been in' : 'what they directed'}).`
+    }
+  )
+}
+
+function discoverMoreTools(server: McpServer, d: ToolDeps): void {
+  tool(server, 'get_trending', { title: 'Trending', description: 'What’s trending on TMDB this week, marking what’s in the user’s library.', inputSchema: { type: typeArg } }, async ({ type }: { type?: MediaType }) => {
+    needKey(d)
+    if (!d.tmdb.trending) throw new Error('Not available here.')
+    const lib = d.library()
+    const list = (await d.tmdb.trending()).filter((r) => !type || r.type === type).slice(0, 20)
+    return list.map((r) => `- ${titleLabel(r)} ${r.type === 'tv' ? 'show' : 'film'}: ${statusOf(lib, r.key)}`).join('\n') || 'Nothing trending.'
+  })
+}
+
+function settingsMoreTools(server: McpServer, d: ToolDeps): void {
+  const more = d.more
+  if (!more) return
+  tool(
+    server,
+    'set_appearance',
+    {
+      title: 'Change how Eclipse looks',
+      description: `Changes a look in Eclipse on this computer: ${Object.entries(APPEARANCE).map(([k, v]) => `${k} (${v.join('/')})`).join(', ')}.`,
+      inputSchema: { setting: z.enum(Object.keys(APPEARANCE) as [AppearanceSetting, ...AppearanceSetting[]]), value: z.string().min(1) },
+      write: true
+    },
+    ({ setting, value }: { setting: AppearanceSetting; value: string }) => {
+      const allowed = APPEARANCE[setting] as readonly string[]
+      if (!allowed.includes(value)) throw new Error(`${setting} can be ${allowed.join(', ')}.`)
+      more.appearance(setting, value)
+      return `${setting} is now ${value}.`
+    }
+  )
+  tool(server, 'get_health', { title: 'Is everything working?', description: 'Eclipse’s background jobs (saving, syncing, TMDB, backups, noticing…) with when each last ran and any problem.', inputSchema: {} }, () =>
+    more
+      .health()
+      .map((j) => `- ${j.ok ? 'ok' : 'PROBLEM'} ${j.label}: ${j.detail}${j.at ? ` (${new Date(j.at).toLocaleString('en-GB')})` : ''}`)
+      .join('\n')
+  )
+  tool(server, 'get_backups', { title: 'Backups', description: 'The daily backups of the library, newest first, with what each holds.', inputSchema: {} }, async () => {
+    const list = await more.backups()
+    return list.length ? list.map((b) => `- ${b.day}: ${b.titles} titles, ${b.episodes} episodes, ${b.watched} watched`).join('\n') : 'No backups yet.'
+  })
+  tool(
+    server,
+    'restore_backup',
+    { title: 'Restore a backup', description: 'Puts a day’s backup of the library back (the current library is copied aside first, and Undo works). Always check with the user first.', inputSchema: { day }, write: true },
+    ({ day: which }: { day: string }) => {
+      more.restoreBackup(which)
+      return `Restored the backup from ${which}.`
+    }
+  )
+}
+
 // ---------- Always there ----------
 
 function openTool(server: McpServer, d: ToolDeps): void {
@@ -1047,11 +1627,11 @@ function openTool(server: McpServer, d: ToolDeps): void {
 }
 
 const AREA_TOOLS: Record<ClaudeArea, (server: McpServer, d: ToolDeps) => void> = {
-  library: libraryTools,
-  tracking: trackingTools,
-  discover: discoverTools,
+  library: (s, d) => (libraryTools(s, d), libraryMoreTools(s, d)),
+  tracking: (s, d) => (trackingTools(s, d), togetherTools(s, d), trackingMoreTools(s, d)),
+  discover: (s, d) => (discoverTools(s, d), discoverMoreTools(s, d)),
   evenings: eveningTools,
-  settings: settingsTools
+  settings: (s, d) => (settingsTools(s, d), settingsMoreTools(s, d))
 }
 
 /** Adds the tools for the parts of Eclipse that are switched on. */
