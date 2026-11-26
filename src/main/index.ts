@@ -44,6 +44,7 @@ import { loginStatus, markAsked, setStartAtLogin, startedHidden } from './login'
 import { backupFor, dailyBackup, listBackups } from './backups'
 import { getZoom, setupZoom, setZoom } from './zoom'
 import { foldFromPhone, phoneAsks, resolveAsk, startPhone } from './phone'
+import { foldHandoffsNow, handingOver, handOver, startHandoff } from './handoff'
 import { finaleImage, themeFor } from './finale'
 import { errorText, healthStatus, log, onHealthChanged, recentLog, report } from './health'
 
@@ -135,15 +136,22 @@ function reopenLibrary(): void {
     dataFolder,
     () => {
       report('sync', true, 'Picked up a change from your other computer')
+      // Changes handed over from here may have come back saved, or (on the saving copy) be waiting.
+      foldHandoffsNow()
       broadcastLibrary()
     },
     readOnlyReason
   )
   dailyBackup(isDirectory(dataFolder) ? dataFolder : null)
+  // Before the guard, so it knows the folder when the guard first says whose it is.
+  startHandoff(isDirectory(dataFolder) ? dataFolder : null, readOnlyReason, broadcastLibrary)
   startGuard(isDirectory(dataFolder) ? dataFolder : null, (s) => {
     mainWindow?.webContents.send('guard:changed', s)
     // Phase 45: changes from the phone wait while this copy is read-only.
     void foldFromPhone()
+    // And ones handed over while read-only are saved as soon as this copy may save.
+    foldHandoffsNow()
+    broadcastLibrary()
   })
   startPhone(
     isDirectory(dataFolder) ? dataFolder : null,
@@ -278,8 +286,23 @@ function setupIpc(): void {
     if (!Object.keys(getLibrary().entries).length) reopenLibrary()
     return getLibrary()
   })
-  ipcMain.handle('library:setStatus', (_e, item, newStatus) => change((lib) => setStatus(lib, item, newStatus)))
-  ipcMain.handle('library:setEpisodes', (_e, item, keys: string[], watched: boolean, undated?: boolean) => change((lib) => setEpisodes(lib, item, keys, watched, new Date(), !!undated)))
+  // While Eclipse is open on the other computer, ticks and status changes are handed to it to save (see handoff.ts).
+  ipcMain.handle('library:setStatus', (_e, item: LibraryItem, newStatus) => {
+    if (handingOver() && newStatus) {
+      const lib = handOver({ kind: 'status', item, status: newStatus, was: getLibrary().entries[item.key]?.status ?? null })
+      broadcastLibrary()
+      return lib
+    }
+    return change((lib) => setStatus(lib, item, newStatus))
+  })
+  ipcMain.handle('library:setEpisodes', (_e, item: LibraryItem, keys: string[], watched: boolean, undated?: boolean) => {
+    if (handingOver() && !undated && item.type === 'tv') {
+      const lib = handOver({ kind: 'episodes', item, keys, watched, day: localDate(new Date()), had: !!getLibrary().entries[item.key] })
+      broadcastLibrary()
+      return lib
+    }
+    return change((lib) => setEpisodes(lib, item, keys, watched, new Date(), !!undated))
+  })
   ipcMain.handle('library:drop', (_e, key) => change((lib) => dropTitle(lib, key)))
   ipcMain.handle('library:restore', (_e, key) => saveLibrary(restoreDropped(getLibrary(), key)))
   ipcMain.handle('library:setFrom', (_e, key, from) => saveLibrary(setFrom(getLibrary(), key, from)))

@@ -70,7 +70,27 @@ export function openLibrary(dataFolder: string | null, onChange: (library: Libra
   stopWatching = () => unwatchFile(file, listener)
 }
 
-export const getLibrary = (): Library => current
+/**
+ * What the library looks like here: the saved copy, with any changes this copy has handed to the
+ * other computer (see handoff.ts) shown on top until they come back saved.
+ */
+let view: (library: Library) => Library = (library) => library
+let viewStamp = 0
+let cached: { base: Library; stamp: number; out: Library } | null = null
+
+export function setLibraryView(fn: (library: Library) => Library): void {
+  view = fn
+  refreshLibraryView()
+}
+/** What `view` shows has changed (a change was handed over or tidied away). */
+export const refreshLibraryView = (): void => void viewStamp++
+
+export function getLibrary(): Library {
+  if (cached?.base !== current || cached.stamp !== viewStamp) cached = { base: current, stamp: viewStamp, out: view(current) }
+  return cached.out
+}
+/** The library as saved in library.json, without handed-over changes on top. */
+export const getSavedLibrary = (): Library => current
 
 const saveListeners: (() => void)[] = []
 /** Called after every save made here (the tray menu follows along). */

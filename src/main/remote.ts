@@ -1,13 +1,14 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'http'
 import { networkInterfaces } from 'os'
 import { randomBytes } from 'crypto'
-import { preferencesOf, setEpisodes, setPreferences } from '@core/library'
+import { localDate, preferencesOf, setEpisodes, setPreferences } from '@core/library'
 import { newRemoteToken, remoteState, sameToken, tonightChange, type RemoteState, type TonightAction } from '@core/remote'
 import { episodeKey } from '@core/types'
 import { watchSoonOf } from '@core/watchsoon'
 import type { RemoteStatus } from '@shared/api'
 import { loadSettings, saveSettings } from './settings'
 import { getLibrary, saveLibrary } from './library'
+import { handingOver, handOver } from './handoff'
 import * as tmdb from './tmdb'
 import { remotePage } from './remotePage'
 
@@ -52,11 +53,17 @@ export function remoteStatus(): RemoteStatus {
   }
 }
 
-/** Ticks one episode (on your rewatch, if you're on one). False if the show has gone. Throws while read-only. */
+/**
+ * Ticks one episode (on your rewatch, if you're on one). False if the show has gone. While Eclipse
+ * is open on your other computer, the tick is handed to that copy to save (see handoff.ts).
+ */
 export function tickEpisode(key: string, season: number, episode: number): boolean {
   const e = getLibrary().entries[key]
   if (!e || !Number.isInteger(season) || !Number.isInteger(episode)) return false
-  saveLibrary(setEpisodes(getLibrary(), { key: e.key, type: e.type, id: e.id, title: e.title }, [episodeKey(season, episode)], true))
+  const item = { key: e.key, type: e.type, id: e.id, title: e.title }
+  const keys = [episodeKey(season, episode)]
+  if (handingOver()) handOver({ kind: 'episodes', item, keys, watched: true, day: localDate(new Date()), had: true })
+  else saveLibrary(setEpisodes(getLibrary(), item, keys, true))
   return true
 }
 

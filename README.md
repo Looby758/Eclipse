@@ -176,9 +176,18 @@ Avoid having Eclipse open on both computers at the same time, so the two copies 
 
 You need both computers and the shared Google Drive folder.
 
-1. **Open on both:** open Eclipse on the PC, wait a minute for Drive to sync, then open it on the Mac. The Mac shows a *Read-only* banner saying Eclipse is open on the PC. Try ticking something: the banner shakes and nothing changes.
+1. **Open on both:** open Eclipse on the PC, wait a minute for Drive to sync, then open it on the Mac. The Mac shows a *Read-only* banner saying Eclipse is open on the PC. Try changing a rating or a note: the banner shakes and nothing changes. (Ticking an episode or changing a title's status still works: see *Ticking while the other computer has it open* below.)
 2. **Close the first:** quit Eclipse on the PC. Within a minute or two (once Drive has synced) the banner on the Mac goes away and it works normally.
 3. **Take over:** with both open again, press **Take over** on the read-only one. Within a minute or two the other one turns read-only and says it was taken over.
+
+## Ticking while the other computer has it open
+
+Both computers need this version. Leave Eclipse open on the Mac, and open it (or just the tray icon) on the PC, which shows *Read-only*.
+
+1. **Tray:** in the PC's tray menu, tick the next episode of a show. It says *Ticked … Eclipse on <your Mac> saves it.* and the menu moves on to the next episode straight away.
+2. **Saved on the Mac:** within a few seconds of Drive syncing, the episode shows as ticked in Eclipse on the Mac too. In the data folder, `from-computer-<pc name>.json` appears while the tick is on its way and goes again once it's saved.
+3. **Window and phone remote:** ticking episodes, or changing a title's status, in the read-only window (or from the phone remote) works the same way. Other changes, like ratings and notes, still wait until the Mac is closed.
+4. **Clash:** if the same episode was ticked on both on different days, the Mac's day is kept.
 
 ## Phases 13 to 22: what to try
 

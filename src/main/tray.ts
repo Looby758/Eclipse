@@ -7,6 +7,7 @@ import { state, tickEpisode } from './remote'
 import { discordStatus } from './discord'
 import { changeDiscord } from './noticing'
 import { eclipseNotification } from './notify'
+import { guardStatus } from './guard'
 
 /**
  * Phase 26: Eclipse in the Mac menu bar or the Windows tray. The next episode of each show you're
@@ -41,9 +42,12 @@ async function rebuild(): Promise<void> {
           label: s.label,
           click: () => {
             try {
+              const other = guardStatus().readOnly ? guardStatus().other?.computer : null
               if (tickEpisode(s.key, s.season, s.episode)) {
                 hooks.changed()
-                if (Notification.isSupported()) eclipseNotification({ title: 'Ticked', body: s.done, silent: true }).show()
+                // Read-only here: the tick went to the copy that's open on the other computer to save.
+                const body = other ? `${s.done} Eclipse on ${other} saves it.` : s.done
+                if (Notification.isSupported()) eclipseNotification({ title: 'Ticked', body, silent: true }).show()
               }
             } catch (err) {
               if (Notification.isSupported()) eclipseNotification({ title: 'Not ticked', body: err instanceof Error ? err.message : String(err) }).show()

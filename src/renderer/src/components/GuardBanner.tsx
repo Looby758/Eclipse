@@ -38,7 +38,7 @@ export default function GuardBanner(): React.JSX.Element | null {
       <div className="guard-text">
         <strong>Read-only.</strong>{' '}
         {s.takenOver ? `Eclipse was taken over on ${where}.` : `Eclipse is open on ${where} (since ${time(s.other.since)}).`}{' '}
-        <span className="muted">Changes here aren’t saved, so the two copies don’t overwrite each other. Close it there and this copy carries on by itself.</span>
+        <span className="muted">Ticking episodes and changing a title’s status still work: they’re handed to {s.other.computer} to save. Other changes wait until you close it there, so the two copies don’t overwrite each other.</span>
       </div>
       <button className="btn glass" title="If it was left open by mistake. The other copy turns read-only." onClick={async () => setS(await window.api.takeOver())}>
         Take over
