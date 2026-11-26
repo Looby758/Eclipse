@@ -44,7 +44,7 @@ import { loginStatus, markAsked, setStartAtLogin, startedHidden } from './login'
 import { backupFor, dailyBackup, listBackups } from './backups'
 import { getZoom, setupZoom, setZoom } from './zoom'
 import { foldFromPhone, phoneAsks, resolveAsk, startPhone } from './phone'
-import { foldHandoffsNow, handingOver, handOver, startHandoff } from './handoff'
+import { foldHandoffsNow, startHandoff } from './handoff'
 import { finaleImage, themeFor } from './finale'
 import { errorText, healthStatus, log, onHealthChanged, recentLog, report } from './health'
 
@@ -286,23 +286,8 @@ function setupIpc(): void {
     if (!Object.keys(getLibrary().entries).length) reopenLibrary()
     return getLibrary()
   })
-  // While Eclipse is open on the other computer, ticks and status changes are handed to it to save (see handoff.ts).
-  ipcMain.handle('library:setStatus', (_e, item: LibraryItem, newStatus) => {
-    if (handingOver() && newStatus) {
-      const lib = handOver({ kind: 'status', item, status: newStatus, was: getLibrary().entries[item.key]?.status ?? null })
-      broadcastLibrary()
-      return lib
-    }
-    return change((lib) => setStatus(lib, item, newStatus))
-  })
-  ipcMain.handle('library:setEpisodes', (_e, item: LibraryItem, keys: string[], watched: boolean, undated?: boolean) => {
-    if (handingOver() && !undated && item.type === 'tv') {
-      const lib = handOver({ kind: 'episodes', item, keys, watched, day: localDate(new Date()), had: !!getLibrary().entries[item.key] })
-      broadcastLibrary()
-      return lib
-    }
-    return change((lib) => setEpisodes(lib, item, keys, watched, new Date(), !!undated))
-  })
+  ipcMain.handle('library:setStatus', (_e, item, newStatus) => change((lib) => setStatus(lib, item, newStatus)))
+  ipcMain.handle('library:setEpisodes', (_e, item, keys: string[], watched: boolean, undated?: boolean) => change((lib) => setEpisodes(lib, item, keys, watched, new Date(), !!undated)))
   ipcMain.handle('library:drop', (_e, key) => change((lib) => dropTitle(lib, key)))
   ipcMain.handle('library:restore', (_e, key) => saveLibrary(restoreDropped(getLibrary(), key)))
   ipcMain.handle('library:setFrom', (_e, key, from) => saveLibrary(setFrom(getLibrary(), key, from)))

@@ -78,6 +78,10 @@ let view: (library: Library) => Library = (library) => library
 let viewStamp = 0
 let cached: { base: Library; stamp: number; out: Library } | null = null
 
+/** Hands a change over while read-only, returning the library as shown here, or null if it can't be. */
+let handOff: (from: Library, to: Library) => Library | null = () => null
+export const setHandOff = (fn: typeof handOff): void => void (handOff = fn)
+
 export function setLibraryView(fn: (library: Library) => Library): void {
   view = fn
   refreshLibraryView()
@@ -99,7 +103,12 @@ export const onSave = (fn: () => void): void => void saveListeners.push(fn)
 export function saveLibrary(library: Library): Library {
   if (!folder) throw new Error('Choose a data folder first.')
   const reason = blocked()
-  if (reason) throw new Error(reason)
+  if (reason) {
+    // Read-only: ticks and status changes are handed to the copy that's saving (see handoff.ts).
+    const handed = handOff(getLibrary(), library)
+    if (handed) return handed
+    throw new Error(reason)
+  }
   current = library
   const file = join(folder, LIBRARY_FILE)
   if (unreadable && existsSync(file)) {

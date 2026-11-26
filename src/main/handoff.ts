@@ -3,10 +3,10 @@ import { existsSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync
 import { hostname } from 'os'
 import { join } from 'path'
 import { computerName } from '@core/guard'
-import { foldHandoffs, handoffFileName, isHandoffFileName, stampChange } from '@core/handoff'
+import { changesBetween, foldHandoffs, handoffFileName, isHandoffFileName, stampChange } from '@core/handoff'
 import { normalizePhoneFile, pendingChanges, phoneView, type NewPhoneChange, type PhoneChange } from '@core/phone'
 import type { Library } from '@core/types'
-import { getLibrary, getSavedLibrary, refreshLibraryView, saveLibrary, setLibraryView } from './library'
+import { getLibrary, getSavedLibrary, refreshLibraryView, saveLibrary, setHandOff, setLibraryView } from './library'
 import { log, report } from './health'
 
 /**
@@ -67,11 +67,12 @@ function tidyMine(): void {
 /** Whether a change made now should be handed over instead of saved. */
 export const handingOver = (): boolean => !!folder && !!readOnly()
 
-/** Hands one change to the copy that's saving, and shows it here straight away. */
-export function handOver(change: NewPhoneChange): Library {
+/** Hands changes to the copy that's saving, and shows them here straight away. */
+export function handOver(...changes: NewPhoneChange[]): Library {
   if (!folder || !mine) throw new Error('Choose a data folder first.')
   const before = pending
-  pending = [...pending, stampChange(change, randomUUID(), new Date())]
+  const now = new Date()
+  pending = [...pending, ...changes.map((c) => stampChange(c, randomUUID(), now))]
   try {
     writeMine()
   } catch (err) {
@@ -138,6 +139,12 @@ export function startHandoff(dataFolder: string | null, isReadOnly: () => string
   mine = folder ? join(folder, handoffFileName(computerName(hostname()))) : null
   pending = mine ? readFile(mine) : []
   setLibraryView((lib) => (pending.length ? phoneView(lib, pending) : lib))
+  // Any save made while read-only: hand it over if it's only ticks and statuses.
+  setHandOff((from, to) => {
+    if (!handingOver()) return null
+    const changes = changesBetween(from, to, new Date())
+    return changes ? handOver(...changes) : null
+  })
   if (!folder) return
   // The first look waits a moment, until the guard has said whether this copy may save.
   timer = setInterval(foldHandoffsNow, LOOK_MS)

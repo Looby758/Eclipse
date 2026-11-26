@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { emptyLibrary, setStatus, type LibraryItem } from '@core/library'
+import { emptyLibrary, setEpisodes, setStatus, type LibraryItem } from '@core/library'
 
 vi.mock('electron', () => ({ app: { getPath: () => tmpdir() } }))
 vi.mock('./health', () => ({ log: () => undefined, report: () => undefined }))
@@ -35,6 +35,17 @@ afterEach(() => {
 })
 
 describe('ticking on a read-only copy', () => {
+  it('hands over a plain save of a tick (as the tray, the window or Claude’s tools make)', async () => {
+    const folder = mkdtempSync(join(tmpdir(), 'eclipse-handoff-'))
+    dirs.push(folder)
+    writeFileSync(join(folder, 'library.json'), JSON.stringify(setStatus(emptyLibrary(), andor, 'watching', new Date('2026-11-20T12:00:00'))))
+    const pc = await openCopy(folder, 'DESKTOP-4F2K9', true)
+    const shown = pc.library.saveLibrary(setEpisodes(pc.library.getLibrary(), andor, ['S1E2'], true))
+    expect(Object.keys(shown.entries['tv:83867'].episodes ?? {})).toEqual(['S1E2'])
+    expect(existsSync(join(folder, 'from-computer-desktop-4f2k9.json'))).toBe(true)
+    expect(JSON.parse(readFileSync(join(folder, 'library.json'), 'utf8')).entries['tv:83867'].episodes).toBeUndefined()
+  })
+
   it('hands the tick to the copy that’s open, which saves it, and the file is tidied away', async () => {
     const folder = mkdtempSync(join(tmpdir(), 'eclipse-handoff-'))
     dirs.push(folder)
@@ -58,8 +69,8 @@ describe('ticking on a read-only copy', () => {
     const saved = JSON.parse(readFileSync(join(folder, 'library.json'), 'utf8'))
     expect(Object.keys(saved.entries['tv:83867'].episodes)).toEqual(['S1E3'])
 
-    // A read-only copy that tries to save outright is still refused.
-    expect(() => pc.library.saveLibrary(pc.library.getLibrary())).toThrow('read-only')
+    // A save of anything other than ticks and statuses is still refused on the read-only copy.
+    expect(() => pc.library.saveLibrary({ ...pc.library.getLibrary(), entries: { ...pc.library.getLibrary().entries, 'tv:83867': { ...pc.library.getLibrary().entries['tv:83867'], rating: 9 } } })).toThrow('read-only')
 
     // When library.json comes back to the PC, its file is tidied away.
     pc.library.openLibrary(folder, () => undefined, () => 'read-only')

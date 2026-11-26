@@ -186,7 +186,7 @@ Both computers need this version. Leave Eclipse open on the Mac, and open it (or
 
 1. **Tray:** in the PC's tray menu, tick the next episode of a show. It says *Ticked … Eclipse on <your Mac> saves it.* and the menu moves on to the next episode straight away.
 2. **Saved on the Mac:** within a few seconds of Drive syncing, the episode shows as ticked in Eclipse on the Mac too. In the data folder, `from-computer-<pc name>.json` appears while the tick is on its way and goes again once it's saved.
-3. **Window and phone remote:** ticking episodes, or changing a title's status, in the read-only window (or from the phone remote) works the same way. Other changes, like ratings and notes, still wait until the Mac is closed.
+3. **Window, phone remote and Claude:** ticking episodes, or changing a title's status, in the read-only window, from the phone remote or through Claude's tools works the same way. Other changes, like ratings and notes, still wait until the Mac is closed.
 4. **Clash:** if the same episode was ticked on both on different days, the Mac's day is kept.
 
 ## Phases 13 to 22: what to try
