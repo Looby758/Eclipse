@@ -93,6 +93,8 @@ export function getLibrary(): Library {
   if (cached?.base !== current || cached.stamp !== viewStamp) cached = { base: current, stamp: viewStamp, out: view(current) }
   return cached.out
 }
+/** How many saves the library.json this copy has had. */
+export const librarySaves = (): number => current.saves ?? 0
 /** The library as saved in library.json, without handed-over changes on top. */
 export const getSavedLibrary = (): Library => current
 
@@ -109,13 +111,14 @@ export function saveLibrary(library: Library): Library {
     if (handed) return handed
     throw new Error(reason)
   }
-  current = library
+  // Counted, so the other computer knows when it has every save before it takes over (see guard.ts).
+  current = { ...library, saves: Math.max(current.saves ?? 0, library.saves ?? 0) + 1 }
   const file = join(folder, LIBRARY_FILE)
   if (unreadable && existsSync(file)) {
     copyFileSync(file, join(folder, `library.unreadable-${Date.now()}.json`))
     unreadable = false
   }
-  lastText = JSON.stringify(library, null, 2) + '\n'
+  lastText = JSON.stringify(current, null, 2) + '\n'
   // Temp file then rename, so a crash (or Drive) never sees half a file.
   writeFileSync(`${file}.tmp`, lastText, 'utf8')
   renameSync(`${file}.tmp`, file)
