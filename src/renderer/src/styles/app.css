@@ -1635,3 +1635,12 @@ select:hover { border-color: var(--accent); }
 .tl-item.soon:hover, .tl-item.soon:focus-visible { opacity: 1; }
 .tl-when { display: block; margin-top: 8px; font-size: 10px; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
 
+
+/* Settings → Claude Desktop */
+.row-buttons { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 8px; }
+.claude-paste { display: grid; gap: 8px; margin-top: 10px; justify-items: start; }
+.claude-paste textarea { width: 100%; font-family: ui-monospace, Consolas, monospace; font-size: var(--text-sm); background: var(--glass-soft); color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 10px; resize: vertical; }
+.claude-areas { display: grid; gap: 10px; }
+.claude-area { display: flex; gap: 16px; align-items: center; justify-content: space-between; }
+.claude-area p { margin: 2px 0 0; }
+.segmented.small button { padding: 4px 10px; }

@@ -133,6 +133,26 @@ const api: EclipseApi = {
     ipcRenderer.on('remote:changed', handler)
     return () => ipcRenderer.removeListener('remote:changed', handler)
   },
+  claudeDesktopStatus: () => ipcRenderer.invoke('claude:status'),
+  setClaudeDesktop: (on) => ipcRenderer.invoke('claude:set', on),
+  setClaudeArea: (area, on) => ipcRenderer.invoke('claude:setArea', area, on),
+  connectClaudeDesktop: () => ipcRenderer.invoke('claude:connect'),
+  newClaudeDesktopToken: () => ipcRenderer.invoke('claude:newToken'),
+  disconnectClaudeDesktop: () => ipcRenderer.invoke('claude:disconnect'),
+  onClaudeShow: (callback) => {
+    const handler = (_e: unknown, what: Parameters<typeof callback>[0]): void => callback(what)
+    ipcRenderer.on('claude:show', handler)
+    return () => ipcRenderer.removeListener('claude:show', handler)
+  },
+  takeClaudeShow: () => ipcRenderer.invoke('claude:takeShow'),
+  claudeShown: () => ipcRenderer.send('claude:shown'),
+  onClaudeAppearance: (callback) => {
+    const handler = (_e: unknown, look: Parameters<typeof callback>[0]): void => callback(look)
+    ipcRenderer.on('claude:appearance', handler)
+    return () => ipcRenderer.removeListener('claude:appearance', handler)
+  },
+  takeClaudeLooks: () => ipcRenderer.invoke('claude:takeLooks'),
+  claudeLookApplied: () => ipcRenderer.send('claude:lookApplied'),
   onServicesChanged: (callback) => {
     const handler = (_e: unknown, h: Parameters<typeof callback>[0]): void => callback(h)
     ipcRenderer.on('services:changed', handler)

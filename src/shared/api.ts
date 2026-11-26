@@ -1,3 +1,4 @@
+import type { ClaudeArea, ClaudeDesktopStatus, ClaudeShow, ConnectResult } from './claudeDesktop'
 import type { ImportSummary } from '@core/sequel'
 import type { ReleaseEvent } from '@core/calendar'
 import type { KnownFrom } from '@core/knownfrom'
@@ -357,6 +358,21 @@ export interface EclipseApi {
   setRemote(on: boolean): Promise<RemoteStatus>
   newRemoteCode(): Promise<RemoteStatus>
   onRemoteStatus(callback: (status: RemoteStatus) => void): () => void
+  /** The Claude Desktop connection (Settings → Claude Desktop). */
+  claudeDesktopStatus(): Promise<ClaudeDesktopStatus>
+  setClaudeDesktop(on: boolean): Promise<ClaudeDesktopStatus>
+  setClaudeArea(area: ClaudeArea, on: boolean): Promise<ClaudeDesktopStatus>
+  connectClaudeDesktop(): Promise<ConnectResult>
+  newClaudeDesktopToken(): Promise<ClaudeDesktopStatus>
+  disconnectClaudeDesktop(): Promise<ClaudeDesktopStatus>
+  /** Claude asked to show a page (or one it asked for before the window was ready), and saying it's been shown. */
+  onClaudeShow(callback: (what: ClaudeShow) => void): () => void
+  takeClaudeShow(): Promise<ClaudeShow | null>
+  claudeShown(): void
+  /** Looks Claude changed (set_appearance): now, and any changed while no window was open. */
+  onClaudeAppearance(callback: (look: { setting: string; value: string }) => void): () => void
+  takeClaudeLooks(): Promise<{ setting: string; value: string }[]>
+  claudeLookApplied(): void
   setPreferences(patch: Partial<Preferences>): Promise<Library>
   /** Called when library.json changes on disk (e.g. Google Drive synced it from your other computer). */
   onLibraryChanged(callback: (library: Library) => void): () => void

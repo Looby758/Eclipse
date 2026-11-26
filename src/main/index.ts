@@ -46,6 +46,9 @@ import { getZoom, setupZoom, setZoom } from './zoom'
 import { foldFromPhone, phoneAsks, resolveAsk, startPhone } from './phone'
 import { finaleImage, themeFor } from './finale'
 import { errorText, healthStatus, log, onHealthChanged, recentLog, report } from './health'
+import { setupClaudeDesktop } from './claudeDesktop'
+import { APP_SETTINGS, type AppControls, type AppSetting } from './claudeTools'
+import type { ClaudeShow } from '@shared/claudeDesktop'
 
 // Window background, matching --bg in src/renderer/src/styles/theme.css so there's no flash on start.
 const BG = '#040309'
@@ -178,7 +181,169 @@ function healthNow(): ReturnType<typeof healthStatus> {
   return healthStatus({ history: !n.history && 'Switched off', playing: !n.playing && 'Switched off', updates: updatesOff() ?? false })
 }
 
+// ---------- Claude Desktop ----------
+
+/** The last change Claude made, so "undo that" can put it back. */
+let claudeUndo: number | null = null
+/** Looks Claude changed (Settings → Appearance) not yet applied by a window. */
+let claudeLooks: { setting: string; value: string }[] = []
+/** A page Claude asked to show before the window was ready to hear it. */
+let claudeShowPending: ClaudeShow | null = null
+
+function showForClaude(what: ClaudeShow): void {
+  showWindow()
+  const win = mainWindow
+  if (!win) return
+  claudeShowPending = what
+  // A window that's still loading picks it up itself (claude:takeShow) once it's ready.
+  if (!win.webContents.isLoading()) win.webContents.send('claude:show', what)
+}
+
+/** Eclipse's settings on this computer that Claude can switch (Settings → App settings in the tools). */
+const claudeApp: AppControls = {
+  status: () => {
+    const n = noticingStatus().settings
+    const d = discordStatus()
+    const login = loginStatus()
+    return [
+      `tray: ${trayOn()}`,
+      `phone_remote: ${remoteStatus().on}`,
+      `discord_status: ${d.on}${d.appId ? '' : ' (not set up yet: needs a Discord application in Settings)'}`,
+      `notice_browser_history: ${n.history}`,
+      `notice_whats_playing: ${n.playing}`,
+      `bedtime_guard: ${n.bedtime}`,
+      `start_with_computer: ${login.on}${login.supported ? '' : ' (not available on this computer)'}`,
+      `text_size: ${getZoom()}`
+    ].join('\n')
+  },
+  set: (setting: AppSetting, value: boolean | number) => {
+    if (!APP_SETTINGS.includes(setting)) throw new Error('Eclipse has no setting called that.')
+    if (setting === 'text_size') {
+      if (typeof value !== 'number') throw new Error('text_size takes a number, like 1.1.')
+      return `Text size is now ${setZoom(value)}.`
+    }
+    if (typeof value !== 'boolean') throw new Error(`${setting} takes true or false.`)
+    if (setting === 'tray') setTray(value)
+    else if (setting === 'phone_remote') {
+      void setRemote(value, sendRemote).then(sendRemote)
+      return `The phone remote is ${value ? 'on: open Settings → Your phone as a remote in Eclipse for the QR code to scan' : 'off'}.`
+    }
+    else if (setting === 'discord_status') {
+      if (value && !discordStatus().appId) throw new Error('The Discord status needs setting up in Eclipse first (Settings → Discord).')
+      changeDiscord({ on: value })
+      mainWindow?.webContents.send('discord:changed', discordStatus())
+    } else if (setting === 'notice_browser_history') setNoticing({ history: value })
+    else if (setting === 'notice_whats_playing') setNoticing({ playing: value })
+    else if (setting === 'bedtime_guard') setNoticing({ bedtime: value })
+    else if (setting === 'start_with_computer') {
+      if (!setStartAtLogin(value).supported) throw new Error('Starting with the computer isn’t available here (only in the installed app).')
+    }
+    if (setting.startsWith('notice') || setting === 'bedtime_guard') mainWindow?.webContents.send('noticing:changed')
+    refreshTray()
+    return `${setting} is now ${value ? 'on' : 'off'}.`
+  }
+}
+
+function claudeDeps(): Parameters<typeof setupClaudeDesktop>[0] {
+  const region = (): string => preferencesOf(getLibrary()).region
+  const data = async <T>(p: Promise<{ data: T }>): Promise<T> => (await p).data
+  return () => ({
+    library: getLibrary,
+    change: (fn) => {
+      const before = getLibrary()
+      const after = saveLibrary(fn(before))
+      const offer = remember(before, after)
+      if (offer) {
+        claudeUndo = offer.id
+        mainWindow?.webContents.send('undo:offer', offer)
+      }
+      broadcastLibrary()
+      return after
+    },
+    undoLast: () => {
+      if (claudeUndo === null) return 'There’s nothing of Claude’s to undo.'
+      const target = undoTarget(claudeUndo, getLibrary())
+      claudeUndo = null
+      if (!target.ok) throw new Error(target.error)
+      saveLibrary(target.library)
+      broadcastLibrary()
+      return `Undone: ${target.label}.`
+    },
+    tmdb: {
+      hasKey: tmdb.hasKey,
+      search: (q) => data(tmdb.search(q)),
+      details: (type, id) => data(tmdb.details(type, id)),
+      detailsMany: tmdb.detailsMany,
+      season: (id, n) => data(tmdb.season(id, n)),
+      providers: (type, id) => data(tmdb.providers(type, id, region())),
+      services: () => data(tmdb.services(region())),
+      credits: (type, id) => data(tmdb.credits(type, id)),
+      searchPeople: (q) => data(tmdb.searchPeople(q)),
+      person: (id) => data(tmdb.person(id)),
+      recommendations: (lib) => tmdb.recommendationsFor(lib),
+      traitsOf: tmdb.traitsOf,
+      calendar: (lib) => tmdb.calendarEvents(lib),
+      weekBudget: (lib) => tmdb.weekBudget(lib),
+      trending: () => data(tmdb.trending()),
+      yearReview: async (lib, year) => {
+        const { details, credits, lists } = await tmdb.yearData(lib, keysWatchedIn(lib, year))
+        return yearInReview(getLibrary(), year, details, credits, lists, localDate(new Date()))
+      },
+      catchUp: (lib) => tmdb.catchUpList(lib),
+      universe: (type, id, lib) => tmdb.universeFor(type, id, lib),
+      knownFrom: (type, id, lib) => tmdb.knownFromFor(type, id, lib),
+      openList: (id, lib) => tmdb.openList(id, lib),
+      collection: (id) => data(tmdb.collection(id))
+    },
+    show: showForClaude,
+    app: claudeApp,
+    more: {
+      suggestions: () => noticingStatus().suggestions,
+      acceptSuggestion: (id, who) => {
+        acceptSuggestion(id, who)
+        broadcastLibrary()
+        mainWindow?.webContents.send('noticing:changed')
+      },
+      dismissSuggestion: (id) => {
+        dismissSuggestion(id)
+        mainWindow?.webContents.send('noticing:changed')
+      },
+      backups: () => listBackups(dataFolderNow()),
+      restoreBackup: (day) => {
+        const restored = backupFor(dataFolderNow(), day)
+        backupLibrary('before-restore')
+        const before = getLibrary()
+        const after = saveLibrary(restored)
+        const offer = remember(before, after)
+        if (offer) {
+          claudeUndo = offer.id
+          mainWindow?.webContents.send('undo:offer', offer)
+        }
+        broadcastLibrary()
+      },
+      health: () => healthNow(),
+      appearance: (setting, value) => {
+        claudeLooks.push({ setting, value })
+        // Sent now if the window's open; a window opened later picks it up (claude:takeLooks).
+        mainWindow?.webContents.send('claude:appearance', { setting, value })
+      }
+    }
+  })
+}
+
 function setupIpc(): void {
+  ipcMain.handle('claude:takeShow', () => {
+    const what = claudeShowPending
+    claudeShowPending = null
+    return what
+  })
+  ipcMain.on('claude:shown', () => (claudeShowPending = null))
+  ipcMain.handle('claude:takeLooks', () => {
+    const looks = claudeLooks
+    claudeLooks = []
+    return looks
+  })
+  ipcMain.on('claude:lookApplied', () => (claudeLooks = []))
   ipcMain.handle('app:status', () => status())
   ipcMain.handle('app:openExternal', (_e, url: string) => {
     // Only web links: nothing else is opened from the window.
@@ -612,6 +777,7 @@ app.whenReady().then(() => {
   startTogetherReminders(getLibrary, showWindow)
   startServiceWatch(getLibrary, () => mainWindow?.webContents.send('services:changed', getHistory()))
   void setupUpdater()
+  setupClaudeDesktop(claudeDeps())
   app.on('activate', () => {
     if (!BrowserWindow.getAllWindows().length) showWindow()
   })
