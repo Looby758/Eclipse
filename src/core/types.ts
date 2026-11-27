@@ -289,6 +289,8 @@ export interface Library {
   countdowns?: TitleRef[]
   /** Phase 64: names you gave eras on your timeline, by era id ("tv:1402@2021-11"). */
   eraNames?: Record<string, string>
+  /** How many times library.json has been saved, so a computer taking over saving knows it has the latest (see guard.ts). */
+  saves?: number
 }
 
 /**

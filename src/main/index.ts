@@ -44,6 +44,7 @@ import { loginStatus, markAsked, setStartAtLogin, startedHidden } from './login'
 import { backupFor, dailyBackup, listBackups } from './backups'
 import { getZoom, setupZoom, setZoom } from './zoom'
 import { foldFromPhone, phoneAsks, resolveAsk, startPhone } from './phone'
+import { foldHandoffsNow, startHandoff } from './handoff'
 import { finaleImage, themeFor } from './finale'
 import { errorText, healthStatus, log, onHealthChanged, recentLog, report } from './health'
 import { setupClaudeDesktop } from './claudeDesktop'
@@ -138,15 +139,22 @@ function reopenLibrary(): void {
     dataFolder,
     () => {
       report('sync', true, 'Picked up a change from your other computer')
+      // Changes handed over from here may have come back saved, or (on the saving copy) be waiting.
+      foldHandoffsNow()
       broadcastLibrary()
     },
     readOnlyReason
   )
   dailyBackup(isDirectory(dataFolder) ? dataFolder : null)
+  // Before the guard, so it knows the folder when the guard first says whose it is.
+  startHandoff(isDirectory(dataFolder) ? dataFolder : null, readOnlyReason, broadcastLibrary)
   startGuard(isDirectory(dataFolder) ? dataFolder : null, (s) => {
     mainWindow?.webContents.send('guard:changed', s)
     // Phase 45: changes from the phone wait while this copy is read-only.
     void foldFromPhone()
+    // And ones handed over while read-only are saved as soon as this copy may save.
+    foldHandoffsNow()
+    broadcastLibrary()
   })
   startPhone(
     isDirectory(dataFolder) ? dataFolder : null,

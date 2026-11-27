@@ -37,11 +37,14 @@ export interface AppStatus {
 
 /** The two-computer guard (see src/core/guard.ts). */
 export interface GuardStatus {
-  /** Another computer has Eclipse open: changes here aren't saved. */
+  /** The other computer's copy is saving: only ticks and status changes made here are kept (handed over). */
   readOnly: boolean
   other?: { computer: string; platform: 'mac' | 'win' | 'linux'; since: string; seen: string; session: string }
-  /** This copy had it, and the other computer took over. */
-  takenOver?: boolean
+  /**
+   * Why this copy isn't saving: the other computer was used in the last minute, or it's this
+   * computer's turn but Drive hasn't brought the latest library yet.
+   */
+  waiting?: 'in-use' | 'catching-up'
 }
 
 /** An answer from TMDB, and whether it's a saved copy shown because TMDB couldn't be reached. */

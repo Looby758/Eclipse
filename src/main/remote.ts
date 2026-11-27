@@ -52,7 +52,7 @@ export function remoteStatus(): RemoteStatus {
   }
 }
 
-/** Ticks one episode (on your rewatch, if you're on one). False if the show has gone. Throws while read-only. */
+/** Ticks one episode (on your rewatch, if you're on one). False if the show has gone. While read-only, the tick is handed over (see handoff.ts). */
 export function tickEpisode(key: string, season: number, episode: number): boolean {
   const e = getLibrary().entries[key]
   if (!e || !Number.isInteger(season) || !Number.isInteger(episode)) return false

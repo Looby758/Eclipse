@@ -427,6 +427,7 @@ export function normalizeLibrary(raw: unknown): Library {
   const rawMilestones = raw && typeof raw === 'object' ? (raw as { milestones?: unknown }).milestones : undefined
   const rawCountdowns = raw && typeof raw === 'object' ? (raw as { countdowns?: unknown }).countdowns : undefined
   const rawEraNames = raw && typeof raw === 'object' ? (raw as { eraNames?: unknown }).eraNames : undefined
+  const rawSaves = raw && typeof raw === 'object' ? (raw as { saves?: unknown }).saves : undefined
   const finish = (): Library => {
     const posters = normalizePosters(rawPosters)
     if (posters) lib.posters = posters
@@ -442,6 +443,7 @@ export function normalizeLibrary(raw: unknown): Library {
     if (countdowns) lib.countdowns = countdowns
     const eraNames = normalizeEraNames(rawEraNames)
     if (eraNames) lib.eraNames = eraNames
+    if (typeof rawSaves === 'number' && Number.isFinite(rawSaves) && rawSaves > 0) lib.saves = Math.floor(rawSaves)
     const taste = normalizeTaste(rawTaste)
     if (taste) lib.recsTaste = taste
     if (Array.isArray(rawApplied)) {

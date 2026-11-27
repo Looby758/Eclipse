@@ -70,7 +70,33 @@ export function openLibrary(dataFolder: string | null, onChange: (library: Libra
   stopWatching = () => unwatchFile(file, listener)
 }
 
-export const getLibrary = (): Library => current
+/**
+ * What the library looks like here: the saved copy, with any changes this copy has handed to the
+ * other computer (see handoff.ts) shown on top until they come back saved.
+ */
+let view: (library: Library) => Library = (library) => library
+let viewStamp = 0
+let cached: { base: Library; stamp: number; out: Library } | null = null
+
+/** Hands a change over while read-only, returning the library as shown here, or null if it can't be. */
+let handOff: (from: Library, to: Library) => Library | null = () => null
+export const setHandOff = (fn: typeof handOff): void => void (handOff = fn)
+
+export function setLibraryView(fn: (library: Library) => Library): void {
+  view = fn
+  refreshLibraryView()
+}
+/** What `view` shows has changed (a change was handed over or tidied away). */
+export const refreshLibraryView = (): void => void viewStamp++
+
+export function getLibrary(): Library {
+  if (cached?.base !== current || cached.stamp !== viewStamp) cached = { base: current, stamp: viewStamp, out: view(current) }
+  return cached.out
+}
+/** How many saves the library.json this copy has had. */
+export const librarySaves = (): number => current.saves ?? 0
+/** The library as saved in library.json, without handed-over changes on top. */
+export const getSavedLibrary = (): Library => current
 
 const saveListeners: (() => void)[] = []
 /** Called after every save made here (the tray menu follows along). */
@@ -79,14 +105,20 @@ export const onSave = (fn: () => void): void => void saveListeners.push(fn)
 export function saveLibrary(library: Library): Library {
   if (!folder) throw new Error('Choose a data folder first.')
   const reason = blocked()
-  if (reason) throw new Error(reason)
-  current = library
+  if (reason) {
+    // Read-only: ticks and status changes are handed to the copy that's saving (see handoff.ts).
+    const handed = handOff(getLibrary(), library)
+    if (handed) return handed
+    throw new Error(reason)
+  }
+  // Counted, so the other computer knows when it has every save before it takes over (see guard.ts).
+  current = { ...library, saves: Math.max(current.saves ?? 0, library.saves ?? 0) + 1 }
   const file = join(folder, LIBRARY_FILE)
   if (unreadable && existsSync(file)) {
     copyFileSync(file, join(folder, `library.unreadable-${Date.now()}.json`))
     unreadable = false
   }
-  lastText = JSON.stringify(library, null, 2) + '\n'
+  lastText = JSON.stringify(current, null, 2) + '\n'
   // Temp file then rename, so a crash (or Drive) never sees half a file.
   writeFileSync(`${file}.tmp`, lastText, 'utf8')
   renameSync(`${file}.tmp`, file)

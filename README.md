@@ -192,13 +192,16 @@ Avoid having Eclipse open on both computers at the same time, so the two copies 
 3. **Make the first release:** after merging, on GitHub open **Actions → Release → Run workflow**. When it finishes, download the installer from **Releases** and install it (see *Installing it* above).
 4. **Updates:** in the installed app, Settings → *Version and updates* → **Check now** says you have the latest version.
 
-## Phase 12: what to try
+## Two computers: what to try
 
-You need both computers and the shared Google Drive folder.
+You need both computers and the shared Google Drive folder, both on this version. Leave Eclipse open on both, as you normally would. The computer you're using is the one that saves; there's no read-only to deal with.
 
-1. **Open on both:** open Eclipse on the PC, wait a minute for Drive to sync, then open it on the Mac. The Mac shows a *Read-only* banner saying Eclipse is open on the PC. Try ticking something: the banner shakes and nothing changes.
-2. **Close the first:** quit Eclipse on the PC. Within a minute or two (once Drive has synced) the banner on the Mac goes away and it works normally.
-3. **Take over:** with both open again, press **Take over** on the read-only one. Within a minute or two the other one turns read-only and says it was taken over.
+1. **Switch over:** use the Mac, then leave it and use the PC. About a minute later (once the Mac's been left a minute and Drive has synced) the PC is the one saving. In the data folder, each computer has an `eclipse-open-<name>.json` saying whether it's saving.
+2. **Tick straight away:** right after moving to the PC, tick the next episode from the tray. It works at once (*Ticked … Eclipse on <your Mac> saves it.*): while the switch is happening, ticks and status changes are handed over through `from-computer-<name>.json`, which goes again once they're saved.
+3. **Nothing lost:** change a rating on the Mac, then move to the PC straight away. The PC doesn't save until Drive has brought it the Mac's change, then it's there on the PC.
+4. **Using both at once:** while both have been used in the last minute, the one already saving keeps saving. A rating changed on the other shows *Saving on <computer>* with **Take over**; ticks still work.
+5. **Sleep or quit:** close the lid on the Mac or quit Eclipse there. The PC carries on by itself (straight away after a quit, within a few minutes after sleep).
+6. **Clash:** if the same episode was ticked on both on different days, the day on the computer that was saving is kept.
 
 ## Phases 13 to 22: what to try
 
